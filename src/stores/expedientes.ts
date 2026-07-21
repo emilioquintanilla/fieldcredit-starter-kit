@@ -274,4 +274,146 @@ export const useExpedientes = create<State>((set, get) => ({
     }),
 
   getExpediente: (id) => get().expedientes[id],
+
+  // ===== Fiador =====
+  actualizarFiador: (id, patch) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev: FiadorData = exp.fiador ?? { ingresos: [], egresos: [], auto_campos: {} };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            fiador: { ...prev, ...patch, auto_campos: { ...(prev.auto_campos || {}), ...(patch.auto_campos || {}) } },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  agregarIngresoFiador: (id, ingreso) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev: FiadorData = exp.fiador ?? { ingresos: [], egresos: [] };
+      const nuevo: IngresoFiador = { id: crypto.randomUUID(), ...ingreso };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, fiador: { ...prev, ingresos: [...prev.ingresos, nuevo] }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  eliminarIngresoFiador: (id, ingresoId) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.fiador) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            fiador: { ...exp.fiador, ingresos: exp.fiador.ingresos.filter((x) => x.id !== ingresoId) },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  agregarEgresoFiador: (id, egreso) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev: FiadorData = exp.fiador ?? { ingresos: [], egresos: [] };
+      const nuevo: EgresoFiador = { id: crypto.randomUUID(), ...egreso };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, fiador: { ...prev, egresos: [...prev.egresos, nuevo] }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  eliminarEgresoFiador: (id, egresoId) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.fiador) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            fiador: { ...exp.fiador, egresos: exp.fiador.egresos.filter((x) => x.id !== egresoId) },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  // ===== Garantías =====
+  agregarBienPrendado: (id, bien) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev: GarantiasData = exp.garantias ?? { bienes: [] };
+      const nuevo: BienPrendado = { id: crypto.randomUUID(), ...bien };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, garantias: { ...prev, bienes: [...prev.bienes, nuevo] }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  actualizarBienPrendado: (id, bienId, patch) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.garantias) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            garantias: {
+              ...exp.garantias,
+              bienes: exp.garantias.bienes.map((b) => (b.id === bienId ? { ...b, ...patch } : b)),
+            },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  eliminarBienPrendado: (id, bienId) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.garantias) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            garantias: { ...exp.garantias, bienes: exp.garantias.bienes.filter((b) => b.id !== bienId) },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  guardarInmuebleHipotecario: (id, patch) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev: GarantiasData = exp.garantias ?? { bienes: [] };
+      const inm: InmuebleHipotecario = { ...(prev.inmueble ?? { fotos: [] }), ...patch };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, garantias: { ...prev, inmueble: inm }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
 }));
