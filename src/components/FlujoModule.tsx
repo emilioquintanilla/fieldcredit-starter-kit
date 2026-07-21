@@ -455,8 +455,9 @@ function VistaGraficos({ expedienteId, meses }: { expedienteId: string; meses: s
   // Composición de ingresos: sumar cada rubro A+B activo
   const composicion = useMemo(() => {
     const items: { name: string; valor: number }[] = [];
+    const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
     (["A", "B"] as Bloque[]).forEach((b) => {
-      RUBROS[b].forEach((r) => {
+      rubrosDin[b].forEach((r) => {
         if (!flujo.rubrosActivos[r.key]) return;
         const total = flujo.valores[r.key]?.reduce((s, v) => s + v, 0) ?? 0;
         if (total > 0) items.push({ name: r.label, valor: total });
