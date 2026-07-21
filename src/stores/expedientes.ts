@@ -1,5 +1,6 @@
 // Store de expedientes (borradores + solicitudes completadas + documentos adjuntos)
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 // Documento adjunto (fotos de cédula y demás)
 export interface Documento {
@@ -246,7 +247,7 @@ interface State {
 const genId = () =>
   `SOL-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`;
 
-export const useExpedientes = create<State>((set, get) => ({
+export const useExpedientes = create<State>()(persist((set, get) => ({
   expedientes: {},
 
   crearExpediente: (id) => {
@@ -624,4 +625,4 @@ export const useExpedientes = create<State>((set, get) => ({
         },
       };
     }),
-}));
+}), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
