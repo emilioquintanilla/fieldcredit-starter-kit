@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FiadorModule } from "@/components/FiadorModule";
 import { GarantiasModule } from "@/components/GarantiasModule";
+import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,8 @@ function ExpedienteDetalle() {
     return "progreso";
   }, [exp?.garantias, d?.tipos_garantia]);
 
+  const estadoFlujoMod: Estado = useMemo(() => estadoFlujo(exp?.flujo), [exp?.flujo]);
+
   if (!exp) {
     return (
       <AppLayout>
@@ -85,7 +88,7 @@ function ExpedienteDetalle() {
     { id: "solicitud", label: "📋 Solicitud", visible: true, estado: exp.estado === "completada" ? "completo" : "progreso" },
     { id: "fiador", label: "👤 Fiador", visible: aplicaFiador, estado: estadoFiador },
     { id: "garantias", label: "🔒 Garantías", visible: aplicaGarantia, estado: estadoGarantias },
-    { id: "flujo", label: "💰 Flujo", visible: true, disabled: true },
+    { id: "flujo", label: "💰 Flujo", visible: true, estado: estadoFlujoMod },
     { id: "estados", label: "📊 Estados", visible: true, disabled: true },
     { id: "geo", label: "📍 Geo", visible: true, disabled: true },
     { id: "docs", label: "📄 Docs", visible: true },
@@ -132,6 +135,14 @@ function ExpedienteDetalle() {
       {tab === "fiador" && aplicaFiador && <FiadorModule expedienteId={id} cuotaDeudor={cuota} />}
       {tab === "garantias" && aplicaGarantia && (
         <GarantiasModule expedienteId={id} montoCredito={d?.monto || 0} tiposGarantia={tiposGarantia} />
+      )}
+      {tab === "flujo" && (
+        <FlujoModule
+          expedienteId={id}
+          plazoMeses={d?.plazo || 12}
+          tipoActividad={d?.tipo_actividad}
+          montoSolicitado={d?.monto || 0}
+        />
       )}
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
     </AppLayout>
