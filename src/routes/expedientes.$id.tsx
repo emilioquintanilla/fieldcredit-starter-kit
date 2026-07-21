@@ -88,7 +88,7 @@ function ExpedienteDetalle() {
     { id: "solicitud", label: "📋 Solicitud", visible: true, estado: exp.estado === "completada" ? "completo" : "progreso" },
     { id: "fiador", label: "👤 Fiador", visible: aplicaFiador, estado: estadoFiador },
     { id: "garantias", label: "🔒 Garantías", visible: aplicaGarantia, estado: estadoGarantias },
-    { id: "flujo", label: "💰 Flujo", visible: true, disabled: true },
+    { id: "flujo", label: "💰 Flujo", visible: true, estado: estadoFlujoMod },
     { id: "estados", label: "📊 Estados", visible: true, disabled: true },
     { id: "geo", label: "📍 Geo", visible: true, disabled: true },
     { id: "docs", label: "📄 Docs", visible: true },
