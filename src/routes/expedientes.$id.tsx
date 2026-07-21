@@ -61,6 +61,8 @@ function ExpedienteDetalle() {
     return "progreso";
   }, [exp?.garantias, d?.tipos_garantia]);
 
+  const estadoFlujoMod: Estado = useMemo(() => estadoFlujo(exp?.flujo), [exp?.flujo]);
+
   if (!exp) {
     return (
       <AppLayout>
