@@ -182,6 +182,27 @@ export interface FlujoEfectivo {
   otroEstacionalDesc?: string;
 }
 
+// ===== Módulos Estado de Resultados y Situación Financiera =====
+export interface ValorCuenta {
+  valor: number;
+  autoLlenado: boolean;
+  editado: boolean;
+}
+export interface EstadoResultadosData {
+  tipoActividad?: string;
+  preLlenadoDesdeflujo?: boolean;
+  valores: Record<string, ValorCuenta>;
+  observacionesAsesor?: string;
+}
+export interface SituacionFinancieraData {
+  tipoActividad?: string;
+  fechaCorte?: string;
+  valores: Record<string, ValorCuenta>;
+  observacionesAsesor?: string;
+}
+
+export type ModuloEstado = "resultados" | "situacion";
+
 export interface ExpedienteBorrador {
   id: string;
   estado: "borrador" | "completada";
@@ -190,6 +211,8 @@ export interface ExpedienteBorrador {
   fiador?: FiadorData;
   garantias?: GarantiasData;
   flujo?: FlujoEfectivo;
+  estadoResultados?: EstadoResultadosData;
+  situacionFinanciera?: SituacionFinancieraData;
   created_at: string;
   updated_at: string;
 }
@@ -215,6 +238,9 @@ interface State {
   actualizarValorMesFlujo: (id: string, rubro: string, mesIndex: number, valor: number) => void;
   actualizarCuotaFlujo: (id: string, cuota: number) => void;
   actualizarDescRubroFlujo: (id: string, campo: "otroFijoDesc" | "otroEstacionalDesc", valor: string) => void;
+  guardarValorEstado: (id: string, modulo: ModuloEstado, cuentaId: string, valor: number) => void;
+  hidratarEstadoDesdeflujo: (id: string, modulo: ModuloEstado, tipoActividad: string | undefined, valores: Record<string, ValorCuenta>) => void;
+  actualizarObservacionesEstado: (id: string, modulo: ModuloEstado, texto: string) => void;
 }
 
 const genId = () =>
