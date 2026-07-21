@@ -446,7 +446,7 @@ function Seccion2({
   onEditarCampo: (campo: keyof SolicitudData, valor: unknown) => void;
   errores: Record<string, string>;
   scannerVisible: boolean; setScannerVisible: (v: boolean) => void;
-  aplicarOCR: (campos: Record<string, string>, lado: "anverso" | "reverso") => void;
+  aplicarOCR: (campos: Record<string, unknown>, lado: "anverso" | "reverso") => void;
   guardarFoto: (base64: string, lado: "anverso" | "reverso") => void;
 }) {
   const edad = calcEdad(data.fecha_nacimiento);
