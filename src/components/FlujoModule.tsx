@@ -62,6 +62,30 @@ export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSoli
 
   return (
     <div className="space-y-4">
+      {/* Banner de actividad económica */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-fieldcredit-green bg-fieldcredit-green-pale p-3 dark:border-slate-600 dark:bg-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{rubrosAct.etiquetas.icono}</span>
+          <div>
+            <p className="text-sm font-semibold text-fieldcredit-green-dark dark:text-fieldcredit-green-light">
+              Mostrando rubros para: {rubrosAct.tipoActividad}
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              {rubrosAct.etiquetas.nota}
+            </p>
+          </div>
+        </div>
+        {onSwitchToSolicitud && (
+          <button
+            type="button"
+            onClick={onSwitchToSolicitud}
+            className="whitespace-nowrap text-xs text-fieldcredit-teal underline hover:text-fieldcredit-teal-dark"
+          >
+            Cambiar actividad →
+          </button>
+        )}
+      </div>
+
       {/* Selector de vista */}
       <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800 lg:hidden">
         <button
