@@ -434,4 +434,99 @@ export const useExpedientes = create<State>((set, get) => ({
         },
       };
     }),
+
+  // ===== Flujo de efectivo =====
+  inicializarFlujo: (id, opts) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      // Si ya existe y el plazo coincide, no reinicializa (preserva valores)
+      if (exp.flujo && exp.flujo.plazoMeses === opts.plazoMeses && exp.flujo.mesInicio === opts.mesInicio) {
+        return s;
+      }
+      const flujo: FlujoEfectivo = {
+        plazoMeses: opts.plazoMeses,
+        mesInicio: opts.mesInicio,
+        tipoActividad: opts.tipoActividad,
+        cuotaEstimada: exp.flujo?.cuotaEstimada ?? opts.cuotaEstimada,
+        rubrosActivos: exp.flujo?.rubrosActivos ?? {},
+        valores: exp.flujo?.valores ?? {},
+        otroFijoDesc: exp.flujo?.otroFijoDesc,
+        otroEstacionalDesc: exp.flujo?.otroEstacionalDesc,
+      };
+      // Ajusta longitud de arrays si cambió el plazo
+      const valores: Record<string, number[]> = {};
+      Object.entries(flujo.valores).forEach(([k, arr]) => {
+        const nuevo = Array.from({ length: opts.plazoMeses }, (_, i) => arr[i] ?? 0);
+        valores[k] = nuevo;
+      });
+      flujo.valores = valores;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, flujo, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  toggleRubroFlujo: (id, rubro) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.flujo) return s;
+      const activo = !exp.flujo.rubrosActivos[rubro];
+      const rubrosActivos = { ...exp.flujo.rubrosActivos, [rubro]: activo };
+      const valores = { ...exp.flujo.valores };
+      if (activo && !valores[rubro]) {
+        valores[rubro] = Array.from({ length: exp.flujo.plazoMeses }, () => 0);
+      }
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, flujo: { ...exp.flujo, rubrosActivos, valores }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  actualizarValorMesFlujo: (id, rubro, mesIndex, valor) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.flujo) return s;
+      const arr = exp.flujo.valores[rubro] ?? Array.from({ length: exp.flujo.plazoMeses }, () => 0);
+      const nuevoArr = [...arr];
+      nuevoArr[mesIndex] = isFinite(valor) ? valor : 0;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            flujo: { ...exp.flujo, valores: { ...exp.flujo.valores, [rubro]: nuevoArr } },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  actualizarCuotaFlujo: (id, cuota) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.flujo) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, flujo: { ...exp.flujo, cuotaEstimada: cuota }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  actualizarDescRubroFlujo: (id, campo, valor) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.flujo) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, flujo: { ...exp.flujo, [campo]: valor }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
 }));
