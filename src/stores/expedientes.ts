@@ -204,6 +204,23 @@ export interface SituacionFinancieraData {
 
 export type ModuloEstado = "resultados" | "situacion";
 
+// ===== Módulo Geolocalización =====
+export type TipoUbicacion = "domicilioDeudor" | "negocioDeudor" | "domicilioFiador" | "negocioFiador";
+export interface UbicacionGeo {
+  lat: number;
+  lng: number;
+  precision: number;
+  precisionBaja: boolean;
+  direccionTextual?: string;
+  direccionNominatim?: string | null;
+  departamento?: string | null;
+  municipio?: string | null;
+  timestamp: string;
+  capturadoPor?: string;
+  metodo: "gps" | "manual";
+}
+export type GeolocalizacionData = Partial<Record<TipoUbicacion, UbicacionGeo | null>>;
+
 export interface ExpedienteBorrador {
   id: string;
   estado: "borrador" | "completada";
@@ -214,9 +231,11 @@ export interface ExpedienteBorrador {
   flujo?: FlujoEfectivo;
   estadoResultados?: EstadoResultadosData;
   situacionFinanciera?: SituacionFinancieraData;
+  geolocalizacion?: GeolocalizacionData;
   created_at: string;
   updated_at: string;
 }
+
 
 interface State {
   expedientes: Record<string, ExpedienteBorrador>;
@@ -242,7 +261,11 @@ interface State {
   guardarValorEstado: (id: string, modulo: ModuloEstado, cuentaId: string, valor: number) => void;
   hidratarEstadoDesdeflujo: (id: string, modulo: ModuloEstado, tipoActividad: string | undefined, valores: Record<string, ValorCuenta>) => void;
   actualizarObservacionesEstado: (id: string, modulo: ModuloEstado, texto: string) => void;
+  guardarUbicacion: (id: string, tipo: TipoUbicacion, datos: UbicacionGeo) => void;
+  eliminarUbicacion: (id: string, tipo: TipoUbicacion) => void;
+  actualizarDireccionTexto: (id: string, tipo: TipoUbicacion, texto: string) => void;
 }
+
 
 const genId = () =>
   `SOL-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`;
@@ -625,4 +648,70 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
         },
       };
     }),
+
+  // ===== Geolocalización =====
+  guardarUbicacion: (id, tipo, datos) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev = exp.geolocalizacion ?? {};
+      const anterior = prev[tipo];
+      const merged: UbicacionGeo = {
+        ...datos,
+        // Preserva la dirección textual escrita por el asesor al recapturar
+        direccionTextual: datos.direccionTextual ?? anterior?.direccionTextual,
+      };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            geolocalizacion: { ...prev, [tipo]: merged },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  eliminarUbicacion: (id, tipo) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.geolocalizacion) return s;
+      const nuevo = { ...exp.geolocalizacion };
+      nuevo[tipo] = null;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, geolocalizacion: nuevo, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  actualizarDireccionTexto: (id, tipo, texto) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev = exp.geolocalizacion ?? {};
+      const anterior = prev[tipo];
+      const base: UbicacionGeo =
+        anterior ?? {
+          lat: 0,
+          lng: 0,
+          precision: 0,
+          precisionBaja: false,
+          timestamp: new Date().toISOString(),
+          metodo: "manual",
+        };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            geolocalizacion: { ...prev, [tipo]: { ...base, direccionTextual: texto } },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
 }), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));

@@ -10,6 +10,8 @@ import { GarantiasModule } from "@/components/GarantiasModule";
 import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
 import { EstadoResultadosModule, estadoResultadosStatus } from "@/components/estados/EstadoResultadosModule";
 import { SituacionFinancieraModule, estadoSituacionStatus } from "@/components/estados/SituacionFinancieraModule";
+import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
+
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
@@ -89,6 +91,8 @@ function ExpedienteDetalle() {
   const tipoActividadFlujo = d?.producto === "agroresilia" ? "AgroResilia" : d?.tipo_actividad;
   const estadoResMod = estadoResultadosStatus(exp.estadoResultados);
   const estadoSitMod = estadoSituacionStatus(exp.situacionFinanciera);
+  const estadoGeoMod = estadoGeoStatus(exp);
+  const fiadorTieneNegocio = !!(exp.fiador?.tipo_actividad && exp.fiador?.nombre_negocio);
 
   const tabs: { id: TabId; label: string; disabled?: boolean; estado?: Estado; visible: boolean }[] = [
     { id: "solicitud", label: "📋 Solicitud", visible: true, estado: exp.estado === "completada" ? "completo" : "progreso" },
@@ -97,9 +101,10 @@ function ExpedienteDetalle() {
     { id: "flujo", label: "💰 Flujo", visible: true, estado: estadoFlujoMod },
     { id: "resultados", label: "📊 Resultados", visible: true, estado: estadoResMod },
     { id: "situacion", label: "🏦 Situación", visible: true, estado: estadoSitMod },
-    { id: "geo", label: "📍 Geo", visible: true, disabled: true },
+    { id: "geo", label: "📍 Geo", visible: true, estado: estadoGeoMod },
     { id: "docs", label: "📄 Docs", visible: true },
   ];
+
 
   return (
     <AppLayout>
@@ -167,7 +172,11 @@ function ExpedienteDetalle() {
           onSwitchToSolicitud={() => setTab("solicitud")}
         />
       )}
+      {tab === "geo" && (
+        <GeoModule expedienteId={id} aplicaFiador={aplicaFiador} fiadorTieneNegocio={fiadorTieneNegocio} />
+      )}
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
+
     </AppLayout>
   );
 }
