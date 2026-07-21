@@ -182,6 +182,27 @@ export interface FlujoEfectivo {
   otroEstacionalDesc?: string;
 }
 
+// ===== Módulos Estado de Resultados y Situación Financiera =====
+export interface ValorCuenta {
+  valor: number;
+  autoLlenado: boolean;
+  editado: boolean;
+}
+export interface EstadoResultadosData {
+  tipoActividad?: string;
+  preLlenadoDesdeflujo?: boolean;
+  valores: Record<string, ValorCuenta>;
+  observacionesAsesor?: string;
+}
+export interface SituacionFinancieraData {
+  tipoActividad?: string;
+  fechaCorte?: string;
+  valores: Record<string, ValorCuenta>;
+  observacionesAsesor?: string;
+}
+
+export type ModuloEstado = "resultados" | "situacion";
+
 export interface ExpedienteBorrador {
   id: string;
   estado: "borrador" | "completada";
@@ -190,6 +211,8 @@ export interface ExpedienteBorrador {
   fiador?: FiadorData;
   garantias?: GarantiasData;
   flujo?: FlujoEfectivo;
+  estadoResultados?: EstadoResultadosData;
+  situacionFinanciera?: SituacionFinancieraData;
   created_at: string;
   updated_at: string;
 }
@@ -215,6 +238,9 @@ interface State {
   actualizarValorMesFlujo: (id: string, rubro: string, mesIndex: number, valor: number) => void;
   actualizarCuotaFlujo: (id: string, cuota: number) => void;
   actualizarDescRubroFlujo: (id: string, campo: "otroFijoDesc" | "otroEstacionalDesc", valor: string) => void;
+  guardarValorEstado: (id: string, modulo: ModuloEstado, cuentaId: string, valor: number) => void;
+  hidratarEstadoDesdeflujo: (id: string, modulo: ModuloEstado, tipoActividad: string | undefined, valores: Record<string, ValorCuenta>) => void;
+  actualizarObservacionesEstado: (id: string, modulo: ModuloEstado, texto: string) => void;
 }
 
 const genId = () =>
@@ -526,6 +552,75 @@ export const useExpedientes = create<State>((set, get) => ({
         expedientes: {
           ...s.expedientes,
           [id]: { ...exp, flujo: { ...exp.flujo, [campo]: valor }, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  // ===== Estado de Resultados / Situación Financiera =====
+  guardarValorEstado: (id, modulo, cuentaId, valor) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const key = modulo === "resultados" ? "estadoResultados" : "situacionFinanciera";
+      const prev = (exp[key] as EstadoResultadosData | SituacionFinancieraData | undefined) ?? { valores: {} };
+      const registro = prev.valores[cuentaId];
+      const nuevo: ValorCuenta = {
+        valor: isFinite(valor) ? valor : 0,
+        autoLlenado: registro?.autoLlenado ?? false,
+        editado: registro?.autoLlenado ? true : registro?.editado ?? false,
+      };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            [key]: { ...prev, valores: { ...prev.valores, [cuentaId]: nuevo } },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  hidratarEstadoDesdeflujo: (id, modulo, tipoActividad, valores) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const key = modulo === "resultados" ? "estadoResultados" : "situacionFinanciera";
+      const prev = (exp[key] as EstadoResultadosData | SituacionFinancieraData | undefined) ?? { valores: {} };
+      // No sobreescribir valores editados por el asesor
+      const merged: Record<string, ValorCuenta> = { ...prev.valores };
+      Object.entries(valores).forEach(([k, v]) => {
+        const existente = prev.valores[k];
+        if (!existente || (existente.autoLlenado && !existente.editado)) {
+          merged[k] = v;
+        }
+      });
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            [key]: { ...prev, tipoActividad, preLlenadoDesdeflujo: true, valores: merged },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  actualizarObservacionesEstado: (id, modulo, texto) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const key = modulo === "resultados" ? "estadoResultados" : "situacionFinanciera";
+      const prev = (exp[key] as EstadoResultadosData | SituacionFinancieraData | undefined) ?? { valores: {} };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            [key]: { ...prev, observacionesAsesor: texto },
+            updated_at: new Date().toISOString(),
+          },
         },
       };
     }),

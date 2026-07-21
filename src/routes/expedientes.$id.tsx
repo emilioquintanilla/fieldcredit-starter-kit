@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { FiadorModule } from "@/components/FiadorModule";
 import { GarantiasModule } from "@/components/GarantiasModule";
 import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
+import { EstadoResultadosModule, estadoResultadosStatus } from "@/components/estados/EstadoResultadosModule";
+import { SituacionFinancieraModule, estadoSituacionStatus } from "@/components/estados/SituacionFinancieraModule";
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
@@ -17,8 +19,8 @@ export const Route = createFileRoute("/expedientes/$id")({
   component: ExpedienteDetalle,
 });
 
-type TabId = "solicitud" | "fiador" | "garantias" | "flujo" | "estados" | "geo" | "docs";
-type Estado = "pendiente" | "progreso" | "completo";
+type TabId = "solicitud" | "fiador" | "garantias" | "flujo" | "resultados" | "situacion" | "geo" | "docs";
+type Estado = "pendiente" | "progreso" | "completo" | "alerta";
 
 // Cálculo simple de cuota mensual estimada (para índice de cobertura del fiador)
 const cuotaEstimadaMensual = (monto?: number, plazo?: number) => {
@@ -84,12 +86,17 @@ function ExpedienteDetalle() {
   const cuota = cuotaEstimadaMensual(d?.monto, d?.plazo);
   const tiposGarantia = d?.tipos_garantia || [];
 
+  const tipoActividadFlujo = d?.producto === "agroresilia" ? "AgroResilia" : d?.tipo_actividad;
+  const estadoResMod = estadoResultadosStatus(exp.estadoResultados);
+  const estadoSitMod = estadoSituacionStatus(exp.situacionFinanciera);
+
   const tabs: { id: TabId; label: string; disabled?: boolean; estado?: Estado; visible: boolean }[] = [
     { id: "solicitud", label: "📋 Solicitud", visible: true, estado: exp.estado === "completada" ? "completo" : "progreso" },
     { id: "fiador", label: "👤 Fiador", visible: aplicaFiador, estado: estadoFiador },
     { id: "garantias", label: "🔒 Garantías", visible: aplicaGarantia, estado: estadoGarantias },
     { id: "flujo", label: "💰 Flujo", visible: true, estado: estadoFlujoMod },
-    { id: "estados", label: "📊 Estados", visible: true, disabled: true },
+    { id: "resultados", label: "📊 Resultados", visible: true, estado: estadoResMod },
+    { id: "situacion", label: "🏦 Situación", visible: true, estado: estadoSitMod },
     { id: "geo", label: "📍 Geo", visible: true, disabled: true },
     { id: "docs", label: "📄 Docs", visible: true },
   ];
@@ -140,8 +147,23 @@ function ExpedienteDetalle() {
         <FlujoModule
           expedienteId={id}
           plazoMeses={d?.plazo || 12}
-          tipoActividad={d?.producto === "agroresilia" ? "AgroResilia" : d?.tipo_actividad}
+          tipoActividad={tipoActividadFlujo}
           montoSolicitado={d?.monto || 0}
+          onSwitchToSolicitud={() => setTab("solicitud")}
+        />
+      )}
+      {tab === "resultados" && (
+        <EstadoResultadosModule
+          expedienteId={id}
+          tipoActividad={tipoActividadFlujo}
+          cuotaEstimada={cuota}
+          onSwitchToSolicitud={() => setTab("solicitud")}
+        />
+      )}
+      {tab === "situacion" && (
+        <SituacionFinancieraModule
+          expedienteId={id}
+          tipoActividad={tipoActividadFlujo}
           onSwitchToSolicitud={() => setTab("solicitud")}
         />
       )}
@@ -243,6 +265,7 @@ function Info({ k, v }: { k: string; v?: string | number | null }) {
 function EstadoDot({ estado }: { estado: Estado }) {
   const cls =
     estado === "completo" ? "bg-fieldcredit-green" :
+    estado === "alerta"   ? "bg-rose-500" :
     estado === "progreso" ? "bg-fieldcredit-amber" :
     "bg-slate-300 dark:bg-slate-500";
   return <span className={cn("inline-block h-2 w-2 rounded-full", cls)} aria-hidden />;
