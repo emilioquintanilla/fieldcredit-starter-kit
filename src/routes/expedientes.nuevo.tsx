@@ -56,7 +56,7 @@ function NuevaSolicitud() {
   const actualizarBorrador = useExpedientes((s) => s.actualizarBorrador);
   const completarSolicitud = useExpedientes((s) => s.completarSolicitud);
   const adjuntarDocumento = useExpedientes((s) => s.adjuntarDocumento);
-  const getExpediente = useExpedientes((s) => s.getExpediente);
+  
 
   const [expedienteId, setExpedienteId] = useState<string | null>(null);
   const [seccion, setSeccion] = useState(1);
