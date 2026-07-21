@@ -265,6 +265,7 @@ function Info({ k, v }: { k: string; v?: string | number | null }) {
 function EstadoDot({ estado }: { estado: Estado }) {
   const cls =
     estado === "completo" ? "bg-fieldcredit-green" :
+    estado === "alerta"   ? "bg-rose-500" :
     estado === "progreso" ? "bg-fieldcredit-amber" :
     "bg-slate-300 dark:bg-slate-500";
   return <span className={cn("inline-block h-2 w-2 rounded-full", cls)} aria-hidden />;
