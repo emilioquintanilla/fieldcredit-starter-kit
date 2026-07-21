@@ -147,8 +147,23 @@ function ExpedienteDetalle() {
         <FlujoModule
           expedienteId={id}
           plazoMeses={d?.plazo || 12}
-          tipoActividad={d?.producto === "agroresilia" ? "AgroResilia" : d?.tipo_actividad}
+          tipoActividad={tipoActividadFlujo}
           montoSolicitado={d?.monto || 0}
+          onSwitchToSolicitud={() => setTab("solicitud")}
+        />
+      )}
+      {tab === "resultados" && (
+        <EstadoResultadosModule
+          expedienteId={id}
+          tipoActividad={tipoActividadFlujo}
+          cuotaEstimada={cuota}
+          onSwitchToSolicitud={() => setTab("solicitud")}
+        />
+      )}
+      {tab === "situacion" && (
+        <SituacionFinancieraModule
+          expedienteId={id}
+          tipoActividad={tipoActividadFlujo}
           onSwitchToSolicitud={() => setTab("solicitud")}
         />
       )}
