@@ -20,7 +20,7 @@ interface CamposOCR {
 }
 
 interface Props {
-  onCamposDetectados: (campos: CamposOCR, lado: Lado) => void;
+  onCamposDetectados: (campos: Record<string, unknown>, lado: Lado) => void;
   onFotoCapturada: (base64: string, lado: Lado) => void;
   onLlenarManual: () => void;
 }
