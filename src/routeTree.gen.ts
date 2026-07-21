@@ -9,38 +9,161 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ComiteRouteImport } from './routes/comite'
+import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
+import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
+import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComiteRoute = ComiteRouteImport.update({
+  id: '/comite',
+  path: '/comite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExpedientesIndexRoute = ExpedientesIndexRouteImport.update({
+  id: '/expedientes/',
+  path: '/expedientes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpedientesNuevoRoute = ExpedientesNuevoRouteImport.update({
+  id: '/expedientes/nuevo',
+  path: '/expedientes/nuevo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
+  id: '/expedientes/$id',
+  path: '/expedientes/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
+  '/comite': typeof ComiteRoute
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/expedientes/$id': typeof ExpedientesIdRoute
+  '/expedientes/nuevo': typeof ExpedientesNuevoRoute
+  '/expedientes/': typeof ExpedientesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
+  '/comite': typeof ComiteRoute
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/expedientes/$id': typeof ExpedientesIdRoute
+  '/expedientes/nuevo': typeof ExpedientesNuevoRoute
+  '/expedientes': typeof ExpedientesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
+  '/comite': typeof ComiteRoute
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/expedientes/$id': typeof ExpedientesIdRoute
+  '/expedientes/nuevo': typeof ExpedientesNuevoRoute
+  '/expedientes/': typeof ExpedientesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/clientes'
+    | '/comite'
+    | '/dashboard'
+    | '/login'
+    | '/expedientes/$id'
+    | '/expedientes/nuevo'
+    | '/expedientes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/clientes'
+    | '/comite'
+    | '/dashboard'
+    | '/login'
+    | '/expedientes/$id'
+    | '/expedientes/nuevo'
+    | '/expedientes'
+  id:
+    | '__root__'
+    | '/'
+    | '/clientes'
+    | '/comite'
+    | '/dashboard'
+    | '/login'
+    | '/expedientes/$id'
+    | '/expedientes/nuevo'
+    | '/expedientes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ClientesRoute: typeof ClientesRoute
+  ComiteRoute: typeof ComiteRoute
+  DashboardRoute: typeof DashboardRoute
+  LoginRoute: typeof LoginRoute
+  ExpedientesIdRoute: typeof ExpedientesIdRoute
+  ExpedientesNuevoRoute: typeof ExpedientesNuevoRoute
+  ExpedientesIndexRoute: typeof ExpedientesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comite': {
+      id: '/comite'
+      path: '/comite'
+      fullPath: '/comite'
+      preLoaderRoute: typeof ComiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +171,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/expedientes/': {
+      id: '/expedientes/'
+      path: '/expedientes'
+      fullPath: '/expedientes/'
+      preLoaderRoute: typeof ExpedientesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expedientes/nuevo': {
+      id: '/expedientes/nuevo'
+      path: '/expedientes/nuevo'
+      fullPath: '/expedientes/nuevo'
+      preLoaderRoute: typeof ExpedientesNuevoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expedientes/$id': {
+      id: '/expedientes/$id'
+      path: '/expedientes/$id'
+      fullPath: '/expedientes/$id'
+      preLoaderRoute: typeof ExpedientesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ClientesRoute: ClientesRoute,
+  ComiteRoute: ComiteRoute,
+  DashboardRoute: DashboardRoute,
+  LoginRoute: LoginRoute,
+  ExpedientesIdRoute: ExpedientesIdRoute,
+  ExpedientesNuevoRoute: ExpedientesNuevoRoute,
+  ExpedientesIndexRoute: ExpedientesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
