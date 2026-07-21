@@ -42,24 +42,26 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
   const [fotoAnverso, setFotoAnverso] = useState<string | null>(null);
   const [fotoReverso, setFotoReverso] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
+  const [progreso, setProgreso] = useState(0);
+  const [statusOCR, setStatusOCR] = useState<string>("");
   const inputCamRef = useRef<HTMLInputElement>(null);
   const inputGalRef = useRef<HTMLInputElement>(null);
 
   const procesar = async (file: File, lado: Lado) => {
     setEstado("procesando");
     setError("");
+    setProgreso(0);
+    setStatusOCR("");
     try {
       const base64 = await leerArchivo(file);
       if (lado === "anverso") setFotoAnverso(base64);
       else setFotoReverso(base64);
       onFotoCapturada(base64, lado);
 
-      const resp = await fetch("/api/ocr/cedula", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, lado }),
+      const data = await reconocerCedula(base64, lado, (p, s) => {
+        setProgreso(p);
+        setStatusOCR(s);
       });
-      const data = await resp.json();
       if (!data.exito) throw new Error(data.error || "No se pudo procesar la imagen");
       onCamposDetectados(data.campos || {}, lado);
 
@@ -74,6 +76,7 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
       setEstado("error");
     }
   };
+
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
