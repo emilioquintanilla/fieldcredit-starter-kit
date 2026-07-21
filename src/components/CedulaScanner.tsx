@@ -63,7 +63,7 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
         setStatusOCR(s);
       });
       if (!data.exito) throw new Error(data.error || "No se pudo procesar la imagen");
-      onCamposDetectados(data.campos || {}, lado);
+      onCamposDetectados({ ...data.campos } as Record<string, unknown>, lado);
 
       if (lado === "anverso") {
         setLadoActual("reverso");
