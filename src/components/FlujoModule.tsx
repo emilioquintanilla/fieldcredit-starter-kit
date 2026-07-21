@@ -11,9 +11,11 @@ import {
 } from "lucide-react";
 import { useExpedientes } from "@/stores/expedientes";
 import {
-  RUBROS, BLOQUE_META, BLOQUE_BG, COLORES_GRAFICO,
+  BLOQUE_META, BLOQUE_BG, COLORES_GRAFICO,
   generarMeses, mesActualISO, type Bloque,
 } from "@/data/flujo-catalogos";
+import { getRubrosParaActividad } from "@/data/rubrosFlujoPorActividad";
+import { useRubrosActividad } from "@/hooks/useRubrosActividad";
 import { cn } from "@/lib/utils";
 
 // Formato monetario
