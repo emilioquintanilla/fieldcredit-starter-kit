@@ -78,8 +78,11 @@ function NuevaSolicitud() {
     }
   }, [expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador]);
 
-  const exp = expedienteId ? getExpediente(expedienteId) : undefined;
+  // Suscripción reactiva al expediente — si usáramos getExpediente() aquí
+  // el componente NO se re-renderiza al teclear y los inputs parecen bloqueados.
+  const exp = useExpedientes((s) => (expedienteId ? s.expedientes[expedienteId] : undefined));
   const data: SolicitudData = exp?.data ?? {};
+
 
   const setData = (patch: Partial<SolicitudData>) => {
     if (!expedienteId) return;
