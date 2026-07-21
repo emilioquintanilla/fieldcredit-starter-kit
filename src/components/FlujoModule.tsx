@@ -11,9 +11,11 @@ import {
 } from "lucide-react";
 import { useExpedientes } from "@/stores/expedientes";
 import {
-  RUBROS, BLOQUE_META, BLOQUE_BG, COLORES_GRAFICO,
+  BLOQUE_META, BLOQUE_BG, COLORES_GRAFICO,
   generarMeses, mesActualISO, type Bloque,
 } from "@/data/flujo-catalogos";
+import { getRubrosParaActividad } from "@/data/rubrosFlujoPorActividad";
+import { useRubrosActividad } from "@/hooks/useRubrosActividad";
 import { cn } from "@/lib/utils";
 
 // Formato monetario
@@ -25,11 +27,13 @@ interface Props {
   plazoMeses: number;
   tipoActividad?: string;
   montoSolicitado: number;
+  onSwitchToSolicitud?: () => void;
 }
 
-export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSolicitado }: Props) {
+export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSolicitado, onSwitchToSolicitud }: Props) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]?.flujo);
   const inicializarFlujo = useExpedientes((s) => s.inicializarFlujo);
+  const rubrosAct = useRubrosActividad(tipoActividad);
   const [vista, setVista] = useState<"datos" | "graficos">("datos");
   const [bloquesAbiertos, setBloquesAbiertos] = useState<Record<Bloque, boolean>>({
     A: true, B: false, C: false, D: false, E: false,
@@ -58,6 +62,30 @@ export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSoli
 
   return (
     <div className="space-y-4">
+      {/* Banner de actividad económica */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-fieldcredit-green bg-fieldcredit-green-pale p-3 dark:border-slate-600 dark:bg-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{rubrosAct.etiquetas.icono}</span>
+          <div>
+            <p className="text-sm font-semibold text-fieldcredit-green-dark dark:text-fieldcredit-green-light">
+              Mostrando rubros para: {rubrosAct.tipoActividad}
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              {rubrosAct.etiquetas.nota}
+            </p>
+          </div>
+        </div>
+        {onSwitchToSolicitud && (
+          <button
+            type="button"
+            onClick={onSwitchToSolicitud}
+            className="whitespace-nowrap text-xs text-fieldcredit-teal underline hover:text-fieldcredit-teal-dark"
+          >
+            Cambiar actividad →
+          </button>
+        )}
+      </div>
+
       {/* Selector de vista */}
       <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800 lg:hidden">
         <button
@@ -115,17 +143,18 @@ function VistaDatos({
 }) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]!.flujo!);
   const { datosMensuales } = useCalculos(expedienteId);
+  const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
 
   // Subtotales por bloque
   const subtotalBloque = (b: Bloque) =>
-    RUBROS[b].reduce((acc, r) => {
+    rubrosDin[b].reduce((acc, r) => {
       if (!flujo.rubrosActivos[r.key]) return acc;
       return acc + (flujo.valores[r.key]?.reduce((s, v) => s + v, 0) ?? 0);
     }, 0);
 
   return (
     <div className="space-y-3">
-      {(Object.keys(RUBROS) as Bloque[]).map((b) => (
+      {(Object.keys(rubrosDin) as Bloque[]).map((b) => (
         <BloqueForm
           key={b}
           bloque={b}
@@ -181,7 +210,7 @@ function BloqueForm({
             💡 {meta.tip}
           </p>
 
-          {RUBROS[bloque].map((r) => {
+          {getRubrosParaActividad(flujo.tipoActividad)[bloque].map((r) => {
             const activo = !!flujo.rubrosActivos[r.key];
             const valores = flujo.valores[r.key] ?? [];
             const totalRubro = valores.reduce((s, v) => s + v, 0);
@@ -409,8 +438,9 @@ function useCalculos(expedienteId: string) {
   return useMemo(() => {
     if (!flujo) return { datosMensuales: [] as DatoMes[] };
     const meses = generarMeses(flujo.mesInicio, flujo.plazoMeses);
+    const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
     const sumar = (bloque: Bloque, idx: number) =>
-      RUBROS[bloque].reduce((acc, r) => {
+      rubrosDin[bloque].reduce((acc, r) => {
         if (!flujo.rubrosActivos[r.key]) return acc;
         return acc + (flujo.valores[r.key]?.[idx] ?? 0);
       }, 0);
@@ -451,8 +481,9 @@ function VistaGraficos({ expedienteId, meses }: { expedienteId: string; meses: s
   // Composición de ingresos: sumar cada rubro A+B activo
   const composicion = useMemo(() => {
     const items: { name: string; valor: number }[] = [];
+    const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
     (["A", "B"] as Bloque[]).forEach((b) => {
-      RUBROS[b].forEach((r) => {
+      rubrosDin[b].forEach((r) => {
         if (!flujo.rubrosActivos[r.key]) return;
         const total = flujo.valores[r.key]?.reduce((s, v) => s + v, 0) ?? 0;
         if (total > 0) items.push({ name: r.label, valor: total });
@@ -702,8 +733,9 @@ function CopilotoBar() {
 // Helper para estado del módulo (usado por el detalle del expediente)
 export function estadoFlujo(flujo: import("@/stores/expedientes").FlujoEfectivo | undefined): "pendiente" | "progreso" | "completo" {
   if (!flujo) return "pendiente";
+  const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
   const total = (bloque: Bloque) =>
-    RUBROS[bloque].reduce((acc, r) =>
+    rubrosDin[bloque].reduce((acc, r) =>
       acc + (flujo.rubrosActivos[r.key] ? (flujo.valores[r.key]?.reduce((s, v) => s + v, 0) ?? 0) : 0), 0);
   const ingresos = total("A") + total("B");
   const consumo = total("C");
