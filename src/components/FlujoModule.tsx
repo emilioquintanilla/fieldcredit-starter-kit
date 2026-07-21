@@ -707,8 +707,9 @@ function CopilotoBar() {
 // Helper para estado del módulo (usado por el detalle del expediente)
 export function estadoFlujo(flujo: import("@/stores/expedientes").FlujoEfectivo | undefined): "pendiente" | "progreso" | "completo" {
   if (!flujo) return "pendiente";
+  const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
   const total = (bloque: Bloque) =>
-    RUBROS[bloque].reduce((acc, r) =>
+    rubrosDin[bloque].reduce((acc, r) =>
       acc + (flujo.rubrosActivos[r.key] ? (flujo.valores[r.key]?.reduce((s, v) => s + v, 0) ?? 0) : 0), 0);
   const ingresos = total("A") + total("B");
   const consumo = total("C");
