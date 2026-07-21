@@ -19,8 +19,8 @@ export const Route = createFileRoute("/expedientes/$id")({
   component: ExpedienteDetalle,
 });
 
-type TabId = "solicitud" | "fiador" | "garantias" | "flujo" | "estados" | "geo" | "docs";
-type Estado = "pendiente" | "progreso" | "completo";
+type TabId = "solicitud" | "fiador" | "garantias" | "flujo" | "resultados" | "situacion" | "geo" | "docs";
+type Estado = "pendiente" | "progreso" | "completo" | "alerta";
 
 // Cálculo simple de cuota mensual estimada (para índice de cobertura del fiador)
 const cuotaEstimadaMensual = (monto?: number, plazo?: number) => {
