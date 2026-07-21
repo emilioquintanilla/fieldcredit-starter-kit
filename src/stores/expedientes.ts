@@ -648,4 +648,70 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
         },
       };
     }),
+
+  // ===== Geolocalización =====
+  guardarUbicacion: (id, tipo, datos) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev = exp.geolocalizacion ?? {};
+      const anterior = prev[tipo];
+      const merged: UbicacionGeo = {
+        ...datos,
+        // Preserva la dirección textual escrita por el asesor al recapturar
+        direccionTextual: datos.direccionTextual ?? anterior?.direccionTextual,
+      };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            geolocalizacion: { ...prev, [tipo]: merged },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  eliminarUbicacion: (id, tipo) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.geolocalizacion) return s;
+      const nuevo = { ...exp.geolocalizacion };
+      nuevo[tipo] = null;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, geolocalizacion: nuevo, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  actualizarDireccionTexto: (id, tipo, texto) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev = exp.geolocalizacion ?? {};
+      const anterior = prev[tipo];
+      const base: UbicacionGeo =
+        anterior ?? {
+          lat: 0,
+          lng: 0,
+          precision: 0,
+          precisionBaja: false,
+          timestamp: new Date().toISOString(),
+          metodo: "manual",
+        };
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            geolocalizacion: { ...prev, [tipo]: { ...base, direccionTextual: texto } },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
 }), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
