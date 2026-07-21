@@ -85,16 +85,23 @@ export function FiadorModule({ expedienteId, cuotaDeudor }: Props) {
     !(fiador.ingresos.some((i) => i.monto > 0)),
     !(fiador.egresos.some((e) => e.monto > 0)),
   ];
+  const pasosStepper = secciones.map((nombre, i) => ({
+    num: i,
+    nombre,
+    completado: !errores[i],
+    conError: false,
+  }));
+  const progreso = Math.round((pasosStepper.filter((p) => p.completado).length / pasosStepper.length) * 100);
 
   return (
     <div className="space-y-4">
       <Stepper
-        pasos={secciones}
-        actual={paso}
-        onCambio={setPaso}
-        errores={errores}
-        completos={errores.map((e) => !e)}
+        pasos={pasosStepper}
+        activo={paso}
+        onIr={setPaso}
+        progreso={progreso}
       />
+
 
       {paso === 0 && (
         <DatosPersonales
