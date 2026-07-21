@@ -27,11 +27,13 @@ interface Props {
   plazoMeses: number;
   tipoActividad?: string;
   montoSolicitado: number;
+  onSwitchToSolicitud?: () => void;
 }
 
-export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSolicitado }: Props) {
+export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSolicitado, onSwitchToSolicitud }: Props) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]?.flujo);
   const inicializarFlujo = useExpedientes((s) => s.inicializarFlujo);
+  const rubrosAct = useRubrosActividad(tipoActividad);
   const [vista, setVista] = useState<"datos" | "graficos">("datos");
   const [bloquesAbiertos, setBloquesAbiertos] = useState<Record<Bloque, boolean>>({
     A: true, B: false, C: false, D: false, E: false,
