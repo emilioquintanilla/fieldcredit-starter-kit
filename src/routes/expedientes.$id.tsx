@@ -140,8 +140,9 @@ function ExpedienteDetalle() {
         <FlujoModule
           expedienteId={id}
           plazoMeses={d?.plazo || 12}
-          tipoActividad={d?.tipo_actividad}
+          tipoActividad={d?.producto === "agroresilia" ? "AgroResilia" : d?.tipo_actividad}
           montoSolicitado={d?.monto || 0}
+          onSwitchToSolicitud={() => setTab("solicitud")}
         />
       )}
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
