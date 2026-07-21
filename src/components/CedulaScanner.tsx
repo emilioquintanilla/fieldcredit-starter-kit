@@ -1,8 +1,11 @@
-// Escáner de cédula: toma foto (cámara o galería), envía a /api/ocr/cedula
-// y devuelve los campos extraídos. Guarda ambas fotos como documentos adjuntos.
+// Escáner de cédula: toma foto (cámara o galería), corre OCR con Tesseract.js
+// en el navegador y devuelve los campos extraídos. Guarda ambas fotos como
+// documentos adjuntos del expediente. No requiere backend ni claves.
 import { useRef, useState } from "react";
 import { Camera, ImageIcon, RotateCcw, Check, X, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { reconocerCedula } from "@/lib/ocr-cedula";
+
 
 type Lado = "anverso" | "reverso";
 type Estado = "idle" | "procesando" | "anverso_listo" | "completo" | "error";
