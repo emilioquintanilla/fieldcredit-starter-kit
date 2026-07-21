@@ -184,7 +184,7 @@ function BloqueForm({
             💡 {meta.tip}
           </p>
 
-          {RUBROS[bloque].map((r) => {
+          {getRubrosParaActividad(flujo.tipoActividad)[bloque].map((r) => {
             const activo = !!flujo.rubrosActivos[r.key];
             const valores = flujo.valores[r.key] ?? [];
             const totalRubro = valores.reduce((s, v) => s + v, 0);
