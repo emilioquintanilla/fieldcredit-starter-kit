@@ -172,7 +172,11 @@ function ExpedienteDetalle() {
           onSwitchToSolicitud={() => setTab("solicitud")}
         />
       )}
+      {tab === "geo" && (
+        <GeoModule expedienteId={id} aplicaFiador={aplicaFiador} fiadorTieneNegocio={fiadorTieneNegocio} />
+      )}
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
+
     </AppLayout>
   );
 }
