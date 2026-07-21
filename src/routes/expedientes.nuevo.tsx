@@ -195,7 +195,7 @@ function NuevaSolicitud() {
   };
 
   // Auto-completa desde OCR solo los campos vacíos
-  const aplicarOCR = (campos: Record<string, string>, lado: "anverso" | "reverso") => {
+  const aplicarOCR = (campos: Record<string, unknown>, lado: "anverso" | "reverso") => {
     const map: Record<string, keyof SolicitudData> = {
       cedula: "cedula",
       fechaNacimiento: "fecha_nacimiento",
