@@ -312,7 +312,7 @@ function FormBien({
           {tieneGravamen && (
             <>
               <input className={cn(inp, "mt-2")} placeholder="Descripción del gravamen" value={gravamenDesc} onChange={(e) => setGravamenDesc(e.target.value)} />
-              <div className="mt-2 flex items-start gap-2 rounded-lg bg-fieldcredit-amber-light p-2 text-xs text-fieldcredit-amber-dark dark:bg-amber-900/30 dark:text-amber-200">
+              <div className="mt-2 flex items-start gap-2 rounded-lg bg-fieldcredit-amber-light p-2 text-xs text-fieldcredit-amber dark:bg-amber-900/30 dark:text-amber-200">
                 <AlertTriangle size={12} className="mt-0.5 shrink-0" />
                 Bien con gravamen previo. Informar al comité.
               </div>
@@ -614,7 +614,7 @@ function Row({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
 
 function Alerta({ children, full }: { children: React.ReactNode; full?: boolean }) {
   return (
-    <div className={cn("flex items-start gap-2 rounded-lg bg-fieldcredit-amber-light p-2 text-xs text-fieldcredit-amber-dark dark:bg-amber-900/30 dark:text-amber-200", full && "sm:col-span-2")}>
+    <div className={cn("flex items-start gap-2 rounded-lg bg-fieldcredit-amber-light p-2 text-xs text-fieldcredit-amber dark:bg-amber-900/30 dark:text-amber-200", full && "sm:col-span-2")}>
       <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {children}
     </div>
   );
@@ -625,7 +625,7 @@ function Semaforo({ cobertura }: { cobertura: number }) {
     cobertura >= 100
       ? { cls: "bg-fieldcredit-green-light text-fieldcredit-green-dark dark:bg-green-900/40 dark:text-green-200", label: "SUFICIENTE", icon: <CheckCircle2 size={14} /> }
       : cobertura >= 70
-      ? { cls: "bg-fieldcredit-amber-light text-fieldcredit-amber-dark dark:bg-amber-900/40 dark:text-amber-200", label: "PARCIAL", icon: <AlertTriangle size={14} /> }
+      ? { cls: "bg-fieldcredit-amber-light text-fieldcredit-amber dark:bg-amber-900/40 dark:text-amber-200", label: "PARCIAL", icon: <AlertTriangle size={14} /> }
       : { cls: "bg-fieldcredit-red-light text-fieldcredit-red dark:bg-red-900/40 dark:text-red-300", label: "INSUFICIENTE", icon: <AlertTriangle size={14} /> };
   return (
     <div className={cn("mt-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold", s.cls)}>

@@ -176,7 +176,7 @@ export function FiadorModule({ expedienteId, cuotaDeudor }: Props) {
           </div>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{semaforo.label}</p>
           {indice < 150 && (
-            <div className="mt-3 flex gap-2 rounded-lg bg-fieldcredit-amber-light p-3 text-xs text-fieldcredit-amber-dark dark:bg-amber-900/30 dark:text-amber-200">
+            <div className="mt-3 flex gap-2 rounded-lg bg-fieldcredit-amber-light p-3 text-xs text-fieldcredit-amber dark:bg-amber-900/30 dark:text-amber-200">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               <span>El índice de cobertura del fiador es menor al 150% recomendado. El comité de crédito evaluará si es suficiente para respaldar el crédito.</span>
             </div>
@@ -206,7 +206,7 @@ function DatosPersonales({
     auto[c] === "auto" ? (
       <span className="ml-2 rounded-full bg-fieldcredit-green-light px-1.5 py-0.5 text-[10px] font-semibold text-fieldcredit-green-dark dark:bg-green-900/40 dark:text-green-200">Auto ✓</span>
     ) : auto[c] === "editado" ? (
-      <span className="ml-2 rounded-full bg-fieldcredit-amber-light px-1.5 py-0.5 text-[10px] font-semibold text-fieldcredit-amber-dark dark:bg-amber-900/40 dark:text-amber-200">Editado</span>
+      <span className="ml-2 rounded-full bg-fieldcredit-amber-light px-1.5 py-0.5 text-[10px] font-semibold text-fieldcredit-amber dark:bg-amber-900/40 dark:text-amber-200">Editado</span>
     ) : null;
 
   const onChange = (campo: keyof FiadorData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
