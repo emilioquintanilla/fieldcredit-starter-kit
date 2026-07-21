@@ -17,7 +17,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
 import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
-import { Route as ApiOcrCedulaRouteImport } from './routes/api/ocr/cedula'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -59,11 +58,6 @@ const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
   path: '/expedientes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiOcrCedulaRoute = ApiOcrCedulaRouteImport.update({
-  id: '/api/ocr/cedula',
-  path: '/api/ocr/cedula',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,7 +68,6 @@ export interface FileRoutesByFullPath {
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
   '/expedientes/': typeof ExpedientesIndexRoute
-  '/api/ocr/cedula': typeof ApiOcrCedulaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +78,6 @@ export interface FileRoutesByTo {
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
   '/expedientes': typeof ExpedientesIndexRoute
-  '/api/ocr/cedula': typeof ApiOcrCedulaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +89,6 @@ export interface FileRoutesById {
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
   '/expedientes/': typeof ExpedientesIndexRoute
-  '/api/ocr/cedula': typeof ApiOcrCedulaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +101,6 @@ export interface FileRouteTypes {
     | '/expedientes/$id'
     | '/expedientes/nuevo'
     | '/expedientes/'
-    | '/api/ocr/cedula'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +111,6 @@ export interface FileRouteTypes {
     | '/expedientes/$id'
     | '/expedientes/nuevo'
     | '/expedientes'
-    | '/api/ocr/cedula'
   id:
     | '__root__'
     | '/'
@@ -132,7 +121,6 @@ export interface FileRouteTypes {
     | '/expedientes/$id'
     | '/expedientes/nuevo'
     | '/expedientes/'
-    | '/api/ocr/cedula'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,7 +132,6 @@ export interface RootRouteChildren {
   ExpedientesIdRoute: typeof ExpedientesIdRoute
   ExpedientesNuevoRoute: typeof ExpedientesNuevoRoute
   ExpedientesIndexRoute: typeof ExpedientesIndexRoute
-  ApiOcrCedulaRoute: typeof ApiOcrCedulaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,13 +192,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpedientesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/ocr/cedula': {
-      id: '/api/ocr/cedula'
-      path: '/api/ocr/cedula'
-      fullPath: '/api/ocr/cedula'
-      preLoaderRoute: typeof ApiOcrCedulaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -224,18 +204,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExpedientesIdRoute: ExpedientesIdRoute,
   ExpedientesNuevoRoute: ExpedientesNuevoRoute,
   ExpedientesIndexRoute: ExpedientesIndexRoute,
-  ApiOcrCedulaRoute: ApiOcrCedulaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

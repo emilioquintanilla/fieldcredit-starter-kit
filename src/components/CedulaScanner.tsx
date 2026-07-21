@@ -1,8 +1,11 @@
-// Escáner de cédula: toma foto (cámara o galería), envía a /api/ocr/cedula
-// y devuelve los campos extraídos. Guarda ambas fotos como documentos adjuntos.
+// Escáner de cédula: toma foto (cámara o galería), corre OCR con Tesseract.js
+// en el navegador y devuelve los campos extraídos. Guarda ambas fotos como
+// documentos adjuntos del expediente. No requiere backend ni claves.
 import { useRef, useState } from "react";
 import { Camera, ImageIcon, RotateCcw, Check, X, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { reconocerCedula } from "@/lib/ocr-cedula";
+
 
 type Lado = "anverso" | "reverso";
 type Estado = "idle" | "procesando" | "anverso_listo" | "completo" | "error";
@@ -39,26 +42,28 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
   const [fotoAnverso, setFotoAnverso] = useState<string | null>(null);
   const [fotoReverso, setFotoReverso] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
+  const [progreso, setProgreso] = useState(0);
+  const [statusOCR, setStatusOCR] = useState<string>("");
   const inputCamRef = useRef<HTMLInputElement>(null);
   const inputGalRef = useRef<HTMLInputElement>(null);
 
   const procesar = async (file: File, lado: Lado) => {
     setEstado("procesando");
     setError("");
+    setProgreso(0);
+    setStatusOCR("");
     try {
       const base64 = await leerArchivo(file);
       if (lado === "anverso") setFotoAnverso(base64);
       else setFotoReverso(base64);
       onFotoCapturada(base64, lado);
 
-      const resp = await fetch("/api/ocr/cedula", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, lado }),
+      const data = await reconocerCedula(base64, lado, (p, s) => {
+        setProgreso(p);
+        setStatusOCR(s);
       });
-      const data = await resp.json();
       if (!data.exito) throw new Error(data.error || "No se pudo procesar la imagen");
-      onCamposDetectados(data.campos || {}, lado);
+      onCamposDetectados({ ...data.campos } as Record<string, unknown>, lado);
 
       if (lado === "anverso") {
         setLadoActual("reverso");
@@ -71,6 +76,7 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
       setEstado("error");
     }
   };
+
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -147,8 +153,16 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
             </div>
           </div>
           <p className="mt-3 text-sm font-medium text-fieldcredit-teal-dark dark:text-fieldcredit-teal">
-            Leyendo cédula con IA...
+            {statusOCR === "loading tesseract core" || statusOCR === "initializing tesseract" || statusOCR === "loading language traineddata"
+              ? "Descargando modelo de reconocimiento… (solo la primera vez)"
+              : `Leyendo cédula… ${Math.round(progreso * 100)}%`}
           </p>
+          <div className="mx-auto mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+            <div
+              className="h-full bg-fieldcredit-teal transition-all"
+              style={{ width: `${Math.round(progreso * 100)}%` }}
+            />
+          </div>
         </div>
       )}
 
