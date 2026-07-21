@@ -10,6 +10,8 @@ import { GarantiasModule } from "@/components/GarantiasModule";
 import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
 import { EstadoResultadosModule, estadoResultadosStatus } from "@/components/estados/EstadoResultadosModule";
 import { SituacionFinancieraModule, estadoSituacionStatus } from "@/components/estados/SituacionFinancieraModule";
+import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
+
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
