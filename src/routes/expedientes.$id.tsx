@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FiadorModule } from "@/components/FiadorModule";
 import { GarantiasModule } from "@/components/GarantiasModule";
+import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
