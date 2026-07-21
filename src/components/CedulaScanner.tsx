@@ -153,8 +153,16 @@ export function CedulaScanner({ onCamposDetectados, onFotoCapturada, onLlenarMan
             </div>
           </div>
           <p className="mt-3 text-sm font-medium text-fieldcredit-teal-dark dark:text-fieldcredit-teal">
-            Leyendo cédula con IA...
+            {statusOCR === "loading tesseract core" || statusOCR === "initializing tesseract" || statusOCR === "loading language traineddata"
+              ? "Descargando modelo de reconocimiento… (solo la primera vez)"
+              : `Leyendo cédula… ${Math.round(progreso * 100)}%`}
           </p>
+          <div className="mx-auto mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+            <div
+              className="h-full bg-fieldcredit-teal transition-all"
+              style={{ width: `${Math.round(progreso * 100)}%` }}
+            />
+          </div>
         </div>
       )}
 
