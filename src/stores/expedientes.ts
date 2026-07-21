@@ -625,4 +625,4 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
         },
       };
     }),
-}), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => localStorage) }));
+}), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
