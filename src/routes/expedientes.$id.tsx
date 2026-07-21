@@ -136,6 +136,14 @@ function ExpedienteDetalle() {
       {tab === "garantias" && aplicaGarantia && (
         <GarantiasModule expedienteId={id} montoCredito={d?.monto || 0} tiposGarantia={tiposGarantia} />
       )}
+      {tab === "flujo" && (
+        <FlujoModule
+          expedienteId={id}
+          plazoMeses={d?.plazo || 12}
+          tipoActividad={d?.tipo_actividad}
+          montoSolicitado={d?.monto || 0}
+        />
+      )}
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
     </AppLayout>
   );
