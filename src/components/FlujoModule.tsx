@@ -412,8 +412,9 @@ function useCalculos(expedienteId: string) {
   return useMemo(() => {
     if (!flujo) return { datosMensuales: [] as DatoMes[] };
     const meses = generarMeses(flujo.mesInicio, flujo.plazoMeses);
+    const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
     const sumar = (bloque: Bloque, idx: number) =>
-      RUBROS[bloque].reduce((acc, r) => {
+      rubrosDin[bloque].reduce((acc, r) => {
         if (!flujo.rubrosActivos[r.key]) return acc;
         return acc + (flujo.valores[r.key]?.[idx] ?? 0);
       }, 0);
