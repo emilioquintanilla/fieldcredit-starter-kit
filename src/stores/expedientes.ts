@@ -261,7 +261,11 @@ interface State {
   guardarValorEstado: (id: string, modulo: ModuloEstado, cuentaId: string, valor: number) => void;
   hidratarEstadoDesdeflujo: (id: string, modulo: ModuloEstado, tipoActividad: string | undefined, valores: Record<string, ValorCuenta>) => void;
   actualizarObservacionesEstado: (id: string, modulo: ModuloEstado, texto: string) => void;
+  guardarUbicacion: (id: string, tipo: TipoUbicacion, datos: UbicacionGeo) => void;
+  eliminarUbicacion: (id: string, tipo: TipoUbicacion) => void;
+  actualizarDireccionTexto: (id: string, tipo: TipoUbicacion, texto: string) => void;
 }
+
 
 const genId = () =>
   `SOL-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`;
