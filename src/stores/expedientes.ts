@@ -170,6 +170,18 @@ export interface GarantiasData {
   inmueble?: InmuebleHipotecario;
 }
 
+// ===== Módulo Flujo de Efectivo =====
+export interface FlujoEfectivo {
+  plazoMeses: number;
+  mesInicio: string; // 'YYYY-MM'
+  tipoActividad?: string;
+  cuotaEstimada: number;
+  rubrosActivos: Record<string, boolean>;
+  valores: Record<string, number[]>; // arrays de longitud plazoMeses
+  otroFijoDesc?: string;
+  otroEstacionalDesc?: string;
+}
+
 export interface ExpedienteBorrador {
   id: string;
   estado: "borrador" | "completada";
@@ -177,6 +189,7 @@ export interface ExpedienteBorrador {
   documentos: Documento[];
   fiador?: FiadorData;
   garantias?: GarantiasData;
+  flujo?: FlujoEfectivo;
   created_at: string;
   updated_at: string;
 }
@@ -197,6 +210,11 @@ interface State {
   actualizarBienPrendado: (id: string, bienId: string, patch: Partial<BienPrendado>) => void;
   eliminarBienPrendado: (id: string, bienId: string) => void;
   guardarInmuebleHipotecario: (id: string, patch: Partial<InmuebleHipotecario>) => void;
+  inicializarFlujo: (id: string, opts: { plazoMeses: number; mesInicio: string; tipoActividad?: string; cuotaEstimada: number }) => void;
+  toggleRubroFlujo: (id: string, rubro: string) => void;
+  actualizarValorMesFlujo: (id: string, rubro: string, mesIndex: number, valor: number) => void;
+  actualizarCuotaFlujo: (id: string, cuota: number) => void;
+  actualizarDescRubroFlujo: (id: string, campo: "otroFijoDesc" | "otroEstacionalDesc", valor: string) => void;
 }
 
 const genId = () =>
