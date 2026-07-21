@@ -117,17 +117,18 @@ function VistaDatos({
 }) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]!.flujo!);
   const { datosMensuales } = useCalculos(expedienteId);
+  const rubrosDin = getRubrosParaActividad(flujo.tipoActividad);
 
   // Subtotales por bloque
   const subtotalBloque = (b: Bloque) =>
-    RUBROS[b].reduce((acc, r) => {
+    rubrosDin[b].reduce((acc, r) => {
       if (!flujo.rubrosActivos[r.key]) return acc;
       return acc + (flujo.valores[r.key]?.reduce((s, v) => s + v, 0) ?? 0);
     }, 0);
 
   return (
     <div className="space-y-3">
-      {(Object.keys(RUBROS) as Bloque[]).map((b) => (
+      {(Object.keys(rubrosDin) as Bloque[]).map((b) => (
         <BloqueForm
           key={b}
           bloque={b}
