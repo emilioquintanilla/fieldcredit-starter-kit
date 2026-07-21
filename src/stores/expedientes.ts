@@ -204,6 +204,23 @@ export interface SituacionFinancieraData {
 
 export type ModuloEstado = "resultados" | "situacion";
 
+// ===== Módulo Geolocalización =====
+export type TipoUbicacion = "domicilioDeudor" | "negocioDeudor" | "domicilioFiador" | "negocioFiador";
+export interface UbicacionGeo {
+  lat: number;
+  lng: number;
+  precision: number;
+  precisionBaja: boolean;
+  direccionTextual?: string;
+  direccionNominatim?: string | null;
+  departamento?: string | null;
+  municipio?: string | null;
+  timestamp: string;
+  capturadoPor?: string;
+  metodo: "gps" | "manual";
+}
+export type GeolocalizacionData = Partial<Record<TipoUbicacion, UbicacionGeo | null>>;
+
 export interface ExpedienteBorrador {
   id: string;
   estado: "borrador" | "completada";
@@ -214,9 +231,11 @@ export interface ExpedienteBorrador {
   flujo?: FlujoEfectivo;
   estadoResultados?: EstadoResultadosData;
   situacionFinanciera?: SituacionFinancieraData;
+  geolocalizacion?: GeolocalizacionData;
   created_at: string;
   updated_at: string;
 }
+
 
 interface State {
   expedientes: Record<string, ExpedienteBorrador>;
