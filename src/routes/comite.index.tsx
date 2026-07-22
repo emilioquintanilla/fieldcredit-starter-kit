@@ -5,9 +5,11 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProveedorBadge } from "@/components/ia/ProveedorBadge";
+import { MenuAccionesExpediente } from "@/components/MenuAccionesExpediente";
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
 import { sembrarExpedientesComite } from "@/lib/seedComite";
+
 
 export const Route = createFileRoute("/comite/")({
   head: () => ({
