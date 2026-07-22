@@ -159,9 +159,39 @@ export async function guardarSolicitud(expedienteId: number, datos: Record<strin
   const { error } = await supabase
     .from("solicitudes")
     .upsert(
-      { expediente_id: expedienteId, ...datos, datos_completos: datos },
+      { expediente_id: expedienteId, datos_completos: datos },
       { onConflict: "expediente_id" },
     );
+  if (error) throw error;
+}
+
+export async function obtenerSolicitud(
+  expedienteId: number,
+): Promise<Record<string, unknown> | null> {
+  const { data, error } = await supabase
+    .from("solicitudes")
+    .select("datos_completos")
+    .eq("expediente_id", expedienteId)
+    .maybeSingle();
+  if (error) {
+    console.error("obtenerSolicitud", error);
+    return null;
+  }
+  return (data?.datos_completos as Record<string, unknown> | undefined) ?? null;
+}
+
+export async function actualizarExpedienteHeader(
+  id: number,
+  patch: {
+    cliente?: string | null;
+    cedula?: string | null;
+    tipo_producto?: string | null;
+    monto_solicitado?: number | null;
+    plazo_meses?: number | null;
+    actividad?: string | null;
+  },
+): Promise<void> {
+  const { error } = await supabase.from("expedientes").update(patch).eq("id", id);
   if (error) throw error;
 }
 
@@ -200,17 +230,30 @@ export async function guardarGeolocalizacion(
   if (error) throw error;
 }
 
+export interface DocumentoDB {
+  id: number;
+  expediente_id: number;
+  categoria: string;
+  doc_id: string;
+  nombre: string;
+  tipo_mime: string | null;
+  tamano_bytes: number | null;
+  base64: string | null;
+  created_at: string;
+}
+
 export async function guardarDocumento(
   expedienteId: number,
-  categoriaId: string,
+  docId: string,
   archivo: { nombre: string; tipo: string; tamano: number; base64: string },
-) {
+): Promise<DocumentoDB> {
+  const categoria = docId.split("_")[0] ?? docId;
   const { data, error } = await supabase
     .from("documentos")
     .insert({
       expediente_id: expedienteId,
-      categoria: categoriaId,
-      doc_id: `${categoriaId}_${Date.now()}`,
+      categoria,
+      doc_id: docId,
       nombre: archivo.nombre,
       tipo_mime: archivo.tipo,
       tamano_bytes: archivo.tamano,
@@ -219,10 +262,23 @@ export async function guardarDocumento(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return data as DocumentoDB;
 }
 
-export async function eliminarDocumento(documentoId: number) {
+export async function eliminarDocumento(documentoId: number): Promise<void> {
   const { error } = await supabase.from("documentos").delete().eq("id", documentoId);
   if (error) throw error;
+}
+
+export async function obtenerDocumentos(expedienteId: number): Promise<DocumentoDB[]> {
+  const { data, error } = await supabase
+    .from("documentos")
+    .select("*")
+    .eq("expediente_id", expedienteId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error("obtenerDocumentos", error);
+    return [];
+  }
+  return (data as DocumentoDB[]) ?? [];
 }

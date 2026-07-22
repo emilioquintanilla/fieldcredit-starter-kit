@@ -1,74 +1,34 @@
-Ya está lista la Parte 1 (Asistente de campo). Continuamos con las Partes 2, 3 y 4, todas centradas en el **Copiloto del Comité de Crédito**.
+## Fase 2 — Migración a Supabase de creación, solicitud y documentos
 
-## Parte 2 — Página `/comite` + infraestructura de decisión
+**Objetivo:** que el alta de expediente, el formulario completo de Solicitud (7 pasos) y los Documentos de Soporte queden persistidos en Supabase con guardado automático. El resto de módulos (flujo, EDR, SF, geo, fiador, garantías, comité) queda en la Fase 3.
 
-**Objetivo:** reemplazar el placeholder de `/comite` con la bandeja real de expedientes por dictaminar, y preparar el store para guardar dictamen y decisión.
+### 1. Alta de expediente contra Supabase
+- `src/routes/expedientes.nuevo.tsx`: al montar, crear el expediente en Supabase vía `useExpedientesRemote.crear({ asesorId, sucursalId })` con el usuario logueado; usar el `id` numérico devuelto para todo el resto del formulario.
+- Se mantiene el store local (`useExpedientes`) como caché de los datos de secciones aún no migradas, pero indexado por el `id` de Supabase (no por el `codigo` local).
+- Si falla la creación, mostrar error inline y bloquear el formulario.
 
-Archivos:
-- `src/stores/expedientes.ts`
-  - Añadir sub-objeto `comite?: { dictamenIA?: DictamenIA | null; decision?: DecisionComite | null; generadoEn?: string | null }` en `ExpedienteBorrador`.
-  - Acciones: `guardarDictamenIA(id, dictamen)`, `registrarDecisionComite(id, { decision, observacion, timestamp })`, `marcarEnComite(id)`.
-  - Al registrar decisión: cambiar `estado` del expediente a `aprobado` / `condicionado` / `rechazado`.
-- `src/routes/comite.tsx` (reemplazar placeholder)
-  - Suscribirse a expedientes con `estado === "en_comite"` (o los que tengan documentación mínima; muestra vacío-friendly).
-  - Tarjeta `TarjetaComite`: nombre, código, monto, producto, badge del proveedor IA, botón **"Analizar con Copiloto IA"** que navega a `/comite/$id`.
-  - Empty state cuando la lista está vacía.
-- `src/components/Sidebar.tsx`
-  - Badge numérico junto al item ⚖️ Comité con el conteo pendiente (suscrito al store).
-- En el detalle `/expedientes/$id`: en el tab de Documentos añadir botón **"Enviar a comité"** que llama `marcarEnComite(id)` y navega a `/comite/$id`. (Cambio mínimo, no rediseño del tab.)
+### 2. Guardado automático de la Solicitud (7 pasos)
+- Nuevo hook `src/hooks/useAutosaveSolicitud.ts`: debounce 800 ms sobre los cambios de `SolicitudData` → llama `guardarSolicitud(expedienteId, datos)` del servicio.
+- Al terminar cada guardado, marcar `ultimoGuardado` en `useExpedientesRemote` para que el `IndicadorGuardado` del NavBar refleje el estado.
+- En paso final (firma + envío): además de guardar, cambiar el estado del expediente a `en_revision` con `cambiarEstado(id, "en_revision")`.
 
-## Parte 3 — Dictamen IA en `/comite/$id`
+### 3. Carga de solicitud existente
+- Nuevo `obtenerSolicitud(expedienteId)` en `expedientesService.ts` (SELECT desde `solicitudes`).
+- Al abrir `/expedientes/$id`, si viene de Supabase, hidratar el store local con los datos de la solicitud para que los tabs actuales sigan funcionando sin cambios.
 
-**Objetivo:** generar el dictamen crediticio completo con IA y mostrarlo en pantalla.
+### 4. Documentos de Soporte a Supabase
+- `src/components/docs/DocsExpedientePage.tsx`: al subir un archivo, llamar `guardarDocumento(expedienteId, categoriaId, archivo)` (ya existe stub); al eliminar, `eliminarDocumento(documentoId)`.
+- Nuevo `obtenerDocumentos(expedienteId)` para listar al abrir la pestaña. Se mantiene la UI actual (miniaturas, visor, toasts, confirmación).
 
-Archivos nuevos:
-- `src/services/ia/parsearDictamen.ts` — parseo robusto con fallback (limpia fences ```json).
-- `src/services/ia/prompts.ts` (extender)
-  - `SISTEMA_COPILOTO_COMITE(contexto, esAgroResilia)`.
-  - `PROMPT_GENERAR_DICTAMEN(contexto)` — pide JSON estricto.
-  - Tipos `DictamenIA`, `Bandera`, `RecomendacionIA`, `ScoreARS`.
-- `src/routes/comite.$id.tsx` — página de dictamen:
-  1. Cabecera con datos del solicitante.
-  2. Estado `idle` → botón "Analizar expediente con el Copiloto IA".
-  3. Estado `procesando` → log animado (10 pasos con `setTimeout` 500 ms) mientras la IA responde.
-  4. Al terminar: parsea con `parsearDictamenIA`, guarda en store con `guardarDictamenIA`, entra a `listo`.
-  5. Si ya hay `dictamenIA` guardado, salta directamente a `listo` (permite volver sin regenerar; botón "Regenerar" opcional).
-- Componentes UI (bajo `src/components/comite/`):
-  - `ScoreGauge.tsx` — gauge semicircular SVG 0–100 con color según semáforo.
-  - `BanderasCumplimiento.tsx` — agrupa verde/amarillo/rojo con conteos.
-  - `ScoreAgroResilia.tsx` — sólo si `dictamen.scoreARS` no es null (o si `producto === "AgroResilia"`).
-  - `RecomendacionIA.tsx` — recomendación + condiciones + disclaimer "la IA no aprueba".
-  - `DecisionComite.tsx` — tres botones (Aprobar / Con condición / Rechazar) + textarea + guardar en store.
-  - `AnalisisFinanciero.tsx` — tabla compacta con las métricas devueltas por la IA.
+### 5. Cambios menores
+- `expedientesService.ts`: implementar `obtenerSolicitud` y `obtenerDocumentos` (los `guardar*` ya existen).
+- `IndicadorGuardado` (NavBar): ya está conectado a `ultimoGuardado`; no cambia.
 
-## Parte 4 — Chat en vivo + protección de la API
+### No incluido (queda para Fase 3)
+Flujo de efectivo, Estado de Resultados, Situación Financiera, Geolocalización, Fiador, Garantías, Comité (dictamen + decisión). Estos siguen en `localStorage` vía `useExpedientes` con `persist`.
 
-**Objetivo:** permitir al oficial conversar con el Copiloto sobre el dictamen ya generado y proteger la API key contra abuso.
+### Riesgos
+- El store local usa strings de `codigo` como id; hay que asegurar que el mapeo `id numérico Supabase ↔ codigo` quede consistente en `useExpedientes`. Propuesta: guardar `supabaseId` dentro del borrador local y usarlo como clave de sincronización.
+- El campo `documentos.base64` puede ser grande; se mantiene tal cual porque el esquema ya lo contempla, pero se recomienda pasar a Storage en una fase posterior.
 
-Archivos:
-- `src/components/comite/ChatCopiloto.tsx`
-  - Chat integrado dentro de `/comite/$id` (debajo del dictamen).
-  - Mensaje inicial automático: "Dictamen generado para X. Score Y/100. Semáforo Z. ¿Qué quieres profundizar?".
-  - 6 sugerencias rápidas (¿Por qué este score?, ¿Qué pasa si reduzco el monto?, etc.).
-  - Envía a `llamarIA` con `SISTEMA_COPILOTO_COMITE` + historial. Reutiliza `Burbuja` y `BurbujaEscribiendo` (extraer de `AsistenteBarraCampo` a `src/components/ia/burbujas.tsx` para no duplicar).
-- `src/components/ia/ProveedorBadge.tsx` — badge del proveedor activo (usar en header del chat y del dictamen). Extraído del helper que ya vive dentro de `adaptadorIA.ts`.
-- `src/routes/api/ia/completar.ts` — añadir rate limiting server-side por IP (map en memoria del handler): máximo **10 llamadas/minuto**, responde 429 con mensaje claro cuando se supera. El cliente muestra el error en la burbuja.
-- Manejo de errores end-to-end: si `llamarIA` lanza, la burbuja muestra "⚠️ Error de conexión con el Copiloto. Intenta de nuevo." (ya soportado en el adaptador actual).
-
-## Notas técnicas
-
-- **Rutas TanStack:** `src/routes/comite.$id.tsx` sigue la convención de rutas ya usada (`expedientes.$id.tsx`). Antes de linkear con `<Link to="/comite/$id">` hay que crear el archivo — la generación del `routeTree.gen.ts` la hace el plugin automáticamente al guardar.
-- **Head metadata:** cada ruta nueva (`/comite`, `/comite/$id`) recibe su propio `head()` con `title`, `description`, `og:*` únicos.
-- **Store persistente:** el middleware `persist` de Zustand ya está activo; los nuevos campos `comite.*` se guardan solos en `localStorage`.
-- **Sin dependencias nuevas:** todo se hace con lo instalado (React, Zustand, Tailwind, TanStack Router, lucide-react). El SVG del gauge es inline; no se añade Recharts al comité.
-- **Compatibilidad AgroResilia:** el campo `producto === "AgroResilia"` se detecta desde `exp.data.producto`; si el dictamen no trae `scoreARS`, la tarjeta no se renderiza.
-- **Provider IA:** sigue Groq/Llama por defecto vía `VITE_IA_PROVEEDOR`; nada cambia en el adaptador ya existente.
-- **No incluido en esta sesión** (según el prompt original): reportería ESG, integración .NET, modo offline nativo.
-
-## Orden de ejecución sugerido
-
-1. Parte 2 (store + `/comite` + sidebar badge + botón "Enviar a comité").
-2. Parte 3 (prompts + parser + `/comite/$id` con dictamen).
-3. Parte 4 (chat + rate limiter + badge proveedor).
-
-Después de cada parte hago typecheck y verifico el flujo antes de pasar a la siguiente.
+¿Procedo con esta fase 2 tal como está, o ajusto alcance (por ejemplo, dejar Documentos para más adelante o incluir también Flujo)?

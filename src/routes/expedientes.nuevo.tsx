@@ -11,6 +11,8 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 import { useApp } from "@/stores/app";
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
+import { useExpedientesRemote } from "@/stores/expedientesRemote";
+import { useAutosaveSolicitud } from "@/hooks/useAutosaveSolicitud";
 import { sucursales } from "@/data/mock";
 import { departamentos, municipiosPorDepartamento } from "@/data/municipios";
 import {
@@ -19,6 +21,7 @@ import {
   relacionesFiador, tiposGarantia,
 } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/expedientes/nuevo")({
   head: () => ({ meta: [{ title: "Nueva solicitud — FieldCredit" }] }),
@@ -53,53 +56,63 @@ function NuevaSolicitud() {
   const navigate = useNavigate();
 
   const crearExpediente = useExpedientes((s) => s.crearExpediente);
+  const setSupabaseId = useExpedientes((s) => s.setSupabaseId);
   const actualizarBorrador = useExpedientes((s) => s.actualizarBorrador);
   const completarSolicitud = useExpedientes((s) => s.completarSolicitud);
   const adjuntarDocumento = useExpedientes((s) => s.adjuntarDocumento);
-  
+  const crearRemote = useExpedientesRemote((s) => s.crear);
+  const cambiarEstadoRemote = useExpedientesRemote((s) => s.cambiarEstado);
 
   const [expedienteId, setExpedienteId] = useState<string | null>(null);
+  const [errorCreacion, setErrorCreacion] = useState<string | null>(null);
   const [seccion, setSeccion] = useState(1);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [seccionesConError, setSeccionesConError] = useState<Set<number>>(new Set());
   const [seccionesCompletadas, setSeccionesCompletadas] = useState<Set<number>>(new Set());
   const [scannerVisible, setScannerVisible] = useState(true);
-  const cambiosPendientes = useRef(false);
+  const creandoRef = useRef(false);
 
-  // Crea el expediente en cuanto entra
+  // Crea el expediente localmente + en Supabase en cuanto entra
   useEffect(() => {
-    if (!expedienteId && usuario) {
-      const id = crearExpediente();
-      actualizarBorrador(id, {
+    if (expedienteId || !usuario || creandoRef.current) return;
+    creandoRef.current = true;
+    (async () => {
+      const idLocal = crearExpediente();
+      actualizarBorrador(idLocal, {
         sucursal: sucursal?.nombre,
         asesor: usuario.nombre,
       });
-      setExpedienteId(id);
-    }
-  }, [expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador]);
+      setExpedienteId(idLocal);
+      const remoto = await crearRemote({
+        asesorId: usuario.id,
+        sucursalId: usuario.sucursal_id,
+        cliente: "Nuevo cliente",
+      });
+      if (remoto) {
+        setSupabaseId(idLocal, remoto.id);
+        actualizarBorrador(idLocal, { numero_solicitud: remoto.codigo });
+      } else {
+        setErrorCreacion(
+          "No se pudo crear el expediente en la nube. Revise su conexión e intente de nuevo.",
+        );
+      }
+      creandoRef.current = false;
+    })();
+  }, [expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador, crearRemote, setSupabaseId]);
 
   // Suscripción reactiva al expediente — si usáramos getExpediente() aquí
   // el componente NO se re-renderiza al teclear y los inputs parecen bloqueados.
   const exp = useExpedientes((s) => (expedienteId ? s.expedientes[expedienteId] : undefined));
   const data: SolicitudData = exp?.data ?? {};
 
-
   const setData = (patch: Partial<SolicitudData>) => {
     if (!expedienteId) return;
     actualizarBorrador(expedienteId, patch);
-    cambiosPendientes.current = true;
   };
 
-  // Guardado automático cada 30s
-  useEffect(() => {
-    const t = setInterval(() => {
-      if (cambiosPendientes.current) {
-        cambiosPendientes.current = false;
-        toast.success("Borrador guardado ✓", { duration: 2000 });
-      }
-    }, 30000);
-    return () => clearInterval(t);
-  }, []);
+  // Guardado automático a Supabase con debounce
+  useAutosaveSolicitud(exp?.supabaseId, exp?.data);
+
 
   // Validación por sección
   const validarSeccion = (n: number): Record<string, string> => {
@@ -170,7 +183,7 @@ function NuevaSolicitud() {
     toast.success("Borrador guardado ✓");
   };
 
-  const enviarSolicitud = () => {
+  const enviarSolicitud = async () => {
     const todosErr: Record<string, string> = {};
     const secErr = new Set<number>();
     for (let i = 1; i <= 7; i++) {
@@ -193,9 +206,13 @@ function NuevaSolicitud() {
     }
     if (!expedienteId) return;
     completarSolicitud(expedienteId);
+    if (exp?.supabaseId) {
+      await cambiarEstadoRemote(exp.supabaseId, "en_revision");
+    }
     toast.success("Solicitud enviada ✓");
     navigate({ to: "/expedientes/$id", params: { id: expedienteId } });
   };
+
 
   // Auto-completa desde OCR solo los campos vacíos
   const aplicarOCR = (campos: Record<string, unknown>, lado: "anverso" | "reverso") => {
@@ -276,7 +293,14 @@ function NuevaSolicitud() {
         subtitle={`N.° ${data.numero_solicitud} · ${data.fecha_solicitud}`}
       />
 
+      {errorCreacion && (
+        <div className="mb-3 rounded-lg border border-fieldcredit-red/40 bg-rose-50 p-3 text-xs text-fieldcredit-red dark:bg-rose-900/20">
+          {errorCreacion}
+        </div>
+      )}
+
       <Stepper pasos={pasos} activo={seccion} onIr={(n) => irSeccion(n, true)} progreso={progreso} />
+
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
         {seccion === 1 && (
