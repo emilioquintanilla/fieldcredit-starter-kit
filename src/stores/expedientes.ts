@@ -278,10 +278,12 @@ export interface ArchivoSoporte {
   tamano: number;
   base64: string;
   fechaSubida: string;
+  dbId?: number; // ID en Supabase (tabla `documentos`) cuando ya se sincronizó
 }
 
 export interface ExpedienteBorrador {
   id: string;
+  supabaseId?: number; // ID numérico en Supabase (tabla `expedientes`)
   estado: EstadoExpediente;
   data: SolicitudData;
   documentos: Documento[];
@@ -301,6 +303,9 @@ export interface ExpedienteBorrador {
 interface State {
   expedientes: Record<string, ExpedienteBorrador>;
   crearExpediente: (id?: string) => string;
+  setSupabaseId: (id: string, supabaseId: number) => void;
+  hidratarSolicitud: (id: string, data: SolicitudData) => void;
+  hidratarDocsSoporte: (id: string, docs: Record<string, ArchivoSoporte[]>) => void;
   actualizarBorrador: (id: string, patch: Partial<SolicitudData>) => void;
   completarSolicitud: (id: string) => void;
   adjuntarDocumento: (id: string, doc: Documento) => void;
