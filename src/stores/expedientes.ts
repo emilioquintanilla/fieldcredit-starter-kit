@@ -342,7 +342,10 @@ interface State {
       "fiador" | "garantias" | "flujo" | "estadoResultados" | "situacionFinanciera" | "geolocalizacion" | "comite"
     >>,
   ) => void;
+  archivarExpediente: (id: string) => Promise<void>;
+  eliminarExpediente: (id: string) => Promise<void>;
 }
+
 
 
 const genId = () =>
