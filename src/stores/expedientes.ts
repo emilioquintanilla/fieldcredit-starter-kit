@@ -370,6 +370,34 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
     return nuevoId;
   },
 
+  setSupabaseId: (id, supabaseId) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return { expedientes: { ...s.expedientes, [id]: { ...exp, supabaseId } } };
+    }),
+
+  hidratarSolicitud: (id, data) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, data: { ...exp.data, ...data } },
+        },
+      };
+    }),
+
+  hidratarDocsSoporte: (id, docs) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: { ...s.expedientes, [id]: { ...exp, documentosSoporte: docs } },
+      };
+    }),
+
   actualizarBorrador: (id, patch) =>
     set((s) => {
       const exp = s.expedientes[id];
