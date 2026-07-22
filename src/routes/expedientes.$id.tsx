@@ -104,7 +104,7 @@ function ExpedienteDetalle() {
     { id: "resultados", label: "📊 Resultados", visible: true, estado: estadoResMod },
     { id: "situacion", label: "🏦 Situación", visible: true, estado: estadoSitMod },
     { id: "geo", label: "📍 Geo", visible: true, estado: estadoGeoMod },
-    { id: "docs", label: "📄 Docs", visible: true },
+    { id: "docs", label: "📄 Docs", visible: true, estado: estadoDocsSoporte(exp) },
   ];
 
 
