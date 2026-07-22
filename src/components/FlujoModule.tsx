@@ -36,7 +36,7 @@ export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSoli
   const rubrosAct = useRubrosActividad(tipoActividad);
   const [vista, setVista] = useState<"datos" | "graficos">("datos");
   const [bloquesAbiertos, setBloquesAbiertos] = useState<Record<Bloque, boolean>>({
-    A: true, B: false, C: false, D: false, E: false,
+    A: true, B: false, C: false, D: false, F: false, E: false,
   });
 
   // Inicializa el flujo al montar
