@@ -114,6 +114,7 @@ function ComitePage() {
 }
 
 function TarjetaComite({ exp }: { exp: ReturnType<typeof useExpedientes.getState>["expedientes"][string] }) {
+  const [menuAbierto, setMenuAbierto] = useState(false);
   const d = exp.data;
   const nombre =
     [d?.primer_nombre, d?.segundo_nombre, d?.primer_apellido, d?.segundo_apellido].filter(Boolean).join(" ") || "—";
@@ -134,7 +135,16 @@ function TarjetaComite({ exp }: { exp: ReturnType<typeof useExpedientes.getState
           </Link>
           <p className="text-xs text-slate-500">{exp.id} · {producto}</p>
         </div>
-        <StatusBadge status={exp.estado} />
+        <div className="flex items-center gap-1">
+          <StatusBadge status={exp.estado} />
+          <MenuAccionesExpediente
+            expedienteId={exp.id}
+            codigoVisible={d?.numero_solicitud ?? exp.id}
+            abierto={menuAbierto}
+            onToggle={() => setMenuAbierto((v) => !v)}
+            onCerrar={() => setMenuAbierto(false)}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-xs">
