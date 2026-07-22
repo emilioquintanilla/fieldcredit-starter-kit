@@ -406,6 +406,23 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
       };
     }),
 
+  guardarDocsSoporte: (id, docId, archivos) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev = exp.documentosSoporte ?? {};
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            documentosSoporte: { ...prev, [docId]: archivos },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
   getExpediente: (id) => get().expedientes[id],
 
   // ===== Fiador =====
