@@ -335,6 +335,13 @@ interface State {
   marcarEnComite: (id: string) => void;
   guardarDictamenIA: (id: string, dictamen: DictamenIA) => void;
   registrarDecisionComite: (id: string, decision: DecisionComite) => void;
+  hidratarModulos: (
+    id: string,
+    patch: Partial<Pick<
+      ExpedienteBorrador,
+      "fiador" | "garantias" | "flujo" | "estadoResultados" | "situacionFinanciera" | "geolocalizacion" | "comite"
+    >>,
+  ) => void;
 }
 
 
