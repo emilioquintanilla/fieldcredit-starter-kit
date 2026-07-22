@@ -11,6 +11,7 @@ import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
 import { EstadoResultadosModule, estadoResultadosStatus } from "@/components/estados/EstadoResultadosModule";
 import { SituacionFinancieraModule, estadoSituacionStatus } from "@/components/estados/SituacionFinancieraModule";
 import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
+import { DocsExpedientePage, estadoDocsSoporte } from "@/components/docs/DocsExpedientePage";
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 
 import { useExpedientes } from "@/stores/expedientes";
