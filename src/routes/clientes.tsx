@@ -83,8 +83,14 @@ function ClientesPage() {
 
 function TarjetaClienteBusqueda({
   expediente,
+  menuAbierto,
+  onToggleMenu,
+  onCerrarMenu,
 }: {
   expediente: ReturnType<typeof useExpedientes.getState>["expedientes"][string];
+  menuAbierto: boolean;
+  onToggleMenu: () => void;
+  onCerrarMenu: () => void;
 }) {
   const geo = expediente.geolocalizacion;
   const domicilio = geo?.domicilioDeudor;
@@ -103,6 +109,7 @@ function TarjetaClienteBusqueda({
           <p className="text-xs text-slate-500">
             {expediente.id} · {d.tipo_actividad || "—"}
           </p>
+
         </div>
         <StatusBadge status={estado} />
       </div>
