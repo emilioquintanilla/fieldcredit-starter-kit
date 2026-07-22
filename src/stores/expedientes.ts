@@ -304,6 +304,7 @@ interface State {
   actualizarBorrador: (id: string, patch: Partial<SolicitudData>) => void;
   completarSolicitud: (id: string) => void;
   adjuntarDocumento: (id: string, doc: Documento) => void;
+  guardarDocsSoporte: (id: string, docId: string, archivos: ArchivoSoporte[]) => void;
   getExpediente: (id: string) => ExpedienteBorrador | undefined;
   actualizarFiador: (id: string, patch: Partial<FiadorData>) => void;
   agregarIngresoFiador: (id: string, ingreso: Omit<IngresoFiador, "id">) => void;
