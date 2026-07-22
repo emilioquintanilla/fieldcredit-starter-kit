@@ -1,5 +1,5 @@
 // Bandeja del comité: lista de expedientes por dictaminar.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ProveedorBadge } from "@/components/ia/ProveedorBadge";
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
+import { sembrarExpedientesComite } from "@/lib/seedComite";
 
 export const Route = createFileRoute("/comite")({
   head: () => ({
@@ -34,6 +35,17 @@ function ComitePage() {
 
   const pendientes = expedientes.filter((e) => !e.comite?.decision).length;
 
+  const [sembrando, setSembrando] = useState(false);
+
+  const handleSembrar = () => {
+    setSembrando(true);
+    try {
+      sembrarExpedientesComite();
+    } finally {
+      setTimeout(() => setSembrando(false), 400);
+    }
+  };
+
   return (
     <AppLayout>
       <PageHeader
@@ -43,7 +55,20 @@ function ComitePage() {
             ? "Sin expedientes en comité"
             : `${pendientes} pendiente${pendientes === 1 ? "" : "s"} de resolución · ${expedientes.length} total`
         }
-        actions={<ProveedorBadge />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSembrar}
+              disabled={sembrando}
+              className="rounded-lg border border-fieldcredit-teal bg-white px-3 py-1.5 text-xs font-bold text-fieldcredit-teal-dark shadow-sm transition hover:bg-fieldcredit-teal-light disabled:opacity-50 dark:bg-slate-800 dark:text-teal-200"
+              title="Crea 3 expedientes de ejemplo (Comercio, Agricultura, Ganadería) en estado 'En comité'."
+            >
+              {sembrando ? "Sembrando…" : "🌱 Sembrar expedientes de prueba"}
+            </button>
+            <ProveedorBadge />
+          </div>
+        }
       />
 
       {expedientes.length === 0 ? (
@@ -51,14 +76,25 @@ function ComitePage() {
           <div className="mb-4 text-5xl">✅</div>
           <p className="mb-1 font-semibold text-slate-700 dark:text-slate-200">Sin expedientes pendientes</p>
           <p className="text-sm text-slate-500">
-            Envía un expediente al comité desde el tab <strong>Docs</strong> del detalle.
+            Envía un expediente al comité desde el tab <strong>Docs</strong> del detalle,
+            o usa <strong>Sembrar expedientes de prueba</strong> para generar ejemplos.
           </p>
-          <Link
-            to="/expedientes"
-            className="mt-4 inline-block rounded-xl bg-fieldcredit-green px-4 py-2 text-sm font-bold text-white"
-          >
-            Ver expedientes
-          </Link>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={handleSembrar}
+              disabled={sembrando}
+              className="rounded-xl bg-fieldcredit-teal px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {sembrando ? "Sembrando…" : "🌱 Sembrar 3 expedientes de prueba"}
+            </button>
+            <Link
+              to="/expedientes"
+              className="rounded-xl border border-fieldcredit-teal px-4 py-2 text-sm font-bold text-fieldcredit-teal-dark dark:text-teal-200"
+            >
+              Ver expedientes
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid gap-3">
