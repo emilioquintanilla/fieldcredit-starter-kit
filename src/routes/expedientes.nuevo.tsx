@@ -293,7 +293,14 @@ function NuevaSolicitud() {
         subtitle={`N.° ${data.numero_solicitud} · ${data.fecha_solicitud}`}
       />
 
+      {errorCreacion && (
+        <div className="mb-3 rounded-lg border border-fieldcredit-red/40 bg-rose-50 p-3 text-xs text-fieldcredit-red dark:bg-rose-900/20">
+          {errorCreacion}
+        </div>
+      )}
+
       <Stepper pasos={pasos} activo={seccion} onIr={(n) => irSeccion(n, true)} progreso={progreso} />
+
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
         {seccion === 1 && (
