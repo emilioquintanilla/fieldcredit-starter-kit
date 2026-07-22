@@ -5,7 +5,9 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { MapaMini } from "@/components/geo/MapaMini";
 import { StatusBadge } from "@/components/StatusBadge";
+import { MenuAccionesExpediente } from "@/components/MenuAccionesExpediente";
 import { useExpedientes } from "@/stores/expedientes";
+
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({
