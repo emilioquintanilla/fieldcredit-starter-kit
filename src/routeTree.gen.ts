@@ -15,6 +15,7 @@ import { Route as ComiteRouteImport } from './routes/comite'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
+import { Route as ComiteIndexRouteImport } from './routes/comite.index'
 import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
 import { Route as ComiteIdRouteImport } from './routes/comite.$id'
@@ -50,6 +51,11 @@ const ExpedientesIndexRoute = ExpedientesIndexRouteImport.update({
   path: '/expedientes/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComiteIndexRoute = ComiteIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ComiteRoute,
+} as any)
 const ExpedientesNuevoRoute = ExpedientesNuevoRouteImport.update({
   id: '/expedientes/nuevo',
   path: '/expedientes/nuevo',
@@ -80,18 +86,19 @@ export interface FileRoutesByFullPath {
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
+  '/comite/': typeof ComiteIndexRoute
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
-  '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
+  '/comite': typeof ComiteIndexRoute
   '/expedientes': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
 }
@@ -105,6 +112,7 @@ export interface FileRoutesById {
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
+  '/comite/': typeof ComiteIndexRoute
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
 }
@@ -119,18 +127,19 @@ export interface FileRouteTypes {
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
+    | '/comite/'
     | '/expedientes/'
     | '/api/ia/completar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/clientes'
-    | '/comite'
     | '/dashboard'
     | '/login'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
+    | '/comite'
     | '/expedientes'
     | '/api/ia/completar'
   id:
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
+    | '/comite/'
     | '/expedientes/'
     | '/api/ia/completar'
   fileRoutesById: FileRoutesById
@@ -203,6 +213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpedientesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comite/': {
+      id: '/comite/'
+      path: '/'
+      fullPath: '/comite/'
+      preLoaderRoute: typeof ComiteIndexRouteImport
+      parentRoute: typeof ComiteRoute
+    }
     '/expedientes/nuevo': {
       id: '/expedientes/nuevo'
       path: '/expedientes/nuevo'
@@ -236,10 +253,12 @@ declare module '@tanstack/react-router' {
 
 interface ComiteRouteChildren {
   ComiteIdRoute: typeof ComiteIdRoute
+  ComiteIndexRoute: typeof ComiteIndexRoute
 }
 
 const ComiteRouteChildren: ComiteRouteChildren = {
   ComiteIdRoute: ComiteIdRoute,
+  ComiteIndexRoute: ComiteIndexRoute,
 }
 
 const ComiteRouteWithChildren =
@@ -259,3 +278,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
