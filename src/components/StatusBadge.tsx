@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 const MAP: Record<EstadoExpediente, { label: string; cls: string; pulse?: boolean }> = {
   borrador: { label: "Borrador", cls: "bg-fieldcredit-gray-pale text-fieldcredit-gray-dark dark:bg-slate-700 dark:text-slate-200" },
+  completada: { label: "Completada", cls: "bg-fieldcredit-teal-light text-fieldcredit-teal-dark dark:bg-teal-900/40 dark:text-teal-200" },
   en_revision: { label: "En revisión", cls: "bg-fieldcredit-amber-light text-fieldcredit-amber dark:bg-amber-900/40 dark:text-amber-300" },
   en_comite: { label: "En comité", cls: "bg-fieldcredit-teal-light text-fieldcredit-teal-dark dark:bg-teal-900/40 dark:text-teal-200", pulse: true },
   aprobado: { label: "Aprobado", cls: "bg-fieldcredit-green-light text-fieldcredit-green-dark dark:bg-green-900/40 dark:text-green-200" },

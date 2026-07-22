@@ -11,10 +11,41 @@ type Body = {
   maxTokens?: number;
 };
 
+// Rate limit por IP: 10 solicitudes / 60s. Se guarda en memoria del proceso.
+const VENTANA_MS = 60_000;
+const LIMITE = 10;
+const buckets = new Map<string, { count: number; reset: number }>();
+
+function limitarPorIP(ip: string): { ok: boolean; restantes: number; retryEn: number } {
+  const ahora = Date.now();
+  const b = buckets.get(ip);
+  if (!b || b.reset < ahora) {
+    buckets.set(ip, { count: 1, reset: ahora + VENTANA_MS });
+    return { ok: true, restantes: LIMITE - 1, retryEn: 0 };
+  }
+  if (b.count >= LIMITE) {
+    return { ok: false, restantes: 0, retryEn: Math.ceil((b.reset - ahora) / 1000) };
+  }
+  b.count += 1;
+  return { ok: true, restantes: LIMITE - b.count, retryEn: 0 };
+}
+
 export const Route = createFileRoute("/api/ia/completar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const ip =
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          request.headers.get("x-real-ip") ||
+          "anon";
+        const rl = limitarPorIP(ip);
+        if (!rl.ok) {
+          return Response.json(
+            { exito: false, texto: "", error: `Rate limit: reintenta en ${rl.retryEn}s.` },
+            { status: 429, headers: { "Retry-After": String(rl.retryEn) } },
+          );
+        }
+
         let body: Body;
         try {
           body = (await request.json()) as Body;

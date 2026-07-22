@@ -1,6 +1,7 @@
 // Sidebar con navegación principal (drawer en móvil, colapsable en desktop)
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { useExpedientes } from "@/stores/expedientes";
 import logoUrl from "@/assets/micredito.svg";
 
 const ITEMS = [
@@ -18,6 +19,12 @@ interface Props {
 
 export function Sidebar({ open, collapsed, onClose }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const comitePendientes = useExpedientes(
+    (s) =>
+      Object.values(s.expedientes).filter(
+        (e) => e.estado === "en_comite" && !e.comite?.decision,
+      ).length,
+  );
 
   return (
     <>
@@ -42,6 +49,7 @@ export function Sidebar({ open, collapsed, onClose }: Props) {
         <nav className="flex-1 space-y-1 p-2">
           {ITEMS.map((item) => {
             const active = pathname.startsWith(item.to);
+            const badge = item.to === "/comite" && comitePendientes > 0 ? comitePendientes : null;
             return (
               <Link
                 key={item.to}
@@ -56,9 +64,19 @@ export function Sidebar({ open, collapsed, onClose }: Props) {
                 title={item.label}
               >
                 <span className="text-lg">{item.icon}</span>
-                <span className={cn("truncate", collapsed && "md:hidden")}>
+                <span className={cn("flex-1 truncate", collapsed && "md:hidden")}>
                   {item.label}
                 </span>
+                {badge !== null && (
+                  <span
+                    className={cn(
+                      "flex h-5 min-w-5 items-center justify-center rounded-full bg-fieldcredit-amber px-1.5 text-[10px] font-bold text-white",
+                      collapsed && "md:hidden",
+                    )}
+                  >
+                    {badge}
+                  </span>
+                )}
               </Link>
             );
           })}

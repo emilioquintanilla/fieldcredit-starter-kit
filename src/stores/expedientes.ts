@@ -221,9 +221,59 @@ export interface UbicacionGeo {
 }
 export type GeolocalizacionData = Partial<Record<TipoUbicacion, UbicacionGeo | null>>;
 
+// ===== Módulo Comité (dictamen IA + decisión humana) =====
+export interface Bandera {
+  tipo: "verde" | "amarillo" | "rojo";
+  texto: string;
+}
+export interface RecomendacionIA {
+  accion: "aprobar" | "aprobar_con_condicion" | "rechazar" | "revisar";
+  texto: string;
+  condiciones: string[];
+}
+export interface ScoreARS {
+  score: number;
+  nivel: "verde_preferencial" | "verde_estandar" | "amarillo" | "rojo";
+  tasa: string;
+  condiciones: string;
+  variables: Array<{ nombre: string; puntaje: number }>;
+}
+export interface DictamenIA {
+  score: number;
+  semaforo: "verde" | "amarillo" | "rojo";
+  resumen: string;
+  banderas: Bandera[];
+  metricas: {
+    capacidadPago: number;
+    coberturaFlujo: number;
+    indiceEndeudamiento: number;
+    coberturaGarantias: number;
+  };
+  scoreARS: ScoreARS | null;
+  recomendacion: RecomendacionIA;
+}
+export interface DecisionComite {
+  decision: "aprobado" | "condicionado" | "rechazado";
+  observacion?: string;
+  timestamp: string;
+}
+export interface ComiteData {
+  dictamenIA?: DictamenIA | null;
+  decision?: DecisionComite | null;
+  generadoEn?: string | null;
+}
+
+export type EstadoExpediente =
+  | "borrador"
+  | "completada"
+  | "en_comite"
+  | "aprobado"
+  | "condicionado"
+  | "rechazado";
+
 export interface ExpedienteBorrador {
   id: string;
-  estado: "borrador" | "completada";
+  estado: EstadoExpediente;
   data: SolicitudData;
   documentos: Documento[];
   fiador?: FiadorData;
@@ -232,6 +282,7 @@ export interface ExpedienteBorrador {
   estadoResultados?: EstadoResultadosData;
   situacionFinanciera?: SituacionFinancieraData;
   geolocalizacion?: GeolocalizacionData;
+  comite?: ComiteData;
   created_at: string;
   updated_at: string;
 }
@@ -264,6 +315,9 @@ interface State {
   guardarUbicacion: (id: string, tipo: TipoUbicacion, datos: UbicacionGeo) => void;
   eliminarUbicacion: (id: string, tipo: TipoUbicacion) => void;
   actualizarDireccionTexto: (id: string, tipo: TipoUbicacion, texto: string) => void;
+  marcarEnComite: (id: string) => void;
+  guardarDictamenIA: (id: string, dictamen: DictamenIA) => void;
+  registrarDecisionComite: (id: string, decision: DecisionComite) => void;
 }
 
 
@@ -714,4 +768,60 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
       };
     }),
 
+  // ===== Comité =====
+  marcarEnComite: (id) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            estado: "en_comite",
+            comite: { ...(exp.comite || {}) },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  guardarDictamenIA: (id, dictamen) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            comite: {
+              ...(exp.comite || {}),
+              dictamenIA: dictamen,
+              generadoEn: new Date().toISOString(),
+            },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  registrarDecisionComite: (id, decision) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            estado: decision.decision,
+            comite: { ...(exp.comite || {}), decision },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
 }), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
+
