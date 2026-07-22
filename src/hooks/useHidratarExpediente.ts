@@ -35,13 +35,13 @@ export function useHidratarExpediente(exp: ExpedienteBorrador | undefined) {
         ]);
 
         const patch: Parameters<typeof hidratarModulos>[1] = {};
-        if (flujo) patch.flujo = flujo as ExpedienteBorrador["flujo"];
-        if (edr) patch.estadoResultados = edr as ExpedienteBorrador["estadoResultados"];
-        if (sf) patch.situacionFinanciera = sf as ExpedienteBorrador["situacionFinanciera"];
-        if (geo) patch.geolocalizacion = geo as ExpedienteBorrador["geolocalizacion"];
-        if (fiador) patch.fiador = fiador as ExpedienteBorrador["fiador"];
-        if (garantias) patch.garantias = garantias as ExpedienteBorrador["garantias"];
-        if (comite) patch.comite = comite as ExpedienteBorrador["comite"];
+        if (flujo) patch.flujo = flujo as unknown as ExpedienteBorrador["flujo"];
+        if (edr) patch.estadoResultados = edr as unknown as ExpedienteBorrador["estadoResultados"];
+        if (sf) patch.situacionFinanciera = sf as unknown as ExpedienteBorrador["situacionFinanciera"];
+        if (geo) patch.geolocalizacion = geo as unknown as ExpedienteBorrador["geolocalizacion"];
+        if (fiador) patch.fiador = fiador as unknown as ExpedienteBorrador["fiador"];
+        if (garantias) patch.garantias = garantias as unknown as ExpedienteBorrador["garantias"];
+        if (comite) patch.comite = comite as unknown as ExpedienteBorrador["comite"];
         if (Object.keys(patch).length > 0) hidratarModulos(exp.id, patch);
       } catch (e) {
         console.error("[hidratar expediente]", e);
