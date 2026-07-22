@@ -5,7 +5,9 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { MapaMini } from "@/components/geo/MapaMini";
 import { StatusBadge } from "@/components/StatusBadge";
+import { MenuAccionesExpediente } from "@/components/MenuAccionesExpediente";
 import { useExpedientes } from "@/stores/expedientes";
+
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({
@@ -20,6 +22,8 @@ export const Route = createFileRoute("/clientes")({
 function ClientesPage() {
   const expedientes = useExpedientes((s) => s.expedientes);
   const [busqueda, setBusqueda] = useState("");
+  const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
+
 
   const resultados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
@@ -60,7 +64,15 @@ function ClientesPage() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {resultados.map((exp) => (
-            <TarjetaClienteBusqueda key={exp.id} expediente={exp} />
+            <TarjetaClienteBusqueda
+              key={exp.id}
+              expediente={exp}
+              menuAbierto={menuAbierto === exp.id}
+              onToggleMenu={() =>
+                setMenuAbierto((v) => (v === exp.id ? null : exp.id))
+              }
+              onCerrarMenu={() => setMenuAbierto(null)}
+            />
           ))}
         </div>
       )}
@@ -68,10 +80,17 @@ function ClientesPage() {
   );
 }
 
+
 function TarjetaClienteBusqueda({
   expediente,
+  menuAbierto,
+  onToggleMenu,
+  onCerrarMenu,
 }: {
   expediente: ReturnType<typeof useExpedientes.getState>["expedientes"][string];
+  menuAbierto: boolean;
+  onToggleMenu: () => void;
+  onCerrarMenu: () => void;
 }) {
   const geo = expediente.geolocalizacion;
   const domicilio = geo?.domicilioDeudor;
@@ -90,9 +109,20 @@ function TarjetaClienteBusqueda({
           <p className="text-xs text-slate-500">
             {expediente.id} · {d.tipo_actividad || "—"}
           </p>
+
         </div>
-        <StatusBadge status={estado} />
+        <div className="flex items-center gap-1">
+          <StatusBadge status={estado} />
+          <MenuAccionesExpediente
+            expedienteId={expediente.id}
+            codigoVisible={expediente.data?.numero_solicitud ?? expediente.id}
+            abierto={menuAbierto}
+            onToggle={onToggleMenu}
+            onCerrar={onCerrarMenu}
+          />
+        </div>
       </div>
+
 
       {tieneUbicacion && (
         <div className="mb-3 overflow-hidden rounded-xl" style={{ height: "130px" }}>

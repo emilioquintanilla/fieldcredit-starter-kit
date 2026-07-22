@@ -342,7 +342,10 @@ interface State {
       "fiador" | "garantias" | "flujo" | "estadoResultados" | "situacionFinanciera" | "geolocalizacion" | "comite"
     >>,
   ) => void;
+  archivarExpediente: (id: string) => Promise<void>;
+  eliminarExpediente: (id: string) => Promise<void>;
 }
+
 
 
 const genId = () =>
@@ -929,5 +932,40 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
       };
     }),
 
+  archivarExpediente: async (id) => {
+    const exp = get().expedientes[id];
+    if (exp?.supabaseId) {
+      try {
+        const svc = await import("@/services/expedientesService");
+        await svc.archivarExpediente(exp.supabaseId);
+      } catch (e) {
+        console.warn("[archivarExpediente] fallo remoto", e);
+      }
+    }
+    set((s) => {
+      const copia = { ...s.expedientes };
+      delete copia[id];
+      return { expedientes: copia };
+    });
+  },
+
+  eliminarExpediente: async (id) => {
+    const exp = get().expedientes[id];
+    if (exp?.supabaseId) {
+      try {
+        const svc = await import("@/services/expedientesService");
+        await svc.eliminarExpedienteDefinitivo(exp.supabaseId);
+      } catch (e) {
+        console.warn("[eliminarExpediente] fallo remoto", e);
+      }
+    }
+    set((s) => {
+      const copia = { ...s.expedientes };
+      delete copia[id];
+      return { expedientes: copia };
+    });
+  },
+
 }), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
+
 
