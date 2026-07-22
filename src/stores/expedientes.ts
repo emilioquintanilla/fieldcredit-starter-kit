@@ -318,6 +318,7 @@ interface State {
   inicializarFlujo: (id: string, opts: { plazoMeses: number; mesInicio: string; tipoActividad?: string; cuotaEstimada: number }) => void;
   toggleRubroFlujo: (id: string, rubro: string) => void;
   actualizarValorMesFlujo: (id: string, rubro: string, mesIndex: number, valor: number) => void;
+  setValoresRubroFlujo: (id: string, rubro: string, valores: number[]) => void;
   actualizarCuotaFlujo: (id: string, cuota: number) => void;
   actualizarDescRubroFlujo: (id: string, campo: "otroFijoDesc" | "otroEstacionalDesc", valor: string) => void;
   guardarValorEstado: (id: string, modulo: ModuloEstado, cuentaId: string, valor: number) => void;
@@ -632,6 +633,31 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
           [id]: {
             ...exp,
             flujo: { ...exp.flujo, valores: { ...exp.flujo.valores, [rubro]: nuevoArr } },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  setValoresRubroFlujo: (id, rubro, valores) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.flujo) return s;
+      const nuevoArr = Array.from({ length: exp.flujo.plazoMeses }, (_, i) =>
+        isFinite(valores[i] ?? 0) ? (valores[i] ?? 0) : 0,
+      );
+      // Auto-activar el rubro cuando se rellena de golpe (útil para "aplicar a todos los meses")
+      const activo = nuevoArr.some((v) => v > 0) || !!exp.flujo.rubrosActivos[rubro];
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            flujo: {
+              ...exp.flujo,
+              rubrosActivos: { ...exp.flujo.rubrosActivos, [rubro]: activo },
+              valores: { ...exp.flujo.valores, [rubro]: nuevoArr },
+            },
             updated_at: new Date().toISOString(),
           },
         },

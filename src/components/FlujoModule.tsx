@@ -36,7 +36,7 @@ export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSoli
   const rubrosAct = useRubrosActividad(tipoActividad);
   const [vista, setVista] = useState<"datos" | "graficos">("datos");
   const [bloquesAbiertos, setBloquesAbiertos] = useState<Record<Bloque, boolean>>({
-    A: true, B: false, C: false, D: false, E: false,
+    A: true, B: false, C: false, D: false, F: false, E: false,
   });
 
   // Inicializa el flujo al montar
@@ -182,15 +182,25 @@ function BloqueForm({
   subtotal: number;
 }) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]!.flujo!);
-  const toggleRubro = useExpedientes((s) => s.toggleRubroFlujo);
-  const actualizarValor = useExpedientes((s) => s.actualizarValorMesFlujo);
-  const actualizarDesc = useExpedientes((s) => s.actualizarDescRubroFlujo);
+  const setValoresRubro = useExpedientes((s) => s.setValoresRubroFlujo);
   const meta = BLOQUE_META[bloque];
   const bg = BLOQUE_BG[bloque];
+  const rubrosBloque = getRubrosParaActividad(flujo.tipoActividad)[bloque];
 
   // Alertas
   const totalConsumoFamiliar = bloque === "C" ? subtotal / (flujo.plazoMeses || 1) : 0;
   const consumoBajo = bloque === "C" && subtotal > 0 && totalConsumoFamiliar < 3000;
+
+  // Rellenar todos los meses de todos los rubros activos con el valor del mes 1
+  const rellenarMes1EnTodos = () => {
+    rubrosBloque.forEach((r) => {
+      if (!flujo.rubrosActivos[r.key]) return;
+      const valorM1 = flujo.valores[r.key]?.[0] ?? 0;
+      if (valorM1 > 0) {
+        setValoresRubro(expedienteId, r.key, new Array(flujo.plazoMeses).fill(valorM1));
+      }
+    });
+  };
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -210,82 +220,24 @@ function BloqueForm({
             💡 {meta.tip}
           </p>
 
-          {getRubrosParaActividad(flujo.tipoActividad)[bloque].map((r) => {
-            const activo = !!flujo.rubrosActivos[r.key];
-            const valores = flujo.valores[r.key] ?? [];
-            const totalRubro = valores.reduce((s, v) => s + v, 0);
-            const activoSinValores = activo && totalRubro === 0 && (bloque === "B");
+          <button
+            type="button"
+            onClick={rellenarMes1EnTodos}
+            className="flex items-center gap-1 text-xs font-semibold text-fieldcredit-teal hover:underline"
+          >
+            ⚡ Rellenar todos los meses con el valor del mes 1
+          </button>
 
-            return (
-              <div key={r.key} className="rounded-lg border border-slate-200 p-2 dark:border-slate-700">
-                <div className="mb-2 flex items-center gap-2">
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input
-                      type="checkbox"
-                      checked={activo}
-                      onChange={() => toggleRubro(expedienteId, r.key)}
-                      className="peer sr-only"
-                    />
-                    <div className="peer h-5 w-9 rounded-full bg-slate-300 after:absolute after:start-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:bg-fieldcredit-green peer-checked:after:translate-x-full dark:bg-slate-600" />
-                  </label>
-                  <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">{r.label}</span>
-                  <TooltipInline text={r.ayuda} />
-                  {activo && (
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Total: {fmtC(totalRubro)}
-                    </span>
-                  )}
-                </div>
-
-                {activo && (
-                  <>
-                    {(r.key === "otroFijo" || r.key === "otroEstacional") && (
-                      <input
-                        type="text"
-                        placeholder="Describe este rubro..."
-                        value={
-                          r.key === "otroFijo"
-                            ? (flujo.otroFijoDesc ?? "")
-                            : (flujo.otroEstacionalDesc ?? "")
-                        }
-                        onChange={(e) =>
-                          actualizarDesc(
-                            expedienteId,
-                            r.key === "otroFijo" ? "otroFijoDesc" : "otroEstacionalDesc",
-                            e.target.value
-                          )
-                        }
-                        className="mb-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900"
-                      />
-                    )}
-                    <div className="overflow-x-auto">
-                      <div className="flex gap-1" style={{ minWidth: `${meses.length * 76}px` }}>
-                        {meses.map((m, idx) => (
-                          <div key={idx} className="flex w-[72px] shrink-0 flex-col">
-                            <label className="text-[10px] text-slate-500">{m}</label>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              value={valores[idx] || ""}
-                              onChange={(e) =>
-                                actualizarValor(expedienteId, r.key, idx, parseFloat(e.target.value) || 0)
-                              }
-                              className="w-full rounded border border-slate-300 bg-yellow-50 px-1 py-1 text-right text-xs dark:border-slate-600 dark:bg-yellow-900/20 dark:text-slate-100"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {activoSinValores && (
-                      <p className="mt-2 text-xs text-fieldcredit-amber">
-                        ⚠️ Este rubro está activo pero todos los meses están en cero. ¿No hay ingreso en el período?
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })}
+          {rubrosBloque.map((r) => (
+            <FilaRubro
+              key={r.key}
+              rubro={r}
+              bloque={bloque}
+              expedienteId={expedienteId}
+              plazoMeses={flujo.plazoMeses}
+              meses={meses}
+            />
+          ))}
 
           {consumoBajo && (
             <div className="rounded-md border border-fieldcredit-amber/40 bg-fieldcredit-amber-light p-2 text-xs text-amber-900 dark:bg-fieldcredit-amber/10 dark:text-amber-200">
@@ -299,6 +251,164 @@ function BloqueForm({
         </div>
       )}
     </section>
+  );
+}
+
+/* -------- Fila rubro con toggle igual / variable -------- */
+
+function FilaRubro({
+  rubro, bloque, expedienteId, plazoMeses, meses,
+}: {
+  rubro: { key: string; label: string; ayuda: string };
+  bloque: Bloque;
+  expedienteId: string;
+  plazoMeses: number;
+  meses: string[];
+}) {
+  const flujo = useExpedientes((s) => s.expedientes[expedienteId]!.flujo!);
+  const toggleRubro = useExpedientes((s) => s.toggleRubroFlujo);
+  const actualizarValor = useExpedientes((s) => s.actualizarValorMesFlujo);
+  const setValoresRubro = useExpedientes((s) => s.setValoresRubroFlujo);
+  const actualizarDesc = useExpedientes((s) => s.actualizarDescRubroFlujo);
+
+  const activo = !!flujo.rubrosActivos[rubro.key];
+  const valores = flujo.valores[rubro.key] ?? [];
+  const totalRubro = valores.reduce((s, v) => s + v, 0);
+  const activoSinValores = activo && totalRubro === 0 && bloque === "B";
+
+  // Detectar modo inicial: si todos los meses son iguales (>0), modoIgual = true.
+  // Si hay valores variables (o todos en cero), decidir por heurística: cero → modoIgual (default), variados → variable.
+  const todosIguales = valores.length > 0 && valores.every((v) => v === valores[0]);
+  const [modoIgual, setModoIgual] = useState<boolean>(todosIguales);
+  const [valorBase, setValorBase] = useState<number>(todosIguales ? (valores[0] ?? 0) : 0);
+
+  const aplicarATodos = (valor: number) => {
+    setValorBase(valor);
+    setValoresRubro(expedienteId, rubro.key, new Array(plazoMeses).fill(valor));
+  };
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-2 dark:border-slate-700">
+      <div className="mb-2 flex items-center gap-2">
+        <label className="relative inline-flex cursor-pointer items-center">
+          <input
+            type="checkbox"
+            checked={activo}
+            onChange={() => toggleRubro(expedienteId, rubro.key)}
+            className="peer sr-only"
+          />
+          <div className="peer h-5 w-9 rounded-full bg-slate-300 after:absolute after:start-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:bg-fieldcredit-green peer-checked:after:translate-x-full dark:bg-slate-600" />
+        </label>
+        <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">{rubro.label}</span>
+        <TooltipInline text={rubro.ayuda} />
+        {activo && (
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Total: {fmtC(totalRubro)}
+          </span>
+        )}
+      </div>
+
+      {activo && (
+        <>
+          {(rubro.key === "otroFijo" || rubro.key === "otroEstacional") && (
+            <input
+              type="text"
+              placeholder="Describe este rubro..."
+              value={
+                rubro.key === "otroFijo"
+                  ? (flujo.otroFijoDesc ?? "")
+                  : (flujo.otroEstacionalDesc ?? "")
+              }
+              onChange={(e) =>
+                actualizarDesc(
+                  expedienteId,
+                  rubro.key === "otroFijo" ? "otroFijoDesc" : "otroEstacionalDesc",
+                  e.target.value,
+                )
+              }
+              className="mb-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900"
+            />
+          )}
+
+          {/* Toggle de modo */}
+          <div className="mb-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setModoIgual((v) => !v)}
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
+                modoIgual
+                  ? "border-fieldcredit-teal bg-fieldcredit-teal text-white"
+                  : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300",
+              )}
+              title={modoIgual ? "Un mismo valor se aplica a todos los meses" : "Cada mes tiene su propio valor"}
+            >
+              {modoIgual ? "= Igual todos los meses" : "≠ Variable por mes"}
+            </button>
+          </div>
+
+          {modoIgual ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[140px]">
+                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-slate-500">C$</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  value={valorBase || ""}
+                  onChange={(e) => aplicarATodos(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  className="w-full rounded-md border border-slate-300 bg-yellow-50 py-1.5 pl-8 pr-2 text-right text-sm font-mono dark:border-slate-600 dark:bg-yellow-900/20 dark:text-slate-100"
+                />
+              </div>
+              <span className="rounded-md bg-fieldcredit-teal-pale px-2 py-1 text-[11px] font-semibold text-fieldcredit-teal-dark dark:bg-fieldcredit-teal-dark/20 dark:text-fieldcredit-teal-light">
+                × {plazoMeses} meses
+              </span>
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                = {fmtC((Number(valorBase) || 0) * plazoMeses)}
+              </span>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex gap-1" style={{ minWidth: `${meses.length * 84}px` }}>
+                {meses.map((m, idx) => (
+                  <div key={idx} className="flex w-[80px] shrink-0 flex-col items-center">
+                    <label className="text-[10px] text-slate-500">{m}</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={valores[idx] || ""}
+                      onChange={(e) =>
+                        actualizarValor(expedienteId, rubro.key, idx, parseFloat(e.target.value) || 0)
+                      }
+                      className="w-full rounded border border-slate-300 bg-yellow-50 px-1 py-1 text-right text-xs dark:border-slate-600 dark:bg-yellow-900/20 dark:text-slate-100"
+                    />
+                    {idx > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          actualizarValor(expedienteId, rubro.key, idx, valores[idx - 1] ?? 0)
+                        }
+                        className="mt-0.5 text-[10px] text-slate-400 hover:text-fieldcredit-teal"
+                        title="Copiar valor del mes anterior"
+                      >
+                        ↑ copiar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activoSinValores && (
+            <p className="mt-2 text-xs text-fieldcredit-amber">
+              ⚠️ Este rubro está activo pero todos los meses están en cero. ¿No hay ingreso en el período?
+            </p>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -428,6 +538,7 @@ interface DatoMes {
   cuota: number;
   gastoHogar: number;
   costoProduccion: number;
+  gastosNegocio: number;
   otrasDeudas: number;
   ingresosFijos: number;
   ingresosEstacional: number;
@@ -451,15 +562,16 @@ function useCalculos(expedienteId: string) {
       const ingresos = ingresosFijos + ingresosEstacional;
       const gastoHogar = sumar("C", i);
       const costoProduccion = sumar("D", i);
+      const gastosNegocio = sumar("F", i);
       const otrasDeudas = sumar("E", i);
-      const egresos = gastoHogar + costoProduccion + otrasDeudas;
+      const egresos = gastoHogar + costoProduccion + gastosNegocio + otrasDeudas;
       const saldoNeto = ingresos - egresos;
       const cuota = flujo.cuotaEstimada;
       const disponible = saldoNeto - cuota;
       const capacidadPago = saldoNeto > 0 ? (cuota / saldoNeto) * 100 : (cuota > 0 ? 999 : 0);
       return {
         mes: m, ingresos, egresos, saldoNeto, disponible, capacidadPago, cuota,
-        gastoHogar, costoProduccion, otrasDeudas, ingresosFijos, ingresosEstacional,
+        gastoHogar, costoProduccion, gastosNegocio, otrasDeudas, ingresosFijos, ingresosEstacional,
       };
     });
     return { datosMensuales: datos };
@@ -602,6 +714,7 @@ function VistaGraficos({ expedienteId, meses }: { expedienteId: string; meses: s
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="gastoHogar" name="Hogar y familia" fill="#8D6E63" stackId="a" />
             <Bar dataKey="costoProduccion" name="Producción" fill="#37474F" stackId="a" />
+            <Bar dataKey="gastosNegocio" name="Gastos del negocio" fill="#1565C0" stackId="a" />
             <Bar dataKey="otrasDeudas" name="Otras deudas" fill="#dc2626" stackId="a" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

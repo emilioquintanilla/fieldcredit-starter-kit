@@ -173,6 +173,77 @@ export const RUBROS_COSTOS_PRODUCCION: Record<TipoActividad, RubroDef[]> = {
   ],
 };
 
+// ── BLOQUE F: GASTOS DEL NEGOCIO / OPERATIVOS POR ACTIVIDAD ─────────
+export const RUBROS_GASTOS_NEGOCIO: Record<TipoActividad, RubroDef[]> = {
+  [TIPOS_ACTIVIDAD.COMERCIO]: [
+    { key: "arrendamiento_local",   label: "Arrendamiento del local",           ayuda: "Alquiler mensual del local donde opera el negocio" },
+    { key: "servicios_basicos_neg", label: "Servicios básicos del negocio",     ayuda: "Agua, luz, internet, teléfono del local de trabajo" },
+    { key: "sueldos_empleados",     label: "Sueldos de empleados",              ayuda: "Pago mensual a empleados permanentes del negocio" },
+    { key: "seguridad_social",      label: "Seguridad social / INSS patronal", ayuda: "Cuota patronal del INSS si tiene empleados formales" },
+    { key: "publicidad_mktg",       label: "Publicidad y marketing",            ayuda: "Redes sociales, volantes, publicidad del negocio" },
+    { key: "transporte_adm",        label: "Transporte administrativo",         ayuda: "Combustible o pasajes para gestiones del negocio (no de mercadería)" },
+    { key: "comisiones_ventas",     label: "Comisiones de ventas",              ayuda: "Comisiones pagadas a vendedores o agentes" },
+    { key: "otros_gastos_com",      label: "Otros gastos del negocio",          ayuda: "Papelería, limpieza, seguridad, otros gastos operativos" },
+  ],
+  [TIPOS_ACTIVIDAD.AGRICULTURA]: [
+    { key: "arrendamiento_tierra",  label: "Arrendamiento de tierra",           ayuda: "Alquiler de manzanas cultivadas — promedio mensual del ciclo" },
+    { key: "servicios_finca",       label: "Servicios básicos de la finca",     ayuda: "Energía eléctrica, agua para riego u otros servicios de la finca" },
+    { key: "sueldos_permanentes",   label: "Sueldos de trabajadores permanentes", ayuda: "Empleados fijos de la finca — no jornaleros eventuales" },
+    { key: "seguridad_social_agro", label: "Seguridad social / INSS patronal", ayuda: "Cuota patronal si tiene empleados permanentes" },
+    { key: "transporte_adm_agro",   label: "Transporte administrativo",         ayuda: "Combustible para gestiones, visitas a proveedores, mercados" },
+    { key: "otros_gastos_agro",     label: "Otros gastos operativos",           ayuda: "Certificaciones, permisos, capacitaciones, otros" },
+  ],
+  [TIPOS_ACTIVIDAD.GANADERIA]: [
+    { key: "arrendamiento_potrero", label: "Arrendamiento de potrero",          ayuda: "Alquiler de potreros para pastoreo — promedio mensual" },
+    { key: "servicios_finca_gana",  label: "Servicios básicos",                 ayuda: "Energía eléctrica del ordeñadero, agua, otros servicios" },
+    { key: "sueldos_vaqueros",      label: "Sueldos de vaqueros permanentes",   ayuda: "Empleados fijos de la finca ganadera" },
+    { key: "seguridad_social_gana", label: "Seguridad social / INSS",           ayuda: "Cuota patronal si tiene empleados permanentes" },
+    { key: "transporte_adm_gana",   label: "Transporte administrativo",         ayuda: "Combustible para gestiones, visitas a compradores" },
+    { key: "otros_gastos_gana",     label: "Otros gastos operativos",           ayuda: "Permisos de movimiento animal, certificaciones, otros" },
+  ],
+  [TIPOS_ACTIVIDAD.MIXTO]: [
+    { key: "arrendamiento_mx",      label: "Arrendamiento (local o tierra)",    ayuda: "Alquiler del local comercial o tierras cultivadas" },
+    { key: "servicios_basicos_mx",  label: "Servicios básicos",                 ayuda: "Agua, luz, internet del lugar de trabajo o finca" },
+    { key: "sueldos_emp_mx",        label: "Sueldos de empleados",              ayuda: "Empleados permanentes del negocio o finca" },
+    { key: "seguridad_social_mx",   label: "Seguridad social / INSS",           ayuda: "Cuota patronal si tiene empleados formales" },
+    { key: "publicidad_mx",         label: "Publicidad y marketing",            ayuda: "Gastos de promoción del negocio" },
+    { key: "otros_gastos_mx",       label: "Otros gastos operativos",           ayuda: "Otros gastos administrativos y operativos" },
+  ],
+  [TIPOS_ACTIVIDAD.SERVICIOS]: [
+    { key: "arrendamiento_srv",     label: "Arrendamiento del local",           ayuda: "Alquiler del taller, oficina o local de trabajo" },
+    { key: "servicios_basicos_srv", label: "Servicios básicos",                 ayuda: "Agua, luz, internet del lugar de trabajo" },
+    { key: "sueldos_emp_srv",       label: "Sueldos de empleados",              ayuda: "Asistentes, técnicos u otros empleados permanentes" },
+    { key: "seguridad_social_srv",  label: "Seguridad social / INSS",           ayuda: "Cuota patronal si tiene empleados formales" },
+    { key: "publicidad_srv",        label: "Publicidad y promoción",            ayuda: "Redes sociales, volantes, referencias digitales" },
+    { key: "otros_gastos_srv",      label: "Otros gastos operativos",           ayuda: "Papelería, herramientas menores, suscripciones" },
+  ],
+  [TIPOS_ACTIVIDAD.MANUFACTURA]: [
+    { key: "arrendamiento_planta", label: "Arrendamiento de planta / taller",   ayuda: "Alquiler del espacio donde produce" },
+    { key: "energia_planta",       label: "Energía de la planta",               ayuda: "Electricidad o combustible para la producción" },
+    { key: "sueldos_emp_mfg",      label: "Sueldos de empleados",               ayuda: "Empleados permanentes del taller o planta" },
+    { key: "seguridad_social_mfg", label: "Seguridad social / INSS",            ayuda: "Cuota patronal si tiene empleados formales" },
+    { key: "publicidad_mfg",       label: "Publicidad y ventas",                ayuda: "Gastos de comercialización del producto" },
+    { key: "otros_gastos_mfg",     label: "Otros gastos operativos",            ayuda: "Mantenimiento de planta, seguros, otros" },
+  ],
+  [TIPOS_ACTIVIDAD.ASALARIADO]: [
+    { key: "gastos_negocio_paralelo", label: "Gastos del negocio paralelo",     ayuda: "Si tiene un negocio adicional al empleo, sus gastos operativos mensuales" },
+  ],
+  [TIPOS_ACTIVIDAD.AGRORESILIA]: [
+    { key: "arrendamiento_ar",     label: "Arrendamiento de tierra",            ayuda: "Alquiler de tierra del sistema AgroResilia" },
+    { key: "servicios_ar",         label: "Servicios básicos",                  ayuda: "Energía, agua y otros servicios del sistema productivo" },
+    { key: "sueldos_ar",           label: "Sueldos de trabajadores",            ayuda: "Empleados permanentes del sistema AgroResilia" },
+    { key: "seguridad_social_ar",  label: "Seguridad social / INSS",            ayuda: "Cuota patronal si tiene empleados formales" },
+    { key: "certificaciones_ar",   label: "Certificaciones y permisos",         ayuda: "Certificaciones orgánicas, ambientales u otras exigidas" },
+    { key: "otros_gastos_ar",      label: "Otros gastos operativos",            ayuda: "Gastos administrativos del sistema productivo" },
+  ],
+  [TIPOS_ACTIVIDAD.OTRO]: [
+    { key: "arrendamiento_otro",   label: "Arrendamiento",                      ayuda: "Alquiler del espacio de trabajo" },
+    { key: "servicios_otro",       label: "Servicios básicos",                  ayuda: "Agua, luz, internet del lugar de trabajo" },
+    { key: "sueldos_otro",         label: "Sueldos de empleados",               ayuda: "Empleados si los tiene" },
+    { key: "otros_gastos_otro",    label: "Otros gastos operativos",            ayuda: "Otros gastos fijos del negocio" },
+  ],
+};
+
 export interface EtiquetaFlujo { icono: string; costos: string; nota: string }
 
 export const ETIQUETAS_FLUJO: Record<TipoActividad, EtiquetaFlujo> = {
@@ -195,6 +266,7 @@ export function resolverTipoActividad(tipo?: string): TipoActividad {
 
 // Devuelve la estructura completa RUBROS por bloque para la actividad dada.
 // Bloques C y E se mantienen desde el catálogo base (iguales para todos).
+// El orden de renderizado sigue las claves: A → B → C → D → F → E.
 export function getRubrosParaActividad(tipo?: string): Record<Bloque, RubroDef[]> {
   const t = resolverTipoActividad(tipo);
   return {
@@ -202,6 +274,7 @@ export function getRubrosParaActividad(tipo?: string): Record<Bloque, RubroDef[]
     B: RUBROS_INGRESOS_ESTACIONALES[t],
     C: RUBROS_BASE.C,
     D: RUBROS_COSTOS_PRODUCCION[t],
+    F: RUBROS_GASTOS_NEGOCIO[t],
     E: RUBROS_BASE.E,
   };
 }

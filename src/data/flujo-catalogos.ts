@@ -1,6 +1,6 @@
 // Catálogos y definiciones de rubros para el módulo de Flujo de Efectivo
 
-export type Bloque = "A" | "B" | "C" | "D" | "E";
+export type Bloque = "A" | "B" | "C" | "D" | "F" | "E";
 
 export interface RubroDef {
   key: string;
@@ -45,6 +45,7 @@ export const RUBROS: Record<Bloque, RubroDef[]> = {
     { key: "mantMaq", label: "Mantenimiento de maquinaria", ayuda: "Reparaciones, repuestos, combustible" },
     { key: "alquilerTierra", label: "Alquiler de tierra o local", ayuda: "Renta de manzanas cultivadas o local" },
   ],
+  F: [],
   E: [
     { key: "otrasIMF", label: "Cuotas con otras instituciones", ayuda: "Pagos mensuales a otras IMF o bancos" },
     { key: "micredito", label: "Cuotas actuales con MiCrédito", ayuda: "Créditos vigentes actuales" },
@@ -77,6 +78,12 @@ export const BLOQUE_META: Record<Bloque, { titulo: string; tip: string; header: 
     header: "text-white",
     subtotal: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200",
   },
+  F: {
+    titulo: "F. Gastos del negocio / operativos",
+    tip: "Gastos fijos e indirectos del negocio: arrendamiento, servicios, sueldos administrativos, publicidad. Distintos a los costos directos de producir o vender (Bloque D).",
+    header: "text-white",
+    subtotal: "bg-blue-100 text-blue-900 dark:bg-blue-900/20 dark:text-blue-200",
+  },
   E: {
     titulo: "E. Otras deudas y gastos",
     tip: "Pagos de deudas existentes que reducen el dinero disponible cada mes.",
@@ -89,6 +96,7 @@ export const BLOQUE_META: Record<Bloque, { titulo: string; tip: string; header: 
 export const BLOQUE_BG: Partial<Record<Bloque, string>> = {
   C: "#5D4037",
   D: "#37474F",
+  F: "#1565C0",
 };
 
 export const COLORES_GRAFICO = [
