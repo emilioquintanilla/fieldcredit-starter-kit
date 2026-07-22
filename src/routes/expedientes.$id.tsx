@@ -237,32 +237,7 @@ function TabDocumentos({ expedienteId }: { expedienteId: string }) {
   const yaEnComite = exp.estado === "en_comite" || !!exp.comite?.dictamenIA;
   return (
     <section className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-        <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
-          <FileImage size={14} /> Documentos adjuntos
-        </h2>
-        {exp.documentos.length === 0 ? (
-          <p className="text-xs text-slate-500">Sin documentos.</p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {exp.documentos.map((doc) => (
-              <li key={doc.tipo} className="flex items-center gap-3 rounded-md border border-slate-200 p-2 dark:border-slate-700">
-                {doc.mimeType.startsWith("image/") ? (
-                  <img src={doc.base64} alt={doc.nombre} className="h-14 w-20 shrink-0 rounded object-cover" />
-                ) : (
-                  <div className="grid h-14 w-20 shrink-0 place-items-center rounded bg-slate-100 text-xs text-slate-500 dark:bg-slate-700">PDF</div>
-                )}
-                <div className="min-w-0 flex-1 text-xs">
-                  <div className="truncate font-medium text-slate-900 dark:text-slate-100">{doc.nombre}</div>
-                  <div className="text-slate-500 dark:text-slate-400">
-                    {new Date(doc.fechaCaptura).toLocaleString("es-NI")}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <DocsExpedientePage expedienteId={expedienteId} />
 
       <div className="rounded-xl border border-fieldcredit-teal/40 bg-fieldcredit-teal-light/40 p-4 dark:border-teal-800/60 dark:bg-teal-900/20">
         <h3 className="mb-2 text-sm font-bold text-fieldcredit-teal-dark dark:text-teal-200">
