@@ -271,11 +271,21 @@ export type EstadoExpediente =
   | "condicionado"
   | "rechazado";
 
+export interface ArchivoSoporte {
+  id: string;
+  nombre: string;
+  tipo: string;
+  tamano: number;
+  base64: string;
+  fechaSubida: string;
+}
+
 export interface ExpedienteBorrador {
   id: string;
   estado: EstadoExpediente;
   data: SolicitudData;
   documentos: Documento[];
+  documentosSoporte?: Record<string, ArchivoSoporte[]>;
   fiador?: FiadorData;
   garantias?: GarantiasData;
   flujo?: FlujoEfectivo;
