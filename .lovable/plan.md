@@ -1,56 +1,74 @@
-## Problema 1 — Campos "bloqueados" en Datos personales
+Ya está lista la Parte 1 (Asistente de campo). Continuamos con las Partes 2, 3 y 4, todas centradas en el **Copiloto del Comité de Crédito**.
 
-**Causa raíz (verificada en el código):**
-En `src/routes/expedientes.nuevo.tsx` el componente lee el expediente así:
+## Parte 2 — Página `/comite` + infraestructura de decisión
 
-```ts
-const getExpediente = useExpedientes((s) => s.getExpediente);
-const exp = expedienteId ? getExpediente(expedienteId) : undefined;
-```
+**Objetivo:** reemplazar el placeholder de `/comite` con la bandeja real de expedientes por dictaminar, y preparar el store para guardar dictamen y decisión.
 
-`getExpediente` es una función estable del store, por lo que el selector nunca notifica cambios. Cuando el usuario teclea → `actualizarBorrador` actualiza el store → pero el componente **no se re-renderiza** → el `value` del input controlado nunca cambia → parece que el campo no acepta escritura. El mismo síntoma aplica a todos los inputs controlados de S2–S7 (nombres, cédula, teléfono, dirección, etc.).
+Archivos:
+- `src/stores/expedientes.ts`
+  - Añadir sub-objeto `comite?: { dictamenIA?: DictamenIA | null; decision?: DecisionComite | null; generadoEn?: string | null }` en `ExpedienteBorrador`.
+  - Acciones: `guardarDictamenIA(id, dictamen)`, `registrarDecisionComite(id, { decision, observacion, timestamp })`, `marcarEnComite(id)`.
+  - Al registrar decisión: cambiar `estado` del expediente a `aprobado` / `condicionado` / `rechazado`.
+- `src/routes/comite.tsx` (reemplazar placeholder)
+  - Suscribirse a expedientes con `estado === "en_comite"` (o los que tengan documentación mínima; muestra vacío-friendly).
+  - Tarjeta `TarjetaComite`: nombre, código, monto, producto, badge del proveedor IA, botón **"Analizar con Copiloto IA"** que navega a `/comite/$id`.
+  - Empty state cuando la lista está vacía.
+- `src/components/Sidebar.tsx`
+  - Badge numérico junto al item ⚖️ Comité con el conteo pendiente (suscrito al store).
+- En el detalle `/expedientes/$id`: en el tab de Documentos añadir botón **"Enviar a comité"** que llama `marcarEnComite(id)` y navega a `/comite/$id`. (Cambio mínimo, no rediseño del tab.)
 
-**Fix:** suscribirse directamente al expediente:
+## Parte 3 — Dictamen IA en `/comite/$id`
 
-```ts
-const exp = useExpedientes((s) =>
-  expedienteId ? s.expedientes[expedienteId] : undefined
-);
-```
+**Objetivo:** generar el dictamen crediticio completo con IA y mostrarlo en pantalla.
 
-(Igual patrón que ya usa `expedientes.$id.tsx`, que sí funciona.) Se elimina la dependencia de `getExpediente` en ese archivo.
+Archivos nuevos:
+- `src/services/ia/parsearDictamen.ts` — parseo robusto con fallback (limpia fences ```json).
+- `src/services/ia/prompts.ts` (extender)
+  - `SISTEMA_COPILOTO_COMITE(contexto, esAgroResilia)`.
+  - `PROMPT_GENERAR_DICTAMEN(contexto)` — pide JSON estricto.
+  - Tipos `DictamenIA`, `Bandera`, `RecomendacionIA`, `ScoreARS`.
+- `src/routes/comite.$id.tsx` — página de dictamen:
+  1. Cabecera con datos del solicitante.
+  2. Estado `idle` → botón "Analizar expediente con el Copiloto IA".
+  3. Estado `procesando` → log animado (10 pasos con `setTimeout` 500 ms) mientras la IA responde.
+  4. Al terminar: parsea con `parsearDictamenIA`, guarda en store con `guardarDictamenIA`, entra a `listo`.
+  5. Si ya hay `dictamenIA` guardado, salta directamente a `listo` (permite volver sin regenerar; botón "Regenerar" opcional).
+- Componentes UI (bajo `src/components/comite/`):
+  - `ScoreGauge.tsx` — gauge semicircular SVG 0–100 con color según semáforo.
+  - `BanderasCumplimiento.tsx` — agrupa verde/amarillo/rojo con conteos.
+  - `ScoreAgroResilia.tsx` — sólo si `dictamen.scoreARS` no es null (o si `producto === "AgroResilia"`).
+  - `RecomendacionIA.tsx` — recomendación + condiciones + disclaimer "la IA no aprueba".
+  - `DecisionComite.tsx` — tres botones (Aprobar / Con condición / Rechazar) + textarea + guardar en store.
+  - `AnalisisFinanciero.tsx` — tabla compacta con las métricas devueltas por la IA.
 
-## Problema 2 — Migrar OCR a Tesseract.js (sin Google Cloud Vision)
+## Parte 4 — Chat en vivo + protección de la API
 
-Motivo: evitar depender de una API externa / clave. Tesseract.js corre 100 % en el navegador (WASM + modelo `spa`), sin backend ni secretos.
+**Objetivo:** permitir al oficial conversar con el Copiloto sobre el dictamen ya generado y proteger la API key contra abuso.
 
-### Cambios
+Archivos:
+- `src/components/comite/ChatCopiloto.tsx`
+  - Chat integrado dentro de `/comite/$id` (debajo del dictamen).
+  - Mensaje inicial automático: "Dictamen generado para X. Score Y/100. Semáforo Z. ¿Qué quieres profundizar?".
+  - 6 sugerencias rápidas (¿Por qué este score?, ¿Qué pasa si reduzco el monto?, etc.).
+  - Envía a `llamarIA` con `SISTEMA_COPILOTO_COMITE` + historial. Reutiliza `Burbuja` y `BurbujaEscribiendo` (extraer de `AsistenteBarraCampo` a `src/components/ia/burbujas.tsx` para no duplicar).
+- `src/components/ia/ProveedorBadge.tsx` — badge del proveedor activo (usar en header del chat y del dictamen). Extraído del helper que ya vive dentro de `adaptadorIA.ts`.
+- `src/routes/api/ia/completar.ts` — añadir rate limiting server-side por IP (map en memoria del handler): máximo **10 llamadas/minuto**, responde 429 con mensaje claro cuando se supera. El cliente muestra el error en la burbuja.
+- Manejo de errores end-to-end: si `llamarIA` lanza, la burbuja muestra "⚠️ Error de conexión con el Copiloto. Intenta de nuevo." (ya soportado en el adaptador actual).
 
-1. **Instalar dependencia:** `bun add tesseract.js`.
-2. **Nuevo módulo cliente** `src/lib/ocr-cedula.ts`:
-   - Función `reconocerCedula(base64, lado, onProgress)` que:
-     - Usa `Tesseract.recognize(image, "spa", { logger })` para extraer texto.
-     - Reporta progreso (0–100) al `CedulaScanner`.
-     - Aplica el mismo parser regex que ya vive en `api/ocr/cedula.ts` (`parsearCedulaNicaragua`) — se traslada tal cual al cliente.
-   - Devuelve `{ exito, campos, textoDetectado }` con la misma forma que la API actual, para no romper el contrato con `CedulaScanner`.
-3. **Actualizar `src/components/CedulaScanner.tsx`:**
-   - Reemplazar el `fetch("/api/ocr/cedula", …)` por `reconocerCedula(base64, lado, setProgreso)`.
-   - Mostrar % de progreso en el estado "procesando" (Tesseract tarda 5–15 s la primera vez mientras baja el modelo `spa`).
-   - Añadir mensaje: *"Descargando modelo de reconocimiento… (primera vez)"* mientras `progress < 0.3`.
-4. **Eliminar el endpoint server-side:** borrar `src/routes/api/ocr/cedula.ts` (ya no se llama). El secreto `GOOGLE_CLOUD_VISION_KEY` queda huérfano; se puede borrar manualmente desde Ajustes → Secretos (no lo tocamos automáticamente).
-5. **Verificación:** navegar a `/expedientes/nuevo`, comprobar que se puede escribir manualmente en todos los campos de S2 y que el escáner de cédula reconoce texto sin requerir clave del servidor.
+## Notas técnicas
 
-### Notas técnicas
+- **Rutas TanStack:** `src/routes/comite.$id.tsx` sigue la convención de rutas ya usada (`expedientes.$id.tsx`). Antes de linkear con `<Link to="/comite/$id">` hay que crear el archivo — la generación del `routeTree.gen.ts` la hace el plugin automáticamente al guardar.
+- **Head metadata:** cada ruta nueva (`/comite`, `/comite/$id`) recibe su propio `head()` con `title`, `description`, `og:*` únicos.
+- **Store persistente:** el middleware `persist` de Zustand ya está activo; los nuevos campos `comite.*` se guardan solos en `localStorage`.
+- **Sin dependencias nuevas:** todo se hace con lo instalado (React, Zustand, Tailwind, TanStack Router, lucide-react). El SVG del gauge es inline; no se añade Recharts al comité.
+- **Compatibilidad AgroResilia:** el campo `producto === "AgroResilia"` se detecta desde `exp.data.producto`; si el dictamen no trae `scoreARS`, la tarjeta no se renderiza.
+- **Provider IA:** sigue Groq/Llama por defecto vía `VITE_IA_PROVEEDOR`; nada cambia en el adaptador ya existente.
+- **No incluido en esta sesión** (según el prompt original): reportería ESG, integración .NET, modo offline nativo.
 
-- Tesseract.js pesa ~2 MB (JS + WASM) + ~10 MB del language pack `spa`. Se descarga bajo demanda al primer uso; luego queda en cache del navegador.
-- El parser regex existente para cédula nicaragüense (`000-000000-0000X`, fecha, sexo, nombres, dirección, departamento) se mantiene íntegro — es lo mismo que hoy vive en el servidor.
-- Precisión: Tesseract sobre foto de cédula suele acertar cédula y fechas; nombres pueden requerir edición (los badges Auto/Editado ya cubren ese caso).
-- Nada en Fiador, Garantías, ni el resto del expediente cambia — solo el flujo OCR y el fix del selector.
+## Orden de ejecución sugerido
 
-## Archivos afectados
+1. Parte 2 (store + `/comite` + sidebar badge + botón "Enviar a comité").
+2. Parte 3 (prompts + parser + `/comite/$id` con dictamen).
+3. Parte 4 (chat + rate limiter + badge proveedor).
 
-- `package.json` — dependencia nueva.
-- `src/lib/ocr-cedula.ts` — **nuevo**.
-- `src/components/CedulaScanner.tsx` — reemplazo del fetch por Tesseract + UI de progreso.
-- `src/routes/expedientes.nuevo.tsx` — corregir selector del store.
-- `src/routes/api/ocr/cedula.ts` — **eliminar**.
+Después de cada parte hago typecheck y verifico el flujo antes de pasar a la siguiente.
