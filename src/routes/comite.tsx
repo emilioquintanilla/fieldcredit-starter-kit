@@ -23,10 +23,14 @@ export const Route = createFileRoute("/comite")({
 });
 
 function ComitePage() {
-  const expedientes = useExpedientes((s) =>
-    Object.values(s.expedientes).filter((e) => e.estado === "en_comite" || e.comite?.dictamenIA),
-  );
-  expedientes.sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
+  const mapa = useExpedientes((s) => s.expedientes);
+  const expedientes = useMemo(() => {
+    const lista = Object.values(mapa).filter(
+      (e) => e.estado === "en_comite" || e.comite?.dictamenIA,
+    );
+    lista.sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
+    return lista;
+  }, [mapa]);
 
   const pendientes = expedientes.filter((e) => !e.comite?.decision).length;
 
