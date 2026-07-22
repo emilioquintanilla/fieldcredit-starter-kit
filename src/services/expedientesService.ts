@@ -195,40 +195,83 @@ export async function actualizarExpedienteHeader(
   if (error) throw error;
 }
 
-export async function guardarFlujo(expedienteId: number, datos: Record<string, unknown>) {
-  const { error } = await supabase
-    .from("flujo_efectivo")
-    .upsert({ expediente_id: expedienteId, ...datos }, { onConflict: "expediente_id" });
-  if (error) throw error;
-}
-
-export async function guardarEstadoResultados(expedienteId: number, datos: Record<string, unknown>) {
-  const { error } = await supabase
-    .from("estado_resultados")
-    .upsert({ expediente_id: expedienteId, ...datos }, { onConflict: "expediente_id" });
-  if (error) throw error;
-}
-
-export async function guardarSituacionFinanciera(
+// ── MÓDULOS (payload JSONB por expediente) ─────────────────────────
+// Convención: cada tabla tiene columnas `expediente_id` (unique) y `datos` (jsonb).
+// Para geolocalizaciones se usa (`expediente_id`, `tipo`) como clave compuesta,
+// pero el hook de autosave del expediente serializa todos los tipos como un solo
+// registro con tipo = 'expediente'.
+async function upsertModulo(
+  tabla: string,
   expedienteId: number,
   datos: Record<string, unknown>,
+  extra?: Record<string, unknown>,
+  onConflict = "expediente_id",
 ) {
   const { error } = await supabase
-    .from("situacion_financiera")
-    .upsert({ expediente_id: expedienteId, ...datos }, { onConflict: "expediente_id" });
+    .from(tabla)
+    .upsert({ expediente_id: expedienteId, datos, ...(extra ?? {}) }, { onConflict });
   if (error) throw error;
 }
 
-export async function guardarGeolocalizacion(
+async function obtenerModulo(
+  tabla: string,
   expedienteId: number,
-  tipo: string,
-  datos: Record<string, unknown>,
-) {
-  const { error } = await supabase
+): Promise<Record<string, unknown> | null> {
+  const { data, error } = await supabase
+    .from(tabla)
+    .select("datos")
+    .eq("expediente_id", expedienteId)
+    .maybeSingle();
+  if (error) {
+    console.error(`obtenerModulo(${tabla})`, error);
+    return null;
+  }
+  return (data?.datos as Record<string, unknown> | undefined) ?? null;
+}
+
+export const guardarFlujo = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("flujo_efectivo", id, d);
+export const obtenerFlujo = (id: number) => obtenerModulo("flujo_efectivo", id);
+
+export const guardarEstadoResultados = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("estado_resultados", id, d);
+export const obtenerEstadoResultados = (id: number) => obtenerModulo("estado_resultados", id);
+
+export const guardarSituacionFinanciera = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("situacion_financiera", id, d);
+export const obtenerSituacionFinanciera = (id: number) =>
+  obtenerModulo("situacion_financiera", id);
+
+export const guardarGeolocalizacion = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("geolocalizaciones", id, d, { tipo: "expediente" }, "expediente_id,tipo");
+export async function obtenerGeolocalizacion(
+  id: number,
+): Promise<Record<string, unknown> | null> {
+  const { data, error } = await supabase
     .from("geolocalizaciones")
-    .upsert({ expediente_id: expedienteId, tipo, ...datos }, { onConflict: "expediente_id,tipo" });
-  if (error) throw error;
+    .select("datos")
+    .eq("expediente_id", id)
+    .eq("tipo", "expediente")
+    .maybeSingle();
+  if (error) {
+    console.error("obtenerGeolocalizacion", error);
+    return null;
+  }
+  return (data?.datos as Record<string, unknown> | undefined) ?? null;
 }
+
+export const guardarFiador = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("fiador_data", id, d);
+export const obtenerFiador = (id: number) => obtenerModulo("fiador_data", id);
+
+export const guardarGarantias = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("garantias_data", id, d);
+export const obtenerGarantias = (id: number) => obtenerModulo("garantias_data", id);
+
+export const guardarComite = (id: number, d: Record<string, unknown>) =>
+  upsertModulo("comite_data", id, d);
+export const obtenerComite = (id: number) => obtenerModulo("comite_data", id);
+
 
 export interface DocumentoDB {
   id: number;

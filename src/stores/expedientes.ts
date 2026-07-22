@@ -335,6 +335,13 @@ interface State {
   marcarEnComite: (id: string) => void;
   guardarDictamenIA: (id: string, dictamen: DictamenIA) => void;
   registrarDecisionComite: (id: string, decision: DecisionComite) => void;
+  hidratarModulos: (
+    id: string,
+    patch: Partial<Pick<
+      ExpedienteBorrador,
+      "fiador" | "garantias" | "flujo" | "estadoResultados" | "situacionFinanciera" | "geolocalizacion" | "comite"
+    >>,
+  ) => void;
 }
 
 
@@ -906,6 +913,18 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
             comite: { ...(exp.comite || {}), decision },
             updated_at: new Date().toISOString(),
           },
+        },
+      };
+    }),
+
+  hidratarModulos: (id, patch) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, ...patch, updated_at: new Date().toISOString() },
         },
       };
     }),
