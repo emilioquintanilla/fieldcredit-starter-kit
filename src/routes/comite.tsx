@@ -1,4 +1,5 @@
 // Bandeja del comité: lista de expedientes por dictaminar.
+import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
