@@ -315,6 +315,9 @@ interface State {
   guardarUbicacion: (id: string, tipo: TipoUbicacion, datos: UbicacionGeo) => void;
   eliminarUbicacion: (id: string, tipo: TipoUbicacion) => void;
   actualizarDireccionTexto: (id: string, tipo: TipoUbicacion, texto: string) => void;
+  marcarEnComite: (id: string) => void;
+  guardarDictamenIA: (id: string, dictamen: DictamenIA) => void;
+  registrarDecisionComite: (id: string, decision: DecisionComite) => void;
 }
 
 
