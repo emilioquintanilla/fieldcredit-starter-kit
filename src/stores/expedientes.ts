@@ -318,6 +318,7 @@ interface State {
   inicializarFlujo: (id: string, opts: { plazoMeses: number; mesInicio: string; tipoActividad?: string; cuotaEstimada: number }) => void;
   toggleRubroFlujo: (id: string, rubro: string) => void;
   actualizarValorMesFlujo: (id: string, rubro: string, mesIndex: number, valor: number) => void;
+  setValoresRubroFlujo: (id: string, rubro: string, valores: number[]) => void;
   actualizarCuotaFlujo: (id: string, cuota: number) => void;
   actualizarDescRubroFlujo: (id: string, campo: "otroFijoDesc" | "otroEstacionalDesc", valor: string) => void;
   guardarValorEstado: (id: string, modulo: ModuloEstado, cuentaId: string, valor: number) => void;
