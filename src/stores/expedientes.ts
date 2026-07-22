@@ -768,4 +768,60 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
       };
     }),
 
+  // ===== Comité =====
+  marcarEnComite: (id) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            estado: "en_comite",
+            comite: { ...(exp.comite || {}) },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  guardarDictamenIA: (id, dictamen) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            comite: {
+              ...(exp.comite || {}),
+              dictamenIA: dictamen,
+              generadoEn: new Date().toISOString(),
+            },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
+  registrarDecisionComite: (id, decision) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            estado: decision.decision,
+            comite: { ...(exp.comite || {}), decision },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
 }), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
+
