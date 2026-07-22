@@ -1,8 +1,15 @@
 // Módulo Expediente Digital de Documentos — Tab 📄 Docs
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useExpedientes, type ArchivoSoporte, type ExpedienteBorrador } from "@/stores/expedientes";
+import {
+  guardarDocumento,
+  eliminarDocumento,
+  obtenerDocumentos,
+} from "@/services/expedientesService";
+import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { cn } from "@/lib/utils";
+
 
 interface DocDef {
   id: string;
@@ -115,12 +122,40 @@ export function estadoDocsSoporte(exp?: ExpedienteBorrador): "pendiente" | "prog
 export function DocsExpedientePage({ expedienteId }: { expedienteId: string }) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId]);
   const guardarDocsSoporte = useExpedientes((s) => s.guardarDocsSoporte);
+  const hidratarDocsSoporte = useExpedientes((s) => s.hidratarDocsSoporte);
+  const supabaseId = exp?.supabaseId;
   const aplicaFiador = !!exp?.data?.aplica_fiador;
   const docsSubidos: Record<string, ArchivoSoporte[]> = exp?.documentosSoporte ?? {};
 
   const [visor, setVisor] = useState<ArchivoSoporte | null>(null);
   const [categoriaOpen, setCategoriaOpen] = useState<string | null>("identidad");
   const [subiendo, setSubiendo] = useState<string | null>(null);
+  const hidratadoRef = useRef(false);
+
+  // Hidrata desde Supabase la primera vez si el expediente ya está sincronizado
+  useEffect(() => {
+    if (!supabaseId || hidratadoRef.current) return;
+    const yaCargados = Object.keys(docsSubidos).length > 0;
+    hidratadoRef.current = true;
+    (async () => {
+      const remotos = await obtenerDocumentos(supabaseId);
+      if (remotos.length === 0 || yaCargados) return;
+      const agrupados: Record<string, ArchivoSoporte[]> = {};
+      remotos.forEach((r) => {
+        const arch: ArchivoSoporte = {
+          id: `${r.doc_id}_${r.id}`,
+          nombre: r.nombre,
+          tipo: r.tipo_mime ?? "",
+          tamano: r.tamano_bytes ?? 0,
+          base64: r.base64 ?? "",
+          fechaSubida: r.created_at,
+          dbId: r.id,
+        };
+        (agrupados[r.doc_id] ??= []).push(arch);
+      });
+      hidratarDocsSoporte(expedienteId, agrupados);
+    })();
+  }, [supabaseId, expedienteId, hidratarDocsSoporte, docsSubidos]);
 
   const todosObligatorios = CATEGORIAS.flatMap((c) =>
     c.docs.filter((d) => d.obligatorio && (!d.soloSiFiador || aplicaFiador)),
@@ -154,12 +189,49 @@ export function DocsExpedientePage({ expedienteId }: { expedienteId: string }) {
         ),
       );
       const actuales = docsSubidos[docId] ?? [];
-      const actualizados = multiple ? [...actuales, ...nuevos] : [nuevos[0]];
-      guardarDocsSoporte(expedienteId, docId, actualizados);
+      const actualizadosLocal = multiple ? [...actuales, ...nuevos] : [nuevos[0]];
+      guardarDocsSoporte(expedienteId, docId, actualizadosLocal);
+
+      // Persistir en Supabase y registrar dbId
+      if (supabaseId) {
+        try {
+          const subidos: ArchivoSoporte[] = [];
+          for (const arch of nuevos) {
+            const row = await guardarDocumento(supabaseId, docId, {
+              nombre: arch.nombre,
+              tipo: arch.tipo,
+              tamano: arch.tamano,
+              base64: arch.base64,
+            });
+            subidos.push({ ...arch, dbId: row.id });
+          }
+          const conIds = multiple ? [...actuales, ...subidos] : [subidos[0]];
+          guardarDocsSoporte(expedienteId, docId, conIds);
+          useExpedientesRemote.setState({ ultimoGuardado: Date.now() });
+        } catch (e) {
+          console.error("guardarDocumento", e);
+          toast.error("No se pudo sincronizar el archivo con la nube");
+        }
+      }
     } finally {
       setSubiendo(null);
     }
   };
+
+  const eliminarArchivo = async (docId: string, archivo: ArchivoSoporte) => {
+    const actualizados = (docsSubidos[docId] ?? []).filter((a) => a.id !== archivo.id);
+    guardarDocsSoporte(expedienteId, docId, actualizados);
+    if (archivo.dbId) {
+      try {
+        await eliminarDocumento(archivo.dbId);
+        useExpedientesRemote.setState({ ultimoGuardado: Date.now() });
+      } catch (e) {
+        console.error("eliminarDocumento", e);
+        toast.error("No se pudo eliminar de la nube (se eliminó localmente)");
+      }
+    }
+  };
+
 
   return (
     <div className="space-y-3">
