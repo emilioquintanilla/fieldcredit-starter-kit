@@ -359,9 +359,13 @@ function FilaDocumento({
                       </button>
                     )}
                     <button
-                      onClick={() => onEliminar(archivo.id)}
-                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-xs font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-label="Eliminar archivo"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEliminar(archivo.id);
+                      }}
+                      className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-sm font-bold leading-none text-white shadow-md ring-2 ring-white transition-transform hover:scale-110 active:scale-95 dark:ring-slate-800"
+                      aria-label={`Eliminar ${archivo.nombre}`}
                     >
                       ×
                     </button>
