@@ -1,5 +1,5 @@
 // Bandeja del comité: lista de expedientes por dictaminar.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ProveedorBadge } from "@/components/ia/ProveedorBadge";
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
+import { sembrarExpedientesComite } from "@/lib/seedComite";
 
 export const Route = createFileRoute("/comite")({
   head: () => ({
