@@ -45,6 +45,7 @@ export const RUBROS: Record<Bloque, RubroDef[]> = {
     { key: "mantMaq", label: "Mantenimiento de maquinaria", ayuda: "Reparaciones, repuestos, combustible" },
     { key: "alquilerTierra", label: "Alquiler de tierra o local", ayuda: "Renta de manzanas cultivadas o local" },
   ],
+  F: [],
   E: [
     { key: "otrasIMF", label: "Cuotas con otras instituciones", ayuda: "Pagos mensuales a otras IMF o bancos" },
     { key: "micredito", label: "Cuotas actuales con MiCrédito", ayuda: "Créditos vigentes actuales" },
