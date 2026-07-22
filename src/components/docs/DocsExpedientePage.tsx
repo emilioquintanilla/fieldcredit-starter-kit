@@ -363,7 +363,12 @@ function FilaDocumento({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        const ok = window.confirm(
+                          `¿Eliminar "${archivo.nombre}"? Esta acción no se puede deshacer.`,
+                        );
+                        if (!ok) return;
                         onEliminar(archivo.id);
+                        toast.success("Archivo eliminado");
                       }}
                       className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-sm font-bold leading-none text-white shadow-md ring-2 ring-white transition-transform hover:scale-110 active:scale-95 dark:ring-slate-800"
                       aria-label={`Eliminar ${archivo.nombre}`}
