@@ -639,6 +639,31 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
       };
     }),
 
+  setValoresRubroFlujo: (id, rubro, valores) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp || !exp.flujo) return s;
+      const nuevoArr = Array.from({ length: exp.flujo.plazoMeses }, (_, i) =>
+        isFinite(valores[i] ?? 0) ? (valores[i] ?? 0) : 0,
+      );
+      // Auto-activar el rubro cuando se rellena de golpe (útil para "aplicar a todos los meses")
+      const activo = nuevoArr.some((v) => v > 0) || !!exp.flujo.rubrosActivos[rubro];
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            flujo: {
+              ...exp.flujo,
+              rubrosActivos: { ...exp.flujo.rubrosActivos, [rubro]: activo },
+              valores: { ...exp.flujo.valores, [rubro]: nuevoArr },
+            },
+            updated_at: new Date().toISOString(),
+          },
+        },
+      };
+    }),
+
   actualizarCuotaFlujo: (id, cuota) =>
     set((s) => {
       const exp = s.expedientes[id];
