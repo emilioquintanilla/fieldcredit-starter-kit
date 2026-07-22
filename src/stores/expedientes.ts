@@ -271,11 +271,21 @@ export type EstadoExpediente =
   | "condicionado"
   | "rechazado";
 
+export interface ArchivoSoporte {
+  id: string;
+  nombre: string;
+  tipo: string;
+  tamano: number;
+  base64: string;
+  fechaSubida: string;
+}
+
 export interface ExpedienteBorrador {
   id: string;
   estado: EstadoExpediente;
   data: SolicitudData;
   documentos: Documento[];
+  documentosSoporte?: Record<string, ArchivoSoporte[]>;
   fiador?: FiadorData;
   garantias?: GarantiasData;
   flujo?: FlujoEfectivo;
@@ -294,6 +304,7 @@ interface State {
   actualizarBorrador: (id: string, patch: Partial<SolicitudData>) => void;
   completarSolicitud: (id: string) => void;
   adjuntarDocumento: (id: string, doc: Documento) => void;
+  guardarDocsSoporte: (id: string, docId: string, archivos: ArchivoSoporte[]) => void;
   getExpediente: (id: string) => ExpedienteBorrador | undefined;
   actualizarFiador: (id: string, patch: Partial<FiadorData>) => void;
   agregarIngresoFiador: (id: string, ingreso: Omit<IngresoFiador, "id">) => void;
@@ -391,6 +402,23 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
         expedientes: {
           ...s.expedientes,
           [id]: { ...exp, documentos: docs, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
+  guardarDocsSoporte: (id, docId, archivos) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      const prev = exp.documentosSoporte ?? {};
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: {
+            ...exp,
+            documentosSoporte: { ...prev, [docId]: archivos },
+            updated_at: new Date().toISOString(),
+          },
         },
       };
     }),
