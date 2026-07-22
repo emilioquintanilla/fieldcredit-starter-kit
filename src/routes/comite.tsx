@@ -1,6 +1,6 @@
 // Bandeja del comité: lista de expedientes por dictaminar.
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/comite")({
 });
 
 function ComitePage() {
+  const navigate = useNavigate({ from: "/comite" });
   const mapa = useExpedientes((s) => s.expedientes);
   const expedientes = useMemo(() => {
     const lista = Object.values(mapa).filter(
@@ -37,10 +38,13 @@ function ComitePage() {
 
   const [sembrando, setSembrando] = useState(false);
 
-  const handleSembrar = () => {
+  const handleSembrar = (abrirPrimero = false) => {
     setSembrando(true);
     try {
-      sembrarExpedientesComite();
+      const ids = sembrarExpedientesComite();
+      if (abrirPrimero && ids[0]) {
+        navigate({ to: "/comite/$id", params: { id: ids[0] } });
+      }
     } finally {
       setTimeout(() => setSembrando(false), 400);
     }
@@ -59,7 +63,7 @@ function ComitePage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handleSembrar}
+              onClick={() => handleSembrar(false)}
               disabled={sembrando}
               className="rounded-lg border border-fieldcredit-teal bg-white px-3 py-1.5 text-xs font-bold text-fieldcredit-teal-dark shadow-sm transition hover:bg-fieldcredit-teal-light disabled:opacity-50 dark:bg-slate-800 dark:text-teal-200"
               title="Crea 3 expedientes de ejemplo (Comercio, Agricultura, Ganadería) en estado 'En comité'."
@@ -82,7 +86,7 @@ function ComitePage() {
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <button
               type="button"
-              onClick={handleSembrar}
+              onClick={() => handleSembrar(true)}
               disabled={sembrando}
               className="rounded-xl bg-fieldcredit-teal px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
@@ -116,14 +120,16 @@ function TarjetaComite({ exp }: { exp: ReturnType<typeof useExpedientes.getState
   const decision = exp.comite?.decision;
 
   return (
-    <Link
-      to="/comite/$id"
-      params={{ id: exp.id }}
-      className="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-fieldcredit-teal hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
-    >
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-fieldcredit-teal hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{nombre}</p>
+          <Link
+            to="/comite/$id"
+            params={{ id: exp.id }}
+            className="block truncate text-sm font-bold text-slate-800 hover:text-fieldcredit-teal-dark hover:underline dark:text-slate-100 dark:hover:text-teal-200"
+          >
+            {nombre}
+          </Link>
           <p className="text-xs text-slate-500">{exp.id} · {producto}</p>
         </div>
         <StatusBadge status={exp.estado} />
@@ -158,10 +164,14 @@ function TarjetaComite({ exp }: { exp: ReturnType<typeof useExpedientes.getState
             ? "Dictamen listo · Falta decisión"
             : "Analizar con Copiloto IA →"}
         </span>
-        <span className="rounded-full bg-fieldcredit-teal px-3 py-1 text-xs font-bold text-white">
+        <Link
+          to="/comite/$id"
+          params={{ id: exp.id }}
+          className="rounded-full bg-fieldcredit-teal px-3 py-1 text-xs font-bold text-white shadow-sm transition hover:bg-fieldcredit-teal-dark"
+        >
           {decision ? "Ver dictamen" : dictamen ? "Decidir" : "Analizar"}
-        </span>
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }
