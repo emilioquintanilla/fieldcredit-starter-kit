@@ -538,6 +538,7 @@ interface DatoMes {
   cuota: number;
   gastoHogar: number;
   costoProduccion: number;
+  gastosNegocio: number;
   otrasDeudas: number;
   ingresosFijos: number;
   ingresosEstacional: number;
@@ -561,15 +562,16 @@ function useCalculos(expedienteId: string) {
       const ingresos = ingresosFijos + ingresosEstacional;
       const gastoHogar = sumar("C", i);
       const costoProduccion = sumar("D", i);
+      const gastosNegocio = sumar("F", i);
       const otrasDeudas = sumar("E", i);
-      const egresos = gastoHogar + costoProduccion + otrasDeudas;
+      const egresos = gastoHogar + costoProduccion + gastosNegocio + otrasDeudas;
       const saldoNeto = ingresos - egresos;
       const cuota = flujo.cuotaEstimada;
       const disponible = saldoNeto - cuota;
       const capacidadPago = saldoNeto > 0 ? (cuota / saldoNeto) * 100 : (cuota > 0 ? 999 : 0);
       return {
         mes: m, ingresos, egresos, saldoNeto, disponible, capacidadPago, cuota,
-        gastoHogar, costoProduccion, otrasDeudas, ingresosFijos, ingresosEstacional,
+        gastoHogar, costoProduccion, gastosNegocio, otrasDeudas, ingresosFijos, ingresosEstacional,
       };
     });
     return { datosMensuales: datos };
