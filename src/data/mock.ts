@@ -2,6 +2,7 @@
 export type Rol = "asesor" | "coordinador" | "gerente" | "admin";
 export type EstadoExpediente =
   | "borrador"
+  | "completada"
   | "en_revision"
   | "en_comite"
   | "aprobado"
