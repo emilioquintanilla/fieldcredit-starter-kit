@@ -15,6 +15,8 @@ import { DocsExpedientePage, estadoDocsSoporte } from "@/components/docs/DocsExp
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 
 import { useExpedientes } from "@/stores/expedientes";
+import { useAutosaveExpediente } from "@/hooks/useAutosaveExpediente";
+import { useHidratarExpediente } from "@/hooks/useHidratarExpediente";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +40,9 @@ function ExpedienteDetalle() {
   const { id } = Route.useParams();
   const exp = useExpedientes((s) => s.expedientes[id]);
   const [tab, setTab] = useState<TabId>("solicitud");
+
+  useHidratarExpediente(exp);
+  useAutosaveExpediente(exp);
 
   const d = exp?.data;
 
