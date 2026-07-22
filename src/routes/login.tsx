@@ -1,8 +1,7 @@
-// Pantalla de login para asesores
+// Pantalla de login para asesores (autenticación contra Supabase)
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { sucursales } from "@/data/mock";
 import { useApp } from "@/stores/app";
 import logoUrl from "@/assets/micredito.svg";
 
@@ -17,7 +16,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const [sucursalId, setSucursalId] = useState<number>(1);
+  const [sucursalId, setSucursalId] = useState<number | "">("");
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -25,26 +24,30 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const login = useApp((s) => s.login);
   const hydrate = useApp((s) => s.hydrate);
+  const cargarSucursales = useApp((s) => s.cargarSucursales);
+  const sucursales = useApp((s) => s.sucursales);
   const navigate = useNavigate();
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    void hydrate();
+    void cargarSucursales();
+  }, [hydrate, cargarSucursales]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (sucursalId === "" && sucursales.length > 0) setSucursalId(sucursales[0].id);
+  }, [sucursales, sucursalId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    // Simulación de autenticación mock
-    setTimeout(() => {
-      const u = login(usuario.trim(), password);
-      setLoading(false);
-      if (u) {
-        navigate({ to: "/dashboard" });
-      } else {
-        setError("Usuario o contraseña incorrectos.");
-      }
-    }, 500);
+    const u = await login(usuario.trim(), password);
+    setLoading(false);
+    if (u) {
+      navigate({ to: "/dashboard" });
+    } else {
+      setError("Usuario o contraseña incorrectos.");
+    }
   };
 
   return (
@@ -68,8 +71,10 @@ function LoginPage() {
             <select
               value={sucursalId}
               onChange={(e) => setSucursalId(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-fieldcredit-green focus:outline-none focus:ring-2 focus:ring-fieldcredit-green/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+              disabled={sucursales.length === 0}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-fieldcredit-green focus:outline-none focus:ring-2 focus:ring-fieldcredit-green/30 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             >
+              {sucursales.length === 0 && <option value="">Cargando sucursales…</option>}
               {sucursales.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nombre}

@@ -15,8 +15,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   // Rehidrata el estado (usuario y tema) al montar en el cliente
   useEffect(() => {
-    hydrate();
-    setReady(true);
+    void hydrate().finally(() => setReady(true));
   }, [hydrate]);
 
   useEffect(() => {

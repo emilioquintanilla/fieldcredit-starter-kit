@@ -2,7 +2,7 @@
 import { Menu, LogOut } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useApp } from "@/stores/app";
-import { sucursales } from "@/data/mock";
+import { IndicadorGuardado } from "@/components/ui/IndicadorGuardado";
 import logoUrl from "@/assets/micredito.svg";
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 export function NavBar({ onToggleSidebar }: Props) {
   const { usuario, theme, toggleTheme, logout } = useApp();
   const navigate = useNavigate();
-  const sucursal = sucursales.find((s) => s.id === usuario?.sucursal_id);
+  const sucursalNombre = usuario?.sucursalNombre ?? "";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors dark:border-slate-700 dark:bg-slate-800/95 sm:px-4">
@@ -31,6 +31,7 @@ export function NavBar({ onToggleSidebar }: Props) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <IndicadorGuardado />
         <button
           onClick={toggleTheme}
           className="grid h-9 w-9 place-items-center rounded-md text-lg hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -43,7 +44,7 @@ export function NavBar({ onToggleSidebar }: Props) {
             {usuario?.nombre}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            {sucursal?.nombre}
+            {sucursalNombre}
           </div>
         </div>
         <button
