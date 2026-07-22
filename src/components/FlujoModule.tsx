@@ -714,6 +714,7 @@ function VistaGraficos({ expedienteId, meses }: { expedienteId: string; meses: s
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="gastoHogar" name="Hogar y familia" fill="#8D6E63" stackId="a" />
             <Bar dataKey="costoProduccion" name="Producción" fill="#37474F" stackId="a" />
+            <Bar dataKey="gastosNegocio" name="Gastos del negocio" fill="#1565C0" stackId="a" />
             <Bar dataKey="otrasDeudas" name="Otras deudas" fill="#dc2626" stackId="a" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
