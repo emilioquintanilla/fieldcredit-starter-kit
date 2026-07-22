@@ -11,6 +11,7 @@ import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
 import { EstadoResultadosModule, estadoResultadosStatus } from "@/components/estados/EstadoResultadosModule";
 import { SituacionFinancieraModule, estadoSituacionStatus } from "@/components/estados/SituacionFinancieraModule";
 import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
+import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 
 import { useExpedientes } from "@/stores/expedientes";
 import { productosCredito } from "@/data/catalogos";
@@ -177,6 +178,7 @@ function ExpedienteDetalle() {
       )}
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
 
+      <AsistenteBarraCampo expediente={exp} moduloActual={tab} />
     </AppLayout>
   );
 }
