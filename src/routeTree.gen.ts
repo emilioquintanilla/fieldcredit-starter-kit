@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
 import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
+import { Route as ComiteIdRouteImport } from './routes/comite.$id'
 import { Route as ApiIaCompletarRouteImport } from './routes/api/ia/completar'
 
 const LoginRoute = LoginRouteImport.update({
@@ -59,6 +60,11 @@ const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
   path: '/expedientes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComiteIdRoute = ComiteIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ComiteRoute,
+} as any)
 const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
   id: '/api/ia/completar',
   path: '/api/ia/completar',
@@ -68,9 +74,10 @@ const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
-  '/comite': typeof ComiteRoute
+  '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
   '/expedientes/': typeof ExpedientesIndexRoute
@@ -79,9 +86,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
-  '/comite': typeof ComiteRoute
+  '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
   '/expedientes': typeof ExpedientesIndexRoute
@@ -91,9 +99,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
-  '/comite': typeof ComiteRoute
+  '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
   '/expedientes/': typeof ExpedientesIndexRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/comite'
     | '/dashboard'
     | '/login'
+    | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
     | '/expedientes/'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/comite'
     | '/dashboard'
     | '/login'
+    | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
     | '/expedientes'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/comite'
     | '/dashboard'
     | '/login'
+    | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
     | '/expedientes/'
@@ -138,7 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
-  ComiteRoute: typeof ComiteRoute
+  ComiteRoute: typeof ComiteRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   ExpedientesIdRoute: typeof ExpedientesIdRoute
@@ -205,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpedientesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comite/$id': {
+      id: '/comite/$id'
+      path: '/$id'
+      fullPath: '/comite/$id'
+      preLoaderRoute: typeof ComiteIdRouteImport
+      parentRoute: typeof ComiteRoute
+    }
     '/api/ia/completar': {
       id: '/api/ia/completar'
       path: '/api/ia/completar'
@@ -215,10 +234,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ComiteRouteChildren {
+  ComiteIdRoute: typeof ComiteIdRoute
+}
+
+const ComiteRouteChildren: ComiteRouteChildren = {
+  ComiteIdRoute: ComiteIdRoute,
+}
+
+const ComiteRouteWithChildren =
+  ComiteRoute._addFileChildren(ComiteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
-  ComiteRoute: ComiteRoute,
+  ComiteRoute: ComiteRouteWithChildren,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   ExpedientesIdRoute: ExpedientesIdRoute,
