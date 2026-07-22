@@ -64,13 +64,22 @@ function ClientesPage() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {resultados.map((exp) => (
-            <TarjetaClienteBusqueda key={exp.id} expediente={exp} />
+            <TarjetaClienteBusqueda
+              key={exp.id}
+              expediente={exp}
+              menuAbierto={menuAbierto === exp.id}
+              onToggleMenu={() =>
+                setMenuAbierto((v) => (v === exp.id ? null : exp.id))
+              }
+              onCerrarMenu={() => setMenuAbierto(null)}
+            />
           ))}
         </div>
       )}
     </AppLayout>
   );
 }
+
 
 function TarjetaClienteBusqueda({
   expediente,
