@@ -111,8 +111,18 @@ function TarjetaClienteBusqueda({
           </p>
 
         </div>
-        <StatusBadge status={estado} />
+        <div className="flex items-center gap-1">
+          <StatusBadge status={estado} />
+          <MenuAccionesExpediente
+            expedienteId={expediente.id}
+            codigoVisible={expediente.data?.numero_solicitud ?? expediente.id}
+            abierto={menuAbierto}
+            onToggle={onToggleMenu}
+            onCerrar={onCerrarMenu}
+          />
+        </div>
       </div>
+
 
       {tieneUbicacion && (
         <div className="mb-3 overflow-hidden rounded-xl" style={{ height: "130px" }}>
