@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Stepper, type Paso } from "@/components/Stepper";
 import { CedulaScanner } from "@/components/CedulaScanner";
 import { SignaturePad } from "@/components/SignaturePad";
-import { CopilotoBar } from "@/components/CopilotoBar";
+import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 import { useApp } from "@/stores/app";
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { sucursales } from "@/data/mock";
@@ -342,7 +342,7 @@ function NuevaSolicitud() {
         </div>
       </div>
 
-      <CopilotoBar />
+      <AsistenteBarraCampo expediente={exp} moduloActual="solicitud" />
     </AppLayout>
   );
 }
