@@ -85,6 +85,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Plataforma para gestionar créditos de campo de forma ágil, transparente y segura." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "FieldCredit" },
+      { name: "twitter:description", content: "Plataforma para gestionar créditos de campo de forma ágil, transparente y segura." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4e6703c0-71db-472d-be10-972d1b70e8e9" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4e6703c0-71db-472d-be10-972d1b70e8e9" },
     ],
     links: [
       {
