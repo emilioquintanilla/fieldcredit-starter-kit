@@ -10,6 +10,7 @@ const MAP: Record<EstadoExpediente, { label: string; cls: string; pulse?: boolea
   aprobado: { label: "Aprobado", cls: "bg-fieldcredit-green-light text-fieldcredit-green-dark dark:bg-green-900/40 dark:text-green-200" },
   rechazado: { label: "Rechazado", cls: "bg-fieldcredit-red-light text-fieldcredit-red dark:bg-red-900/40 dark:text-red-300" },
   condicionado: { label: "Condicionado", cls: "bg-amber-200 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100" },
+  archivado: { label: "Archivado", cls: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
 };
 
 export function StatusBadge({ status }: { status: EstadoExpediente }) {
