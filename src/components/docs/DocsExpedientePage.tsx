@@ -1,5 +1,6 @@
 // Módulo Expediente Digital de Documentos — Tab 📄 Docs
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { useExpedientes, type ArchivoSoporte, type ExpedienteBorrador } from "@/stores/expedientes";
 import { cn } from "@/lib/utils";
 
