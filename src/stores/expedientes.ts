@@ -917,5 +917,17 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
       };
     }),
 
+  hidratarModulos: (id, patch) =>
+    set((s) => {
+      const exp = s.expedientes[id];
+      if (!exp) return s;
+      return {
+        expedientes: {
+          ...s.expedientes,
+          [id]: { ...exp, ...patch, updated_at: new Date().toISOString() },
+        },
+      };
+    }),
+
 }), { name: "fieldcredit-expedientes", storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))) }));
 
