@@ -1,18 +1,19 @@
-// Dashboard principal del asesor
+// Dashboard principal del asesor (lee expedientes desde Supabase).
+import { useEffect, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PageHeader } from "@/components/PageHeader";
 import { useApp } from "@/stores/app";
-import { expedientes, sucursales } from "@/data/mock";
+import { useExpedientesRemote } from "@/stores/expedientesRemote";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — FieldCredit" }] }),
   component: DashboardPage,
 });
 
-const money = (n: number) => `C$ ${n.toLocaleString("es-NI")}`;
+const money = (n: number | null) => `C$ ${(n ?? 0).toLocaleString("es-NI")}`;
 const saludo = () => {
   const h = new Date().getHours();
   if (h < 12) return "Buenos días";
@@ -22,20 +23,37 @@ const saludo = () => {
 
 function DashboardPage() {
   const usuario = useApp((s) => s.usuario);
-  const sucursal = sucursales.find((s) => s.id === usuario?.sucursal_id);
-  const mios = expedientes.filter((e) => e.asesor_id === usuario?.id);
+  const expedientes = useExpedientesRemote((s) => s.expedientes);
+  const cargando = useExpedientesRemote((s) => s.cargando);
+  const cargar = useExpedientesRemote((s) => s.cargar);
+
+  useEffect(() => {
+    if (!usuario) return;
+    void cargar(
+      usuario.rol === "asesor"
+        ? { asesorId: usuario.id }
+        : { sucursalId: usuario.sucursal_id },
+    );
+  }, [usuario, cargar]);
+
+  const mios = useMemo(
+    () => (usuario?.rol === "asesor" ? expedientes.filter((e) => e.asesor_id === usuario.id) : expedientes),
+    [expedientes, usuario],
+  );
   const activos = mios.length;
   const pendientes = mios.filter((e) => e.estado === "borrador" || e.estado === "en_revision").length;
   const enComite = mios.filter((e) => e.estado === "en_comite").length;
   const aprobados = mios.filter((e) => e.estado === "aprobado").length;
-  const recientes = [...mios].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5);
+  const recientes = [...mios]
+    .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+    .slice(0, 5);
   const hoy = new Date().toLocaleDateString("es-NI", { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <AppLayout>
       <PageHeader
         title={`${saludo()}, ${usuario?.nombre.split(" ")[0]} 👋`}
-        subtitle={`Sucursal ${sucursal?.nombre} · ${hoy}`}
+        subtitle={`Sucursal ${usuario?.sucursalNombre ?? ""} · ${hoy}`}
       />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -57,7 +75,10 @@ function DashboardPage() {
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-            {recientes.length === 0 && (
+            {cargando && recientes.length === 0 && (
+              <li className="p-4 text-sm text-slate-500 dark:text-slate-400">Cargando expedientes…</li>
+            )}
+            {!cargando && recientes.length === 0 && (
               <li className="p-4 text-sm text-slate-500 dark:text-slate-400">
                 Aún no tienes expedientes.
               </li>
@@ -69,15 +90,15 @@ function DashboardPage() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {e.cliente}
+                    {e.cliente ?? "Sin nombre"}
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    {e.codigo} · {e.created_at}
+                    {e.codigo} · {new Date(e.created_at).toLocaleDateString("es-NI")}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {money(e.monto)}
+                    {money(e.monto_solicitado)}
                   </div>
                   <div className="mt-1">
                     <StatusBadge status={e.estado} />

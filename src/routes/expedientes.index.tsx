@@ -1,12 +1,15 @@
-// Listado completo de expedientes del asesor
-import { useMemo, useState } from "react";
+// Listado de expedientes del asesor (leído desde Supabase, con acciones
+// de archivar y eliminar). Fase 1 de la migración a Cloud.
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronRight, MoreVertical, Plus, Search, Archive, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { expedientes, type EstadoExpediente } from "@/data/mock";
 import { useApp } from "@/stores/app";
+import { useExpedientesRemote } from "@/stores/expedientesRemote";
+import type { ExpedienteDB } from "@/services/expedientesService";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/expedientes/")({
@@ -14,11 +17,7 @@ export const Route = createFileRoute("/expedientes/")({
   component: ExpedientesPage,
 });
 
-const money = (n: number) => `C$ ${n.toLocaleString("es-NI")}`;
-const initials = (n: string) =>
-  n.split(" ").filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
-
-type Filtro = "todos" | EstadoExpediente;
+type Filtro = "todos" | ExpedienteDB["estado"];
 const FILTROS: { key: Filtro; label: string }[] = [
   { key: "todos", label: "Todos" },
   { key: "borrador", label: "Borrador" },
@@ -28,31 +27,63 @@ const FILTROS: { key: Filtro; label: string }[] = [
   { key: "rechazado", label: "Rechazado" },
 ];
 
+const money = (n: number | null) => `C$ ${(n ?? 0).toLocaleString("es-NI")}`;
+const initials = (n: string) =>
+  n.split(" ").filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+
 function ExpedientesPage() {
   const usuario = useApp((s) => s.usuario);
+  const expedientes = useExpedientesRemote((s) => s.expedientes);
+  const cargando = useExpedientesRemote((s) => s.cargando);
+  const cargar = useExpedientesRemote((s) => s.cargar);
+  const archivar = useExpedientesRemote((s) => s.archivar);
+  const eliminar = useExpedientesRemote((s) => s.eliminar);
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [menuAbierto, setMenuAbierto] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!usuario) return;
+    void cargar(
+      usuario.rol === "asesor"
+        ? { asesorId: usuario.id }
+        : { sucursalId: usuario.sucursal_id },
+    );
+  }, [usuario, cargar]);
 
   const lista = useMemo(() => {
-    // Los asesores solo ven los suyos; roles superiores ven todos
-    const base =
-      usuario?.rol === "asesor"
-        ? expedientes.filter((e) => e.asesor_id === usuario.id)
-        : expedientes;
     const s = q.trim().toLowerCase();
-    return base.filter((e) => {
+    return expedientes.filter((e) => {
       const okQ =
-        !s || e.cliente.toLowerCase().includes(s) || e.cedula.toLowerCase().includes(s);
+        !s ||
+        (e.cliente ?? "").toLowerCase().includes(s) ||
+        (e.cedula ?? "").toLowerCase().includes(s);
       const okF = filtro === "todos" || e.estado === filtro;
       return okQ && okF;
     });
-  }, [usuario, q, filtro]);
+  }, [expedientes, q, filtro]);
+
+  const handleArchivar = async (exp: ExpedienteDB) => {
+    if (!window.confirm(`¿Archivar el expediente ${exp.codigo}?\nSe podrá recuperar desde el historial.`)) return;
+    await archivar(exp.id);
+    setMenuAbierto(null);
+    toast.success("Expediente archivado");
+  };
+
+  const handleEliminar = async (exp: ExpedienteDB) => {
+    if (!window.confirm(
+      `¿Eliminar definitivamente el expediente ${exp.codigo}?\nEsta acción NO se puede deshacer.`,
+    )) return;
+    await eliminar(exp.id);
+    setMenuAbierto(null);
+    toast.success("Expediente eliminado");
+  };
 
   return (
     <AppLayout>
       <PageHeader
         title="Expedientes"
-        subtitle={`${lista.length} solicitud(es)`}
+        subtitle={cargando ? "Cargando…" : `${lista.length} solicitud(es)`}
         actions={
           <Link
             to="/expedientes/nuevo"
@@ -97,31 +128,39 @@ function ExpedientesPage() {
       {/* Móvil: cards apiladas */}
       <ul className="space-y-2 md:hidden">
         {lista.map((e) => (
-          <li key={e.id}>
-            <Link
-              to="/expedientes/$id"
-              params={{ id: String(e.id) }}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
-            >
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-fieldcredit-green-pale text-sm font-bold text-fieldcredit-green-dark dark:bg-slate-700 dark:text-slate-100">
-                {initials(e.cliente)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {e.cliente}
+          <li key={e.id} className="relative">
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+              <Link
+                to="/expedientes/$id"
+                params={{ id: String(e.id) }}
+                className="flex min-w-0 flex-1 items-center gap-3"
+              >
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-fieldcredit-green-pale text-sm font-bold text-fieldcredit-green-dark dark:bg-slate-700 dark:text-slate-100">
+                  {initials(e.cliente ?? "?")}
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {e.codigo} · {money(e.monto)}
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {e.cliente ?? "Sin nombre"}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {e.codigo} · {money(e.monto_solicitado)}
+                  </div>
+                  <div className="mt-1"><StatusBadge status={e.estado} /></div>
                 </div>
-                <div className="mt-1">
-                  <StatusBadge status={e.estado} />
-                </div>
-              </div>
-              <ChevronRight size={18} className="shrink-0 text-slate-400" />
-            </Link>
+                <ChevronRight size={18} className="shrink-0 text-slate-400" />
+              </Link>
+              <MenuAcciones
+                exp={e}
+                rol={usuario?.rol}
+                abierto={menuAbierto === e.id}
+                onToggle={() => setMenuAbierto((v) => (v === e.id ? null : e.id))}
+                onArchivar={() => handleArchivar(e)}
+                onEliminar={() => handleEliminar(e)}
+              />
+            </div>
           </li>
         ))}
-        {lista.length === 0 && (
+        {lista.length === 0 && !cargando && (
           <li className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
             No se encontraron expedientes.
           </li>
@@ -143,41 +182,46 @@ function ExpedientesPage() {
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {lista.map((e) => (
-              <tr
-                key={e.id}
-                className="transition-colors hover:bg-fieldcredit-green-pale dark:hover:bg-slate-700"
-              >
+              <tr key={e.id} className="transition-colors hover:bg-fieldcredit-green-pale dark:hover:bg-slate-700">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="grid h-9 w-9 place-items-center rounded-full bg-fieldcredit-green-pale text-xs font-bold text-fieldcredit-green-dark dark:bg-slate-700 dark:text-slate-100">
-                      {initials(e.cliente)}
+                      {initials(e.cliente ?? "?")}
                     </div>
                     <div>
-                      <div className="font-medium text-slate-900 dark:text-slate-100">{e.cliente}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{e.cedula}</div>
+                      <div className="font-medium text-slate-900 dark:text-slate-100">{e.cliente ?? "Sin nombre"}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{e.cedula ?? "—"}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{e.codigo}</td>
-                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
-                  {money(e.monto)}
+                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{money(e.monto_solicitado)}</td>
+                <td className="px-4 py-3"><StatusBadge status={e.estado} /></td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                  {new Date(e.created_at).toLocaleDateString("es-NI")}
                 </td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={e.estado} />
-                </td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{e.created_at}</td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    to="/expedientes/$id"
-                    params={{ id: String(e.id) }}
-                    className="inline-flex items-center text-fieldcredit-green hover:text-fieldcredit-green-dark"
-                  >
-                    <ChevronRight size={18} />
-                  </Link>
+                <td className="relative px-4 py-3 text-right">
+                  <div className="inline-flex items-center gap-1">
+                    <Link
+                      to="/expedientes/$id"
+                      params={{ id: String(e.id) }}
+                      className="inline-flex items-center text-fieldcredit-green hover:text-fieldcredit-green-dark"
+                    >
+                      <ChevronRight size={18} />
+                    </Link>
+                    <MenuAcciones
+                      exp={e}
+                      rol={usuario?.rol}
+                      abierto={menuAbierto === e.id}
+                      onToggle={() => setMenuAbierto((v) => (v === e.id ? null : e.id))}
+                      onArchivar={() => handleArchivar(e)}
+                      onEliminar={() => handleEliminar(e)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
-            {lista.length === 0 && (
+            {lista.length === 0 && !cargando && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   No se encontraron expedientes.
@@ -188,5 +232,61 @@ function ExpedientesPage() {
         </table>
       </div>
     </AppLayout>
+  );
+}
+
+function MenuAcciones({
+  exp,
+  rol,
+  abierto,
+  onToggle,
+  onArchivar,
+  onEliminar,
+}: {
+  exp: ExpedienteDB;
+  rol: string | undefined;
+  abierto: boolean;
+  onToggle: () => void;
+  onArchivar: () => void;
+  onEliminar: () => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(); }}
+        className="grid h-9 w-9 place-items-center rounded-md text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
+        aria-label="Opciones"
+      >
+        <MoreVertical size={18} />
+      </button>
+      {abierto && (
+        <>
+          <button
+            onClick={onToggle}
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            aria-label="Cerrar menú"
+          />
+          <div className="absolute right-0 top-10 z-50 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+            <button
+              onClick={(e) => { e.stopPropagation(); onArchivar(); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-900/20"
+            >
+              <Archive size={14} /> Archivar expediente
+            </button>
+            {rol === "admin" && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEliminar(); }}
+                className="flex w-full items-center gap-2 border-t border-slate-100 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:border-slate-700 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                <Trash2 size={14} /> Eliminar definitivamente
+              </button>
+            )}
+            <div className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400 dark:border-slate-700">
+              {exp.codigo}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
