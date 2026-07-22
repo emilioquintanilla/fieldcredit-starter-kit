@@ -14,11 +14,10 @@ export function construirContextoExpediente(exp: ExpedienteBorrador | undefined)
 
   const flujo = exp.flujo;
   let flujoResumen = "Sin flujo capturado.";
-  if (flujo) {
-    const meses = Object.values(flujo.valores || {});
-    const totalIng = meses.reduce((s, m) => s + (m?.ingresos_totales || 0), 0);
-    const totalEg = meses.reduce((s, m) => s + (m?.egresos_totales || 0), 0);
-    flujoResumen = `Ingresos anuales ${fmtC$(totalIng)}, egresos ${fmtC$(totalEg)}, saldo ${fmtC$(totalIng - totalEg)}.`;
+  if (flujo && flujo.valores) {
+    const suma = (arr: number[]) => arr.reduce((s, n) => s + (Number(n) || 0), 0);
+    const total = Object.values(flujo.valores).reduce((s, arr) => s + suma(arr), 0);
+    flujoResumen = `Movimientos anuales totales aprox. ${fmtC$(total)} (revisar detalle mes a mes en el módulo Flujo).`;
   }
 
   const er = exp.estadoResultados;
