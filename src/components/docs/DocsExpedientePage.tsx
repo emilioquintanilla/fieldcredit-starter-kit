@@ -347,8 +347,8 @@ export function DocsExpedientePage({ expedienteId }: { expedienteId: string }) {
                       onSubir={(files) => manejarSubida(doc.id, files, doc.multiple)}
                       onVer={(a) => setVisor(a)}
                       onEliminar={(archivoId) => {
-                        const actualizados = archivos.filter((a) => a.id !== archivoId);
-                        guardarDocsSoporte(expedienteId, doc.id, actualizados);
+                        const archivo = archivos.find((a) => a.id === archivoId);
+                        if (archivo) void eliminarArchivo(doc.id, archivo);
                       }}
                     />
                   );
