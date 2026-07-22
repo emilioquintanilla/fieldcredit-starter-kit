@@ -1,6 +1,6 @@
 // Catálogos y definiciones de rubros para el módulo de Flujo de Efectivo
 
-export type Bloque = "A" | "B" | "C" | "D" | "E";
+export type Bloque = "A" | "B" | "C" | "D" | "F" | "E";
 
 export interface RubroDef {
   key: string;
