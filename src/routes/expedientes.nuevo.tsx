@@ -183,7 +183,7 @@ function NuevaSolicitud() {
     toast.success("Borrador guardado ✓");
   };
 
-  const enviarSolicitud = () => {
+  const enviarSolicitud = async () => {
     const todosErr: Record<string, string> = {};
     const secErr = new Set<number>();
     for (let i = 1; i <= 7; i++) {
@@ -206,9 +206,13 @@ function NuevaSolicitud() {
     }
     if (!expedienteId) return;
     completarSolicitud(expedienteId);
+    if (exp?.supabaseId) {
+      await cambiarEstadoRemote(exp.supabaseId, "en_revision");
+    }
     toast.success("Solicitud enviada ✓");
     navigate({ to: "/expedientes/$id", params: { id: expedienteId } });
   };
+
 
   // Auto-completa desde OCR solo los campos vacíos
   const aplicarOCR = (campos: Record<string, unknown>, lado: "anverso" | "reverso") => {
