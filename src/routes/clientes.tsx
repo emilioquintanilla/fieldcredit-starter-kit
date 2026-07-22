@@ -22,6 +22,8 @@ export const Route = createFileRoute("/clientes")({
 function ClientesPage() {
   const expedientes = useExpedientes((s) => s.expedientes);
   const [busqueda, setBusqueda] = useState("");
+  const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
+
 
   const resultados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
