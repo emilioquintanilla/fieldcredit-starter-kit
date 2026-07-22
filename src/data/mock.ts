@@ -7,7 +7,8 @@ export type EstadoExpediente =
   | "en_comite"
   | "aprobado"
   | "rechazado"
-  | "condicionado";
+  | "condicionado"
+  | "archivado";
 
 export interface Sucursal {
   id: number;
