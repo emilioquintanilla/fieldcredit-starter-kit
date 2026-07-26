@@ -9,6 +9,7 @@ const ITEMS = [
   { to: "/expedientes", icon: "📋", label: "Expedientes" },
   { to: "/clientes", icon: "👥", label: "Clientes" },
   { to: "/comite", icon: "⚖️", label: "Comité" },
+  { to: "/institucional", icon: "🌿", label: "Institucional" },
 ] as const;
 
 interface Props {
