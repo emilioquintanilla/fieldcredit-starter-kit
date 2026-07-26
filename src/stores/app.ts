@@ -1,14 +1,16 @@
-// Store global: autenticación (contra Supabase) + tema (dark/light).
+// Store global: autenticación (contra Supabase) + tema (dark/light) + simulación de rol.
 // Fase 1: login usa la tabla `usuarios` de Supabase; se persiste el usuario
 // en localStorage como caché para no re-loguear en cada refresh.
 import { create } from "zustand";
 import { verificarLogin, obtenerSucursales, type SucursalDB, type UsuarioDB } from "@/services/expedientesService";
 
+export type Rol = "asesor" | "coordinador" | "gerente" | "admin";
+
 export interface AuthUser {
   id: number;
   nombre: string;
   usuario: string;
-  rol: UsuarioDB["rol"];
+  rol: Rol;
   sucursal_id: number;
   sucursalNombre?: string;
   sucursalRegion?: string;
@@ -19,6 +21,14 @@ interface AppState {
   sucursales: SucursalDB[];
   theme: "light" | "dark";
   cargandoLogin: boolean;
+
+  // ── Simulación de rol (solo para demos) ──────────────────────────────────
+  // Permite al admin previsualizar la interfaz como otro rol sin cerrar sesión.
+  // ⚠️ NO es control de acceso real: el rol vive en localStorage y es editable.
+  // El control efectivo se implementará con RLS sobre el JWT (Bloque A).
+  rolSimulado: Rol | null;
+  setRolSimulado: (rol: Rol | null) => void;
+
   login: (username: string, password: string) => Promise<AuthUser | null>;
   logout: () => void;
   toggleTheme: () => void;
@@ -38,7 +48,7 @@ const toAuthUser = (u: UsuarioDB): AuthUser => ({
   id: u.id,
   nombre: u.nombre,
   usuario: u.usuario,
-  rol: u.rol,
+  rol: u.rol as Rol,
   sucursal_id: u.sucursal_id,
   sucursalNombre: u.sucursales?.nombre,
   sucursalRegion: u.sucursales?.region ?? undefined,
@@ -49,6 +59,9 @@ export const useApp = create<AppState>((set, get) => ({
   sucursales: [],
   theme: "light",
   cargandoLogin: false,
+  rolSimulado: null,
+
+  setRolSimulado: (rol) => set({ rolSimulado: rol }),
 
   login: async (username, password) => {
     set({ cargandoLogin: true });
@@ -58,7 +71,7 @@ export const useApp = create<AppState>((set, get) => ({
       return null;
     }
     const authUser = toAuthUser(u);
-    set({ usuario: authUser, cargandoLogin: false });
+    set({ usuario: authUser, cargandoLogin: false, rolSimulado: null });
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(authUser));
     }
@@ -66,7 +79,7 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   logout: () => {
-    set({ usuario: null });
+    set({ usuario: null, rolSimulado: null });
     if (typeof localStorage !== "undefined") localStorage.removeItem(STORAGE_KEY_USER);
   },
 
@@ -101,3 +114,10 @@ export const useApp = create<AppState>((set, get) => ({
     set({ sucursales: data });
   },
 }));
+
+/** Rol efectivo: el simulado (si existe) o el real del usuario. */
+export function useRolActivo(): Rol {
+  const real = useApp((s) => s.usuario?.rol ?? "asesor");
+  const sim = useApp((s) => s.rolSimulado);
+  return sim ?? real;
+}
