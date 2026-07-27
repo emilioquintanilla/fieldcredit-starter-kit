@@ -21,8 +21,9 @@ const OPERACION: NavItem[] = [
 ];
 
 const DIRECCION: NavItem[] = [
-  { to: "/institucional", icon: "🌿", label: "Institucional", roles: ["gerente","admin"] },
-  { to: "/admin",         icon: "⚙️", label: "Administración", roles: ["admin"] },
+  { to: "/alertas",       icon: "🌦️", label: "Alertas climáticas", roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/institucional", icon: "🌿", label: "Institucional",       roles: ["gerente","admin"] },
+  { to: "/admin",         icon: "⚙️", label: "Administración",      roles: ["admin"] },
 ];
 
 interface Props {
