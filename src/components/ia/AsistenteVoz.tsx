@@ -1,10 +1,10 @@
 // Asistente de voz para captura de datos en campo.
-// Usa la Web Speech API (sin dependencias externas) para transcribir y
-// envía la transcripción a Claude para estructurar los datos del expediente.
+// Usa la Web Speech API para transcribir y el endpoint /api/ia/completar
+// (mismo que usa el copiloto) para estructurar los datos.
 // Ruta: src/components/ia/AsistenteVoz.tsx
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, MicOff, Loader2, ChevronDown, ChevronUp, Volume2 } from "lucide-react";
+import { Mic, MicOff, Loader2, ChevronDown, ChevronUp, Volume2, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
@@ -21,77 +21,73 @@ interface RespuestaIA {
 }
 
 interface Props {
-  contexto: string;          // Qué módulo está abierto ("flujo", "solicitud", etc.)
+  contexto: string;
   expedienteId: string;
   onAplicar?: (campos: CampoExtraido[]) => void;
 }
 
-// ── Reconocimiento de voz (Web Speech API) ───────────────────────────────────
-type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : never;
-
-function crearReconocimiento(): InstanceType<SpeechRecognitionType> | null {
+// ── Reconocimiento de voz ────────────────────────────────────────────────────
+function crearReconocimiento(): SpeechRecognition | null {
   if (typeof window === "undefined") return null;
-  const SR = (window as unknown as Record<string, unknown>).SpeechRecognition ||
-             (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+  const SR =
+    (window as unknown as { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ||
+    (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
   if (!SR) return null;
-  const rec = new (SR as new () => InstanceType<SpeechRecognitionType>)();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (rec as any).lang = "es-NI";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (rec as any).continuous = true;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (rec as any).interimResults = true;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (rec as any).maxAlternatives = 1;
+  const rec = new SR();
+  rec.lang = "es-NI";
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
   return rec;
 }
 
-const SISTEMA_PROMPT = `Eres el asistente de campo de FieldCredit, una app para asesores de crédito rural de MiCrédito en Nicaragua.
+// Mismo sistema prompt que usa el copiloto — conciso para Llama 3
+const SISTEMA_PROMPT = `Eres el asistente de campo de FieldCredit para asesores de crédito rural en Nicaragua.
+El asesor está en el módulo "{MODULO}" del expediente.
 
-El asesor está en campo completando información de un expediente crediticio en el módulo: {MODULO}.
-
-Tu tarea es:
-1. Extraer los datos mencionados por el asesor en su transcripción de voz.
-2. Estructurarlos en campos específicos del expediente.
-3. Dar un resumen breve de lo capturado.
-4. Si hay algo ambiguo, sugerir qué aclarar.
-
-Campos del expediente según módulo:
-- solicitud: nombre, cédula, fecha_nacimiento, telefono, actividad, monto, plazo, destino
-- flujo: cultivo/rubro, manzanas, rendimiento, precio_unitario, ciclos_año, ingresos_monto, egresos_tipo, egresos_monto
-- garantías: tipo_garantia, descripcion_bien, valor_estimado, ubicacion_bien
-- geo: descripcion_ubicacion, referencia_acceso, tipo_camino
-- general: cualquier dato del expediente
-
-IMPORTANTE: Responde SOLO con JSON válido, sin texto adicional ni bloques de código. Formato:
+Extrae los datos mencionados y devuelve SOLO JSON válido sin texto extra ni bloques de código:
 {
   "campos": [
-    { "campo": "nombre_del_campo", "valor": "valor_extraido", "confianza": "alta|media|baja" }
+    { "campo": "nombre_campo", "valor": "valor", "confianza": "alta|media|baja" }
   ],
-  "resumen": "Texto breve de lo que capturaste",
-  "sugerencia": "Qué aclarar o completar (opcional)"
-}`;
+  "resumen": "Qué capturaste en una oración",
+  "sugerencia": "Qué falta o aclarar (omitir si no aplica)"
+}
 
-// ── Componente principal ─────────────────────────────────────────────────────
+Campos por módulo:
+- solicitud: nombre, cedula, fecha_nacimiento, telefono, actividad, monto, plazo, destino
+- flujo: rubro, manzanas, rendimiento, precio_unitario, ciclos_año, ingreso_monto, egreso_tipo, egreso_monto
+- garantias: tipo_garantia, descripcion_bien, valor_estimado, ubicacion_bien
+- geo: descripcion_ubicacion, referencia_acceso, tipo_camino
+- docs: documento_tipo, documento_estado
+- general: cualquier dato relevante del expediente`;
+
+const CONFIANZA_STYLE: Record<string, string> = {
+  alta:  "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  media: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  baja:  "bg-red-100   text-red-700   dark:bg-red-900/30   dark:text-red-300",
+};
+
+// ── Componente ───────────────────────────────────────────────────────────────
 export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [grabando, setGrabando] = useState(false);
   const [transcripcion, setTranscripcion] = useState("");
-  const [transcripcionParcial, setTranscripcionParcial] = useState("");
+  const [parcial, setParcial] = useState("");
+  const [editando, setEditando] = useState(false);       // ← nuevo: modo edición
   const [procesando, setProcesando] = useState(false);
   const [resultado, setResultado] = useState<RespuestaIA | null>(null);
   const [soportado, setSoportado] = useState(true);
 
-  const recRef = useRef<InstanceType<SpeechRecognitionType> | null>(null);
-  const transcripcionRef = useRef("");
+  const recRef = useRef<SpeechRecognition | null>(null);
+  const acumulado = useRef("");
 
   useEffect(() => {
     const rec = crearReconocimiento();
     if (!rec) { setSoportado(false); return; }
     recRef.current = rec;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (rec as any).onresult = (e: any) => {
+    rec.onresult = (e) => {
       let final = "";
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -100,95 +96,97 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
         else interim += t;
       }
       if (final) {
-        transcripcionRef.current += final;
-        setTranscripcion(transcripcionRef.current);
+        acumulado.current += final;
+        setTranscripcion(acumulado.current);
       }
-      setTranscripcionParcial(interim);
+      setParcial(interim);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (rec as any).onerror = (e: any) => {
-      console.warn("[voz]", e.error);
+    rec.onerror = (e) => {
       if (e.error === "not-allowed") {
-        toast.error("Permiso de micrófono denegado.");
+        toast.error("Permiso de micrófono denegado. Activalo en la configuración del navegador.");
         setGrabando(false);
       }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (rec as any).onend = () => {
-      if (grabando) {
-        try { (rec as any).start(); } catch { /* reinicia si aún activo */ }
+    rec.onend = () => {
+      // Si aún está en modo grabación, reinicia (para grabación continua)
+      if (recRef.current && grabando) {
+        try { recRef.current.start(); } catch { /* ya corriendo */ }
       }
     };
 
-    return () => {
-      try { (rec as any).stop(); } catch { /* ignore */ }
-    };
+    return () => { try { rec.stop(); } catch { /* ignore */ } };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const iniciarGrabacion = useCallback(() => {
     const rec = recRef.current;
     if (!rec) return;
-    transcripcionRef.current = "";
+    acumulado.current = "";
     setTranscripcion("");
-    setTranscripcionParcial("");
+    setParcial("");
     setResultado(null);
+    setEditando(false);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (rec as any).start();
+      rec.start();
       setGrabando(true);
-      toast.success("Escuchando… Habla con claridad.", { duration: 2000 });
+      toast.success("Escuchando… Hablá con claridad.", { duration: 2000 });
     } catch { /* ya estaba corriendo */ }
   }, []);
 
   const detenerGrabacion = useCallback(() => {
-    const rec = recRef.current;
-    if (!rec) return;
     setGrabando(false);
-    try { (rec as any).stop(); } catch { /* ignore */ }
+    setParcial("");
+    try { recRef.current?.stop(); } catch { /* ignore */ }
   }, []);
 
   const procesarConIA = useCallback(async () => {
-    const texto = transcripcionRef.current.trim();
-    if (!texto) { toast.error("No hay texto grabado."); return; }
+    const texto = transcripcion.trim();
+    if (!texto) { toast.error("No hay texto grabado todavía."); return; }
 
     setProcesando(true);
+    setResultado(null);
     try {
-      const prompt = SISTEMA_PROMPT.replace("{MODULO}", contexto);
+      const sistema = SISTEMA_PROMPT.replace("{MODULO}", contexto);
+
+      // Usa el mismo formato que el copiloto (adaptadorIA.ts)
       const respuesta = await fetch("/api/ia/completar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sistema: prompt,
-          mensaje: `Transcripción del asesor:\n"${texto}"`,
-          expedienteId,
+          proveedor: "groq",
+          modelo: "llama-3.3-70b-versatile",
+          sistema,
+          mensajes: [{ role: "user", content: `Transcripción del asesor:\n"${texto}"` }],
+          maxTokens: 800,
         }),
       });
-      const json = await respuesta.json() as { respuesta?: string };
-      const raw = (json.respuesta ?? "").replace(/```json|```/g, "").trim();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const json = await respuesta.json() as any;
+
+      if (!respuesta.ok || !json.exito) {
+        throw new Error(json.error || `Error ${respuesta.status}`);
+      }
+
+      const raw = (json.texto as string).replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(raw) as RespuestaIA;
       setResultado(parsed);
     } catch (e) {
-      console.error("[AsistenteVoz]", e);
-      toast.error("Error al procesar con IA. Revisá la conexión.");
+      const msg = e instanceof Error ? e.message : "Error desconocido";
+      console.error("[AsistenteVoz]", msg);
+      toast.error(`Error al procesar: ${msg}`);
     } finally {
       setProcesando(false);
     }
-  }, [contexto, expedienteId]);
+  }, [transcripcion, contexto]);
 
-  const CONFIANZA_COLOR: Record<string, string> = {
-    alta: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-    media: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-    baja: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  };
-
-  if (!soportado) return null; // No mostrar si el browser no soporta
+  if (!soportado) return null;
 
   return (
     <div className="mt-4 overflow-hidden rounded-xl border border-fieldcredit-teal/40 bg-white shadow-sm dark:border-teal-700/30 dark:bg-slate-800">
-      {/* Header */}
+      {/* Header colapsable */}
       <button
         onClick={() => setAbierto(!abierto)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-fieldcredit-teal-pale dark:hover:bg-slate-700"
@@ -205,12 +203,12 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
 
       {abierto && (
         <div className="border-t border-fieldcredit-teal/20 p-4 dark:border-teal-700/20">
+
           {/* Instrucciones */}
           <div className="mb-4 rounded-lg bg-fieldcredit-teal-pale px-3 py-2 dark:bg-teal-900/20">
             <p className="text-xs text-teal-800 dark:text-teal-200">
-              <strong>¿Cómo usarlo?</strong> Presioná el micrófono y dictá los datos del cliente.
-              Por ejemplo: <em>"El productor tiene 5 manzanas de café, cosecha unas 20 quintales por manzana,
-              el precio está en 800 córdobas el quintal."</em>
+              <strong>¿Cómo usarlo?</strong> Presioná el micrófono y dictá los datos del cliente en voz alta.
+              Ejemplo: <em>"Tiene 5 manzanas de café, cosecha 20 quintales por manzana a 800 córdobas."</em>
             </p>
           </div>
 
@@ -229,18 +227,48 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
             </button>
           </div>
 
-          {/* Transcripción en tiempo real */}
-          {(transcripcion || transcripcionParcial) && (
-            <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-900">
-              <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">Transcripción</p>
-              <p className="text-sm text-slate-700 dark:text-slate-200">{transcripcion}</p>
-              {transcripcionParcial && (
-                <p className="text-sm italic text-slate-400">{transcripcionParcial}</p>
-              )}
+          {/* Transcripción — con modo edición */}
+          {(transcripcion || parcial) && (
+            <div className="mb-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-900">
+              <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1.5 dark:border-slate-700">
+                <p className="text-[10px] font-bold uppercase text-slate-500">Transcripción</p>
+                {!grabando && transcripcion && (
+                  <button
+                    onClick={() => setEditando(!editando)}
+                    className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium text-fieldcredit-teal hover:bg-fieldcredit-teal-pale dark:hover:bg-teal-900/20"
+                  >
+                    {editando
+                      ? <><Check size={11} /> Listo</>
+                      : <><Pencil size={11} /> Editar</>}
+                  </button>
+                )}
+              </div>
+
+              <div className="p-3">
+                {editando ? (
+                  // Modo edición: textarea para corregir lo que el micrófono no captó bien
+                  <textarea
+                    value={transcripcion}
+                    onChange={(e) => {
+                      setTranscripcion(e.target.value);
+                      acumulado.current = e.target.value;
+                    }}
+                    rows={4}
+                    className="w-full resize-y rounded border border-fieldcredit-teal/40 bg-white px-2 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fieldcredit-teal dark:border-teal-700/40 dark:bg-slate-800 dark:text-slate-200"
+                    placeholder="Corregí el texto antes de estructurar..."
+                  />
+                ) : (
+                  <p className="text-sm text-slate-700 dark:text-slate-200">{transcripcion}</p>
+                )}
+                {/* Texto parcial en tiempo real mientras graba */}
+                {parcial && !editando && (
+                  <p className="mt-1 text-sm italic text-slate-400">{parcial}…</p>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Botón procesar */}
+          {/* Botones de acción */}
           {transcripcion && !grabando && (
             <div className="mb-4 flex gap-2">
               <button
@@ -253,7 +281,13 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
                   : <>✨ Estructurar con IA</>}
               </button>
               <button
-                onClick={() => { setTranscripcion(""); transcripcionRef.current = ""; setResultado(null); }}
+                onClick={() => {
+                  acumulado.current = "";
+                  setTranscripcion("");
+                  setParcial("");
+                  setResultado(null);
+                  setEditando(false);
+                }}
                 className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
               >
                 Limpiar
@@ -287,10 +321,10 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
                       <div key={i}
                         className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
                         <div className="min-w-0 flex-1">
-                          <span className="text-[10px] text-slate-400">{c.campo}</span>
+                          <p className="text-[10px] text-slate-400">{c.campo}</p>
                           <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{c.valor}</p>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${CONFIANZA_COLOR[c.confianza] ?? CONFIANZA_COLOR.media}`}>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${CONFIANZA_STYLE[c.confianza] ?? CONFIANZA_STYLE.media}`}>
                           {c.confianza}
                         </span>
                       </div>
@@ -301,14 +335,17 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
 
               {/* Disclaimer obligatorio */}
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/10 dark:text-amber-300">
-                ⚠️ <strong>Verificá los datos antes de guardar.</strong> El asistente de IA puede cometer errores.
-                Los datos son sugerencias — la decisión crediticia siempre la toma el comité humano.
+                ⚠️ <strong>Verificá los datos antes de guardar.</strong> El asistente de IA puede
+                cometer errores. La decisión crediticia siempre la toma el comité humano.
               </p>
 
               {/* Botón aplicar */}
               {onAplicar && resultado.campos.length > 0 && (
                 <button
-                  onClick={() => { onAplicar(resultado.campos); toast.success("Datos enviados al formulario."); }}
+                  onClick={() => {
+                    onAplicar(resultado.campos);
+                    toast.success("Datos enviados al formulario. Revisalos antes de guardar.");
+                  }}
                   className="w-full rounded-lg bg-fieldcredit-green py-2.5 text-sm font-bold text-white hover:bg-fieldcredit-green-dark"
                 >
                   Aplicar al expediente
