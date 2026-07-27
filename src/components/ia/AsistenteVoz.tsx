@@ -27,11 +27,14 @@ interface Props {
 }
 
 // ── Reconocimiento de voz ────────────────────────────────────────────────────
-function crearReconocimiento(): SpeechRecognition | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRec = any;
+
+function crearReconocimiento(): AnyRec | null {
   if (typeof window === "undefined") return null;
-  const SR =
-    (window as unknown as { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ||
-    (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
   if (!SR) return null;
   const rec = new SR();
   rec.lang = "es-NI";
@@ -79,7 +82,8 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
   const [resultado, setResultado] = useState<RespuestaIA | null>(null);
   const [soportado, setSoportado] = useState(true);
 
-  const recRef = useRef<SpeechRecognition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recRef = useRef<any>(null);
   const acumulado = useRef("");
 
   useEffect(() => {
@@ -87,7 +91,8 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
     if (!rec) { setSoportado(false); return; }
     recRef.current = rec;
 
-    rec.onresult = (e) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
       let final = "";
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -102,7 +107,8 @@ export function AsistenteVoz({ contexto, expedienteId, onAplicar }: Props) {
       setParcial(interim);
     };
 
-    rec.onerror = (e) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onerror = (e: any) => {
       if (e.error === "not-allowed") {
         toast.error("Permiso de micrófono denegado. Activalo en la configuración del navegador.");
         setGrabando(false);
