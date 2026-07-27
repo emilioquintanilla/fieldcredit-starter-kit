@@ -5,14 +5,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Pencil, Save, X, Eye, EyeOff, Shield, Users, Package, Settings, ClipboardList } from "lucide-react";
+import { Plus, Pencil, Save, X, Eye, EyeOff, Shield, Users, Package, Settings, ClipboardList, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { useApp } from "@/stores/app";
 import {
-  listarUsuarios, crearUsuario, actualizarUsuario, cambiarPasswordUsuario,
-  listarProductos, actualizarProducto, crearProducto,
+  listarUsuarios, crearUsuario, actualizarUsuario, cambiarPasswordUsuario, eliminarUsuario,
+  listarProductos, actualizarProducto, crearProducto, eliminarProducto,
   listarParametros, actualizarParametro,
   listarSucursalesAdmin, registrarBitacora,
   type UsuarioAdmin, type ProductoAdmin, type ParametroAdmin, type SucursalAdmin,
@@ -248,6 +248,7 @@ function FilaUsuario({
   const [edit, setEdit] = useState({ nombre: u.nombre, rol: u.rol, sucursal_id: u.sucursal_id });
   const [newPass, setNewPass] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const guardar = async () => {
     const ok = await actualizarUsuario(u.id, edit);
@@ -279,6 +280,22 @@ function FilaUsuario({
       });
       onGuardado();
     }
+  };
+
+  const handleEliminar = async () => {
+    const res = await eliminarUsuario(u.id);
+    if (res.ok) {
+      toast.success(`Usuario "${u.nombre}" eliminado.`);
+      await registrarBitacora({
+        usuario_id: adminUser.id, usuario_nombre: adminUser.nombre, usuario_rol: adminUser.rol,
+        accion: "eliminar", entidad: "usuario", entidad_id: String(u.id),
+        descripcion: `Eliminó usuario ${u.usuario} (${u.rol})`,
+      });
+      onGuardado();
+    } else {
+      toast.error(res.mensaje ?? "Error al eliminar.");
+    }
+    setConfirmDelete(false);
   };
 
   if (editando) {
@@ -328,40 +345,68 @@ function FilaUsuario({
   }
 
   return (
-    <tr className={!u.activo ? "opacity-50" : ""}>
-      <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{u.nombre}</td>
-      <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{u.usuario}</td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-          u.rol === "admin" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-          : u.rol === "gerente" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-          : u.rol === "coordinador" ? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
-          : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-        }`}>
-          <Shield size={10} />
-          {ROLES.find((r) => r.value === u.rol)?.label ?? u.rol}
-        </span>
-      </td>
-      <td className="hidden px-4 py-3 text-slate-600 dark:text-slate-300 sm:table-cell">
-        {u.sucursales?.nombre ?? "—"}
-      </td>
-      <td className="px-4 py-3 text-center">
-        <button onClick={toggleActivo}
-          className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
-            u.activo
-              ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
-              : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
+    <>
+      <tr className={!u.activo ? "opacity-50" : ""}>
+        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{u.nombre}</td>
+        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{u.usuario}</td>
+        <td className="px-4 py-3">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+            u.rol === "admin" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+            : u.rol === "gerente" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+            : u.rol === "coordinador" ? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
+            : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
           }`}>
-          {u.activo ? "Activo" : "Inactivo"}
-        </button>
-      </td>
-      <td className="px-4 py-3 text-right">
-        <button onClick={onEditar}
-          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200">
-          <Pencil size={14} />
-        </button>
-      </td>
-    </tr>
+            <Shield size={10} />
+            {ROLES.find((r) => r.value === u.rol)?.label ?? u.rol}
+          </span>
+        </td>
+        <td className="hidden px-4 py-3 text-slate-600 dark:text-slate-300 sm:table-cell">
+          {u.sucursales?.nombre ?? "—"}
+        </td>
+        <td className="px-4 py-3 text-center">
+          <button onClick={toggleActivo}
+            className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
+              u.activo
+                ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
+                : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
+            }`}>
+            {u.activo ? "Activo" : "Inactivo"}
+          </button>
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className="flex justify-end gap-1">
+            <button onClick={onEditar}
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200">
+              <Pencil size={14} />
+            </button>
+            <button onClick={() => setConfirmDelete(true)}
+              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </td>
+      </tr>
+      {confirmDelete && (
+        <tr>
+          <td colSpan={6} className="border-t border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/30 dark:bg-red-900/10">
+            <div className="flex items-center gap-3">
+              <p className="flex-1 text-xs text-red-700 dark:text-red-300">
+                ¿Eliminar a <strong>{u.nombre}</strong> ({u.usuario})? Esta acción no se puede deshacer.
+                Si tiene expedientes asociados, se recomienda desactivar en lugar de eliminar.
+              </p>
+              <button onClick={handleEliminar}
+                className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">
+                Sí, eliminar
+              </button>
+              <button onClick={() => setConfirmDelete(false)}
+                className="rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-white dark:border-slate-600 dark:text-slate-300">
+                Cancelar
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -553,6 +598,7 @@ function TarjetaProducto({
     monto_max: p.monto_max ?? 0,
     activo: p.activo,
   });
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const guardar = async () => {
     const ok = await actualizarProducto(p.id, edit);
@@ -565,6 +611,22 @@ function TarjetaProducto({
       });
       onGuardado();
     }
+  };
+
+  const handleEliminar = async () => {
+    const res = await eliminarProducto(p.id);
+    if (res.ok) {
+      toast.success(`Producto "${p.nombre}" eliminado.`);
+      await registrarBitacora({
+        usuario_id: adminUser.id, usuario_nombre: adminUser.nombre, usuario_rol: adminUser.rol,
+        accion: "eliminar", entidad: "producto", entidad_id: String(p.id),
+        descripcion: `Eliminó producto ${p.codigo} — ${p.nombre}`,
+      });
+      onGuardado();
+    } else {
+      toast.error(res.mensaje ?? "Error al eliminar.");
+    }
+    setConfirmDelete(false);
   };
 
   return (
@@ -582,15 +644,39 @@ function TarjetaProducto({
           <p className="mt-0.5 font-mono text-xs text-slate-400">{p.codigo}</p>
         </div>
         {!editando && (
-          <button onClick={onEditar}
-            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
-            <Pencil size={14} />
-          </button>
+          <div className="flex gap-1">
+            <button onClick={onEditar}
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
+              <Pencil size={14} />
+            </button>
+            <button onClick={() => setConfirmDelete(true)}
+              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+              <Trash2 size={14} />
+            </button>
+          </div>
         )}
       </div>
 
       {p.descripcion && (
         <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{p.descripcion}</p>
+      )}
+
+      {confirmDelete && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/30 dark:bg-red-900/10">
+          <p className="mb-2 text-xs text-red-700 dark:text-red-300">
+            ¿Eliminar <strong>{p.nombre}</strong>? Si tiene créditos asociados, no se podrá eliminar — desactívalo en su lugar.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={handleEliminar}
+              className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700">
+              Sí, eliminar
+            </button>
+            <button onClick={() => setConfirmDelete(false)}
+              className="rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-white dark:border-slate-600 dark:text-slate-300">
+              Cancelar
+            </button>
+          </div>
+        </div>
       )}
 
       {editando ? (
