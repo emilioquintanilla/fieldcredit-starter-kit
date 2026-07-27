@@ -13,6 +13,7 @@ import { RecomendacionIA } from "@/components/comite/RecomendacionIA";
 import { AnalisisFinanciero } from "@/components/comite/AnalisisFinanciero";
 import { DecisionComite } from "@/components/comite/DecisionComite";
 import { ChatCopiloto } from "@/components/comite/ChatCopiloto";
+import { ExportarDictamenPDF } from "@/components/comite/ExportarDictamenPDF";
 import { useExpedientes, type DictamenIA } from "@/stores/expedientes";
 import { llamarIA } from "@/services/ia/adaptadorIA";
 import { construirContextoExpediente } from "@/services/ia/contextoExpediente";
@@ -196,12 +197,19 @@ function DictamenPage() {
           <RecomendacionIA recomendacion={dictamen.recomendacion} />
           <DecisionComite expedienteId={id} />
           <ChatCopiloto expediente={exp} dictamen={dictamen} clienteNombre={nombre} />
-          <button
-            onClick={generar}
-            className="mb-4 w-full rounded-xl border border-slate-300 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            Regenerar dictamen
-          </button>
+          <div className="mb-4 flex gap-2">
+            <button
+              onClick={generar}
+              className="flex-1 rounded-xl border border-slate-300 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Regenerar dictamen
+            </button>
+            <ExportarDictamenPDF
+              dictamen={dictamen}
+              expediente={exp}
+              clienteNombre={nombre}
+            />
+          </div>
         </>
       )}
     </AppLayout>
