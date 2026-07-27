@@ -132,6 +132,31 @@ export async function actualizarProducto(
   return true;
 }
 
+export async function crearProducto(datos: {
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  es_verde: boolean;
+  linea_verde?: string | null;
+  monto_min: number;
+  monto_max: number;
+  plazo_min_meses: number;
+  plazo_max_meses: number;
+  tasa_anual: number;
+  requiere_fiador_desde?: number | null;
+}): Promise<ProductoAdmin | null> {
+  const { data, error } = await supabase
+    .from("productos_credito")
+    .insert({ ...datos, activo: true })
+    .select("*")
+    .single();
+  if (error) {
+    console.error("[admin] crearProducto", error.message);
+    return null;
+  }
+  return data as ProductoAdmin;
+}
+
 // ── Parámetros ──────────────────────────────────────────────────────────────
 export async function listarParametros(): Promise<ParametroAdmin[]> {
   const { data, error } = await supabase
