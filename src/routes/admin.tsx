@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useApp } from "@/stores/app";
 import {
   listarUsuarios, crearUsuario, actualizarUsuario, cambiarPasswordUsuario,
-  listarProductos, actualizarProducto,
+  listarProductos, actualizarProducto, crearProducto,
   listarParametros, actualizarParametro,
   listarSucursalesAdmin, registrarBitacora,
   type UsuarioAdmin, type ProductoAdmin, type ParametroAdmin, type SucursalAdmin,
@@ -372,6 +372,7 @@ function TabProductos({ adminUser }: { adminUser: NonNullable<ReturnType<typeof 
   const [productos, setProductos] = useState<ProductoAdmin[]>([]);
   const [cargando, setCargando] = useState(true);
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [creando, setCreando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -384,11 +385,140 @@ function TabProductos({ adminUser }: { adminUser: NonNullable<ReturnType<typeof 
 
   const fmtC$ = (n: number | null) => n == null ? "—" : `C$ ${Math.round(n).toLocaleString("es-NI")}`;
 
+  // Estado del formulario de nuevo producto
+  const [nuevoP, setNuevoP] = useState({
+    codigo: "", nombre: "", descripcion: "", es_verde: false,
+    linea_verde: "" as string, tasa_anual: 28, monto_min: 5000, monto_max: 300000,
+    plazo_min_meses: 6, plazo_max_meses: 36, requiere_fiador_desde: 50000,
+  });
+
+  const handleCrearProducto = async () => {
+    if (!nuevoP.codigo.trim() || !nuevoP.nombre.trim()) {
+      toast.error("El código y nombre del producto son obligatorios.");
+      return;
+    }
+    const resultado = await crearProducto({
+      ...nuevoP,
+      codigo: nuevoP.codigo.trim(),
+      nombre: nuevoP.nombre.trim(),
+      descripcion: nuevoP.descripcion.trim() || undefined,
+      linea_verde: nuevoP.es_verde && nuevoP.linea_verde ? nuevoP.linea_verde : null,
+    });
+    if (resultado) {
+      toast.success(`Producto "${resultado.nombre}" creado.`);
+      await registrarBitacora({
+        usuario_id: adminUser.id, usuario_nombre: adminUser.nombre, usuario_rol: adminUser.rol,
+        accion: "crear", entidad: "producto", entidad_id: String(resultado.id),
+        descripcion: `Creó producto ${resultado.codigo} — ${resultado.nombre}`,
+      });
+      setNuevoP({ codigo: "", nombre: "", descripcion: "", es_verde: false, linea_verde: "",
+        tasa_anual: 28, monto_min: 5000, monto_max: 300000, plazo_min_meses: 6, plazo_max_meses: 36,
+        requiere_fiador_desde: 50000 });
+      setCreando(false);
+      void cargar();
+    } else {
+      toast.error("Error al crear producto. Verifica que el código no esté duplicado.");
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        {productos.length} productos configurados · Los cambios aplican a nuevas operaciones
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {productos.length} productos configurados · Los cambios aplican a nuevas operaciones
+        </p>
+        <button onClick={() => setCreando(!creando)}
+          className="flex items-center gap-1.5 rounded-lg bg-fieldcredit-green px-3 py-2 text-sm font-medium text-white hover:bg-fieldcredit-green-dark">
+          <Plus size={16} />
+          Nuevo producto
+        </button>
+      </div>
+
+      {/* Formulario de creación de producto */}
+      {creando && (
+        <div className="rounded-xl border border-fieldcredit-green-light bg-fieldcredit-green-pale p-4 dark:border-slate-600 dark:bg-slate-800">
+          <h3 className="mb-3 text-sm font-bold text-slate-800 dark:text-slate-100">Nuevo producto crediticio</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <input placeholder="Código (ej: AR-NUEVO)" value={nuevoP.codigo}
+              onChange={(e) => setNuevoP((p) => ({ ...p, codigo: e.target.value.toUpperCase() }))}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-mono dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            <input placeholder="Nombre del producto" value={nuevoP.nombre}
+              onChange={(e) => setNuevoP((p) => ({ ...p, nombre: e.target.value }))}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            <input placeholder="Descripción (opcional)" value={nuevoP.descripcion}
+              onChange={(e) => setNuevoP((p) => ({ ...p, descripcion: e.target.value }))}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <input type="checkbox" checked={nuevoP.es_verde}
+                  onChange={(e) => setNuevoP((p) => ({ ...p, es_verde: e.target.checked, linea_verde: e.target.checked ? p.linea_verde : "" }))}
+                  className="rounded" />
+                🌿 Producto verde
+              </label>
+            </div>
+
+            {nuevoP.es_verde && (
+              <select value={nuevoP.linea_verde}
+                onChange={(e) => setNuevoP((p) => ({ ...p, linea_verde: e.target.value }))}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                <option value="">Seleccionar línea verde</option>
+                <option value="agua">Agua</option>
+                <option value="produccion_protegida">Producción protegida</option>
+                <option value="fincas_resilientes">Fincas resilientes</option>
+                <option value="energia_solar">Energía solar</option>
+              </select>
+            )}
+
+            <div>
+              <label className="text-[10px] text-slate-500">Tasa anual %</label>
+              <input type="number" step="0.5" value={nuevoP.tasa_anual}
+                onChange={(e) => setNuevoP((p) => ({ ...p, tasa_anual: Number(e.target.value) }))}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-500">Monto mínimo C$</label>
+              <input type="number" step="1000" value={nuevoP.monto_min}
+                onChange={(e) => setNuevoP((p) => ({ ...p, monto_min: Number(e.target.value) }))}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-500">Monto máximo C$</label>
+              <input type="number" step="1000" value={nuevoP.monto_max}
+                onChange={(e) => setNuevoP((p) => ({ ...p, monto_max: Number(e.target.value) }))}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-500">Plazo mínimo (meses)</label>
+              <input type="number" value={nuevoP.plazo_min_meses}
+                onChange={(e) => setNuevoP((p) => ({ ...p, plazo_min_meses: Number(e.target.value) }))}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-500">Plazo máximo (meses)</label>
+              <input type="number" value={nuevoP.plazo_max_meses}
+                onChange={(e) => setNuevoP((p) => ({ ...p, plazo_max_meses: Number(e.target.value) }))}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-500">Fiador obligatorio desde C$</label>
+              <input type="number" step="5000" value={nuevoP.requiere_fiador_desde}
+                onChange={(e) => setNuevoP((p) => ({ ...p, requiere_fiador_desde: Number(e.target.value) }))}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button onClick={handleCrearProducto}
+              className="flex items-center gap-1 rounded-md bg-fieldcredit-green px-4 py-2 text-sm font-medium text-white hover:bg-fieldcredit-green-dark">
+              <Save size={14} /> Crear producto
+            </button>
+            <button onClick={() => setCreando(false)}
+              className="flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
+              <X size={14} /> Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {cargando ? (
         <div className="space-y-2">
