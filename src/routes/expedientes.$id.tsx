@@ -19,6 +19,7 @@ import { AsistenteVoz } from "@/components/ia/AsistenteVoz";
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useAutosaveExpediente } from "@/hooks/useAutosaveExpediente";
 import { useHidratarExpediente } from "@/hooks/useHidratarExpediente";
+import { useSincronizarEstados } from "@/hooks/useSincronizarEstados";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,9 @@ function ExpedienteDetalle() {
 
   useHidratarExpediente(exp);
   useAutosaveExpediente(exp);
+  // Motor de sincronización reactiva: flujo → Estado de Resultados + Situación Financiera.
+  // Corre en background con debounce 800ms. Respeta campos editados manualmente.
+  useSincronizarEstados(id);
 
   const d = exp?.data;
 
