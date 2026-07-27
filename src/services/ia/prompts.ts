@@ -189,27 +189,40 @@ directo y fundamentado en los datos. Sin emojis excesivos.
 `.trim();
 
 export const PROMPT_GENERAR_DICTAMEN = (contexto: string) => `
-Analiza el expediente y devuélveme EXCLUSIVAMENTE un JSON válido (sin texto extra,
-sin markdown, sin \`\`\`) con esta estructura exacta:
+El expediente ya viene con todos los ratios calculados en la sección
+"BANDERAS AUTOMÁTICAS DE POLÍTICA". Tu trabajo es:
+
+1. USAR esos números — no recalcules ni inventes cifras distintas.
+2. INTERPRETAR el conjunto: coherencia entre flujo, estado de resultados
+   y situación financiera; riesgos que los números no capturan;
+   contexto sectorial (cultivo, zona, temporada).
+3. DETECTAR incoherencias: ¿el ingreso declarado es creíble para
+   las manzanas y el rubro? ¿El consumo familiar es coherente?
+   ¿Las deudas declaradas coinciden con los pasivos del balance?
+
+Devuelve EXCLUSIVAMENTE un JSON válido (sin texto extra, sin markdown,
+sin backticks) con esta estructura:
 
 {
-  "score": <número 0-100 de salud crediticia global>,
+  "score": <0-100 basado en capacidad de pago, cobertura de garantías,
+            endeudamiento y coherencia del expediente>,
   "semaforo": "verde" | "amarillo" | "rojo",
-  "resumen": "<párrafo ejecutivo de 3-4 oraciones>",
+  "resumen": "<3-4 oraciones ejecutivas: quién es, qué pide, cómo está financieramente y cuál es tu lectura de riesgo>",
   "banderas": [
-    { "tipo": "verde"|"amarillo"|"rojo", "texto": "<hallazgo puntual vs. políticas>" }
+    { "tipo": "verde"|"amarillo"|"rojo",
+      "texto": "<hallazgo concreto — menciona el número si lo tienes>" }
   ],
   "metricas": {
-    "capacidadPago": <cuota/excedente en %>,
-    "coberturaFlujo": <ingresos/(egresos+cuota) en %>,
-    "indiceEndeudamiento": <pasivos/activos en %>,
-    "coberturaGarantias": <valor garantías/monto solicitado en %>
+    "capacidadPago": <usa el % ya calculado en FLUJO DE EFECTIVO del contexto>,
+    "coberturaFlujo": <ingresos totales / (egresos totales + cuota anual) x 100>,
+    "indiceEndeudamiento": <usa el % de SITUACIÓN FINANCIERA, o 0 si no hay datos>,
+    "coberturaGarantias": <usa el % de GARANTÍAS, o 0 si no aplica>
   },
   "scoreARS": null,
   "recomendacion": {
-    "accion": "aprobar" | "aprobar_con_condicion" | "rechazar",
-    "texto": "<justificación en 2-3 oraciones>",
-    "condiciones": ["<condición 1>", "<condición 2>"]
+    "accion": "aprobar" | "aprobar_con_condicion" | "rechazar" | "revisar",
+    "texto": "<justificación en 2-3 oraciones — menciona el ratio clave>",
+    "condiciones": ["<condición específica y accionable>"]
   }
 }
 
@@ -217,24 +230,24 @@ Si el producto es AgroResilia, reemplaza "scoreARS": null por:
 {
   "score": <0-100>,
   "nivel": "verde_preferencial"|"verde_estandar"|"amarillo"|"rojo",
-  "tasa": "<ej. 12% anual>",
-  "condiciones": "<texto corto>",
+  "tasa": "<tasa diferenciada según nivel ARS>",
+  "condiciones": "<texto breve>",
   "variables": [
     { "nombre": "Diversificación de cultivos", "puntaje": <0-100> },
-    { "nombre": "Prácticas resilientes", "puntaje": <0-100> },
-    { "nombre": "Historial de siniestros", "puntaje": <0-100> },
-    { "nombre": "Acceso a agua/riego", "puntaje": <0-100> }
+    { "nombre": "Prácticas resilientes declaradas", "puntaje": <0-100> },
+    { "nombre": "Acceso a agua / sistema de riego", "puntaje": <0-100> },
+    { "nombre": "Viabilidad del destino financiado", "puntaje": <0-100> },
+    { "nombre": "Capacidad de pago ajustada al ciclo", "puntaje": <0-100> }
   ]
 }
 
-Reglas de scoring sugeridas:
-- 85-100 verde: sin banderas rojas y capacidad ≤ 70%, cobertura ≥ 100%.
-- 60-84 amarillo: alguna bandera amarilla o cobertura entre 80% y 100%.
-- < 60 rojo: al menos una bandera roja o capacidad > 70%.
+Escala de score:
+- 85-100 verde: capacidad ≤ 70%, garantías ≥ 100%, sin banderas rojas, expediente coherente.
+- 60-84  amarillo: alguna bandera amarilla, cobertura 80-100%, o leve incoherencia.
+- < 60   rojo: bandera roja, capacidad > 70%, o incoherencia grave.
 
-Emite entre 3 y 8 banderas totales, priorizando cumplimiento CONAMI y política interna.
+Emite entre 4 y 8 banderas. Prioriza: CONAMI, cuota ≤ 70%, cobertura ≥ 100%, coherencia.
 
-DATOS DEL EXPEDIENTE (contexto de referencia):
+EXPEDIENTE COMPLETO:
 ${contexto}
 `.trim();
-
