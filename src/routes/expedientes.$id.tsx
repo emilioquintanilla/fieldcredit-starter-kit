@@ -1,7 +1,8 @@
 // Detalle de expediente con barra de módulos (tabs)
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileImage, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -15,7 +16,7 @@ import { DocsExpedientePage, estadoDocsSoporte } from "@/components/docs/DocsExp
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 import { AsistenteVoz } from "@/components/ia/AsistenteVoz";
 
-import { useExpedientes } from "@/stores/expedientes";
+import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useAutosaveExpediente } from "@/hooks/useAutosaveExpediente";
 import { useHidratarExpediente } from "@/hooks/useHidratarExpediente";
 import { productosCredito } from "@/data/catalogos";
@@ -29,17 +30,32 @@ export const Route = createFileRoute("/expedientes/$id")({
 type TabId = "solicitud" | "fiador" | "garantias" | "flujo" | "resultados" | "situacion" | "geo" | "docs";
 type Estado = "pendiente" | "progreso" | "completo" | "alerta";
 
-// Cálculo simple de cuota mensual estimada (para índice de cobertura del fiador)
 const cuotaEstimadaMensual = (monto?: number, plazo?: number) => {
   if (!monto || !plazo) return 0;
-  // Tasa mensual referencial 2.5% — solo para el prototipo
   const i = 0.025;
   return Math.round((monto * i) / (1 - Math.pow(1 + i, -plazo)));
+};
+
+// Mapeo de campos que devuelve el AsistenteVoz → campos de SolicitudData
+// Permite que los datos capturados por voz se guarden directamente en el expediente.
+const CAMPO_A_SOLICITUD: Record<string, keyof SolicitudData> = {
+  nombre:              "primer_nombre",
+  cedula:              "cedula",
+  fecha_nacimiento:    "fecha_nacimiento",
+  telefono:            "telefono",
+  actividad:           "tipo_actividad",
+  descripcion_actividad: "descripcion_actividad",
+  monto:               "monto",
+  plazo:               "plazo",
+  destino:             "destino",
+  rubro:               "tipo_actividad",
+  nombre_negocio:      "nombre_negocio",
 };
 
 function ExpedienteDetalle() {
   const { id } = Route.useParams();
   const exp = useExpedientes((s) => s.expedientes[id]);
+  const actualizarBorrador = useExpedientes((s) => s.actualizarBorrador);
   const [tab, setTab] = useState<TabId>("solicitud");
 
   useHidratarExpediente(exp);
@@ -47,7 +63,44 @@ function ExpedienteDetalle() {
 
   const d = exp?.data;
 
-  // Estado de cada módulo (pendiente/progreso/completo)
+  // Handler para aplicar campos del asistente de voz al expediente
+  const handleAplicarVoz = useCallback(
+    (campos: Array<{ campo: string; valor: string; confianza: string }>) => {
+      const patch: Partial<SolicitudData> = {};
+      let aplicados = 0;
+
+      campos.forEach(({ campo, valor, confianza }) => {
+        // Solo aplica automáticamente campos con confianza alta o media
+        if (confianza === "baja") return;
+        const key = CAMPO_A_SOLICITUD[campo];
+        if (!key) return;
+
+        // Conversión de tipos según el campo destino
+        if (key === "monto" || key === "plazo") {
+          const num = Number(valor.replace(/[^\d.]/g, ""));
+          if (!isNaN(num) && num > 0) {
+            (patch as Record<string, unknown>)[key] = num;
+            aplicados++;
+          }
+        } else {
+          (patch as Record<string, unknown>)[key] = valor;
+          aplicados++;
+        }
+      });
+
+      if (aplicados > 0) {
+        actualizarBorrador(id, patch);
+        toast.success(
+          `${aplicados} campo${aplicados > 1 ? "s" : ""} aplicado${aplicados > 1 ? "s" : ""} al expediente. Revisalos en la pestaña Solicitud.`,
+          { duration: 4000 }
+        );
+      } else {
+        toast.info("No se encontraron campos compatibles con confianza suficiente para aplicar.");
+      }
+    },
+    [id, actualizarBorrador]
+  );
+
   const estadoFiador: Estado = useMemo(() => {
     if (!exp?.fiador) return "pendiente";
     const f = exp.fiador;
@@ -103,16 +156,15 @@ function ExpedienteDetalle() {
   const fiadorTieneNegocio = !!(exp.fiador?.tipo_actividad && exp.fiador?.nombre_negocio);
 
   const tabs: { id: TabId; label: string; disabled?: boolean; estado?: Estado; visible: boolean }[] = [
-    { id: "solicitud", label: "📋 Solicitud", visible: true, estado: exp.estado === "completada" ? "completo" : "progreso" },
-    { id: "fiador", label: "👤 Fiador", visible: aplicaFiador, estado: estadoFiador },
-    { id: "garantias", label: "🔒 Garantías", visible: aplicaGarantia, estado: estadoGarantias },
-    { id: "flujo", label: "💰 Flujo", visible: true, estado: estadoFlujoMod },
-    { id: "resultados", label: "📊 Resultados", visible: true, estado: estadoResMod },
-    { id: "situacion", label: "🏦 Situación", visible: true, estado: estadoSitMod },
-    { id: "geo", label: "📍 Geo", visible: true, estado: estadoGeoMod },
-    { id: "docs", label: "📄 Docs", visible: true, estado: estadoDocsSoporte(exp) },
+    { id: "solicitud",  label: "📋 Solicitud",  visible: true,           estado: exp.estado === "completada" ? "completo" : "progreso" },
+    { id: "fiador",     label: "👤 Fiador",     visible: aplicaFiador,   estado: estadoFiador },
+    { id: "garantias",  label: "🔒 Garantías",  visible: aplicaGarantia, estado: estadoGarantias },
+    { id: "flujo",      label: "💰 Flujo",      visible: true,           estado: estadoFlujoMod },
+    { id: "resultados", label: "📊 Resultados", visible: true,           estado: estadoResMod },
+    { id: "situacion",  label: "🏦 Situación",  visible: true,           estado: estadoSitMod },
+    { id: "geo",        label: "📍 Geo",        visible: true,           estado: estadoGeoMod },
+    { id: "docs",       label: "📄 Docs",       visible: true,           estado: estadoDocsSoporte(exp) },
   ];
-
 
   return (
     <AppLayout>
@@ -186,12 +238,18 @@ function ExpedienteDetalle() {
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
 
       <AsistenteBarraCampo expediente={exp} moduloActual={tab} />
-      <AsistenteVoz contexto={tab} expedienteId={id} />
+
+      {/* Asistente de voz — aplica al expediente cuando el asesor confirma */}
+      <AsistenteVoz
+        contexto={tab}
+        expedienteId={id}
+        onAplicar={handleAplicarVoz}
+      />
     </AppLayout>
   );
 }
 
-/* -------- Tab Solicitud (contenido original de detalle) -------- */
+/* ── Tab Solicitud ── */
 
 function TabSolicitud({ expedienteId }: { expedienteId: string }) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId])!;
@@ -203,21 +261,27 @@ function TabSolicitud({ expedienteId }: { expedienteId: string }) {
       <section className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2 dark:border-slate-700 dark:bg-slate-800">
         <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Resumen</h2>
         <dl className="grid grid-cols-2 gap-3 text-sm">
-          <Info k="Cédula" v={d.cedula} />
+          <Info k="Cédula"          v={d.cedula} />
           <Info k="Fecha nacimiento" v={d.fecha_nacimiento} />
-          <Info k="Teléfono" v={d.telefono} />
-          <Info k="Departamento" v={d.departamento_residencia} />
-          <Info k="Actividad" v={d.tipo_actividad} />
-          <Info k="Producto" v={producto} />
-          <Info k="Monto" v={d.monto ? `C$ ${d.monto.toLocaleString("es-NI")}` : undefined} />
-          <Info k="Plazo" v={d.plazo ? `${d.plazo} meses` : undefined} />
-          <Info k="Frecuencia" v={d.frecuencia_pago} />
-          <Info k="Fiador" v={d.aplica_fiador ? `Sí (${d.relacion_fiador || ""})` : "No"} />
+          <Info k="Teléfono"        v={d.telefono} />
+          <Info k="Departamento"    v={d.departamento_residencia} />
+          <Info k="Actividad"       v={d.tipo_actividad} />
+          <Info k="Producto"        v={producto} />
+          <Info k="Monto"           v={d.monto ? `C$ ${d.monto.toLocaleString("es-NI")}` : undefined} />
+          <Info k="Plazo"           v={d.plazo ? `${d.plazo} meses` : undefined} />
+          <Info k="Frecuencia"      v={d.frecuencia_pago} />
+          <Info k="Fiador"          v={d.aplica_fiador ? `Sí (${d.relacion_fiador || ""})` : "No"} />
         </dl>
         {d.destino && (
           <div className="mt-3">
-            <div className="text-xs text-slate-500">Destino</div>
+            <div className="text-xs text-slate-500">Destino del crédito</div>
             <p className="text-sm text-slate-800 dark:text-slate-200">{d.destino}</p>
+          </div>
+        )}
+        {d.descripcion_actividad && (
+          <div className="mt-2">
+            <div className="text-xs text-slate-500">Descripción de la actividad</div>
+            <p className="text-sm text-slate-800 dark:text-slate-200">{d.descripcion_actividad}</p>
           </div>
         )}
       </section>
@@ -236,7 +300,7 @@ function TabSolicitud({ expedienteId }: { expedienteId: string }) {
   );
 }
 
-/* -------- Tab Documentos -------- */
+/* ── Tab Documentos ── */
 
 function TabDocumentos({ expedienteId }: { expedienteId: string }) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId])!;
@@ -245,7 +309,6 @@ function TabDocumentos({ expedienteId }: { expedienteId: string }) {
   return (
     <section className="space-y-4">
       <DocsExpedientePage expedienteId={expedienteId} />
-
       <div className="rounded-xl border border-fieldcredit-teal/40 bg-fieldcredit-teal-light/40 p-4 dark:border-teal-800/60 dark:bg-teal-900/20">
         <h3 className="mb-2 text-sm font-bold text-fieldcredit-teal-dark dark:text-teal-200">
           ⚖️ Enviar a comité de crédito
@@ -277,8 +340,7 @@ function TabDocumentos({ expedienteId }: { expedienteId: string }) {
   );
 }
 
-
-/* -------- Helpers -------- */
+/* ── Helpers ── */
 
 function Info({ k, v }: { k: string; v?: string | number | null }) {
   return (
