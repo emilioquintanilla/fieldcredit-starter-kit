@@ -10,7 +10,13 @@ export interface CuentaDef {
   etiqueta: string;
   ayuda?: string;
   obligatorio?: boolean;
-  prefillDesde?: string; // key del rubro en el flujo de efectivo
+  /**
+   * Key(s) del flujo de efectivo para pre-llenar esta cuenta.
+   * Si es un array, se suma el promedio de todas las fuentes.
+   * Esto permite que una cuenta del Estado de Resultados acumule
+   * varios rubros del flujo (ej: cosecha primera + postrera de frijol).
+   */
+  prefillDesde?: string | string[];
 }
 
 // ── INGRESOS POR ACTIVIDAD ───────────────────────────────────────────
@@ -23,8 +29,9 @@ export const CUENTAS_INGRESOS: Record<TipoActividad, CuentaDef[]> = {
   [TIPOS_ACTIVIDAD.AGRICULTURA]: [
     { id: "venta_cosecha_p",       etiqueta: "Venta de cosecha primera (C$)",         ayuda: "Quintales vendidos × precio — ciclo primera", prefillDesde: "cosechaMaizP", obligatorio: true },
     { id: "venta_cosecha_po",      etiqueta: "Venta de cosecha postrera (C$)",        ayuda: "Quintales vendidos × precio — ciclo postrera", prefillDesde: "cosechaMaizPo" },
-    { id: "venta_frijol",          etiqueta: "Venta de frijol (C$)",                  ayuda: "Quintales vendidos × precio", prefillDesde: "cosechaFrijolP" },
-    { id: "venta_otros_cultivos",  etiqueta: "Venta de otros cultivos (C$)",          ayuda: "Sorgo, millón, hortalizas, café u otros", prefillDesde: "otroEstacional" },
+    { id: "venta_frijol_p",         etiqueta: "Venta de frijol primera (C$)",           ayuda: "Quintales vendidos × precio — cosecha de primera", prefillDesde: "cosechaFrijolP" },
+    { id: "venta_frijol_po",        etiqueta: "Venta de frijol postrera (C$)",          ayuda: "Quintales vendidos × precio — cosecha postrera", prefillDesde: "cosechaFrijolPo" },
+    { id: "venta_otros_cultivos",  etiqueta: "Venta de otros cultivos (C$)",          ayuda: "Sorgo, millón, hortalizas, café u otros", prefillDesde: "otrosCultivos" },
     { id: "ingreso_jornales",      etiqueta: "Ingresos por jornales externos (C$/mes)", ayuda: "Si el cliente trabaja como jornalero", prefillDesde: "ingresoJornales" },
     { id: "otros_ing_agro",        etiqueta: "Otros ingresos agrícolas (C$/mes)",     ayuda: "Alquiler de maquinaria, servicios de arado, otros", prefillDesde: "otrosIngAgro" },
   ],
@@ -58,10 +65,14 @@ export const CUENTAS_INGRESOS: Record<TipoActividad, CuentaDef[]> = {
     { id: "otros_ing_asal",   etiqueta: "Otros ingresos (C$/mes)", ayuda: "Remesas, alquileres, pensión u otros", prefillDesde: "otrosIngAsal" },
   ],
   [TIPOS_ACTIVIDAD.AGRORESILIA]: [
-    { id: "venta_cosecha_ar",   etiqueta: "Venta de cosecha principal (C$)", ayuda: "Producto principal del proyecto AgroResilia", prefillDesde: "cosechaMaizP", obligatorio: true },
-    { id: "venta_secundaria_ar",etiqueta: "Venta de cultivos secundarios (C$)", ayuda: "Otros cultivos del sistema productivo", prefillDesde: "otroEstacional" },
-    { id: "beneficio_riego_ar", etiqueta: "Ahorro estimado por tecnología AgroResilia (C$/mes)", ayuda: "Reducción de costos gracias al sistema financiado", prefillDesde: "ahorroTecnologia" },
-    { id: "otros_ing_ar",       etiqueta: "Otros ingresos del sistema productivo (C$/mes)", ayuda: "Subproductos, servicios, otros", prefillDesde: "otrosIngAr" },
+    { id: "venta_cosecha_ar",   etiqueta: "Venta de cosecha primera — cultivo principal (C$)", ayuda: "Frijol, café, sorgo, hortalizas u otro cultivo financiado. Quintales × precio", prefillDesde: "cosechaArP", obligatorio: true },
+    { id: "venta_frijol_ar_p",  etiqueta: "Cosecha de frijol primera (C$)",  ayuda: "Si el proyecto es frijol con riego: qq vendidos × precio primera", prefillDesde: "cosechaFrijolP" },
+    { id: "venta_frijol_ar_po", etiqueta: "Cosecha de frijol postrera (C$)", ayuda: "Segunda cosecha de frijol del año. Dejar en 0 si no aplica", prefillDesde: "cosechaFrijolPo" },
+    { id: "venta_secundaria_ar",etiqueta: "Cosecha postrera / otros cultivos (C$)", ayuda: "Segunda cosecha del cultivo principal u otros cultivos del sistema", prefillDesde: "cosechaArPo" },
+    { id: "venta_cafe_ar",      etiqueta: "Cosecha de café (C$)", ayuda: "Si el sistema incluye café: qq uva × precio", prefillDesde: "cosechaCafe" },
+    { id: "venta_sorgo_ar",     etiqueta: "Cosecha de sorgo / maíz (C$)", ayuda: "Si el sistema incluye sorgo o maíz: qq vendidos × precio", prefillDesde: "cosechaSorgo" },
+    { id: "beneficio_riego_ar", etiqueta: "Ahorro estimado por tecnología AgroResilia (C$/mes)", ayuda: "Reducción de costos gracias al sistema financiado: menos riego manual, energía, agua", prefillDesde: "ahorroTecnologia" },
+    { id: "otros_ing_ar",       etiqueta: "Otros ingresos del sistema productivo (C$/mes)", ayuda: "Subproductos, alquiler de equipo, servicios", prefillDesde: "otrosIngAr" },
   ],
   [TIPOS_ACTIVIDAD.OTRO]: [
     { id: "ingreso_principal_otro", etiqueta: "Ingreso principal (C$/mes)", ayuda: "Principal fuente de ingresos del cliente", prefillDesde: "ingresoPrincipal", obligatorio: true },
