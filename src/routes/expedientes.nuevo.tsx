@@ -711,9 +711,63 @@ function Seccion2({
    SECCIÓN 3 — Actividad económica
    ============================================================ */
 const PLACEHOLDER_ACT: Record<string, string> = {
-  "Comercio": "Ej: Venta de ropa y calzado en mercado municipal",
-  "Agropecuaria": "Ej: Producción de maíz y frijol, 5 manzanas en Rivas",
-  "Asalariado": "Ej: Empleado en empresa de transporte como conductor",
+  "Comercio":                "Ej: Venta de ropa y calzado en el mercado municipal de Rivas",
+  "Agropecuaria":            "Ej: Producción de maíz y frijol, 5 manzanas en Teustepe, Boaco",
+  "Ganadería / Pecuario":    "Ej: Crianza y venta de ganado bovino, 15 cabezas en potrero propio",
+  "Mixto (Agro + Comercio)": "Ej: Pulpería familiar y 3 manzanas de café en Jinotega",
+  "Servicios":               "Ej: Servicio de transporte de carga en ruta Managua-León",
+  "Producción / Manufactura":"Ej: Fabricación artesanal de puros, taller en Estelí",
+  "Asalariado":              "Ej: Trabajador en empresa de construcción, contrato permanente",
+  "AgroResilia":             "Ej: Producción de café con sistema de riego por goteo, 8 manzanas",
+  "Otra":                    "Ej: Describa detalladamente la actividad principal del solicitante",
+};
+
+// Sugerencias de destino según actividad + producto — vincula ambos campos
+const DESTINOS_SUGERIDOS: Record<string, string[]> = {
+  "Comercio": [
+    "Capital de trabajo para compra de inventario",
+    "Ampliación o remodelación del local comercial",
+    "Compra de equipo o mobiliario para el negocio",
+  ],
+  "Agropecuaria": [
+    "Compra de insumos agrícolas (semillas, fertilizantes, agroquímicos)",
+    "Preparación y siembra del ciclo productivo",
+    "Compra de herramientas y equipos de labranza",
+    "Construcción o mejora de infraestructura productiva",
+  ],
+  "Ganadería / Pecuario": [
+    "Compra de semovientes (ganado bovino, porcino, aves)",
+    "Mejora de potreros y cercas",
+    "Compra de alimento y suplementos para el ganado",
+    "Construcción de corrales o instalaciones pecuarias",
+  ],
+  "Mixto (Agro + Comercio)": [
+    "Capital de trabajo mixto (negocio + insumos agrícolas)",
+    "Compra de inventario comercial y semillas para siembra",
+  ],
+  "Servicios": [
+    "Compra o reparación de equipo para prestación del servicio",
+    "Capital de trabajo para operación del negocio de servicios",
+  ],
+  "Producción / Manufactura": [
+    "Compra de materia prima para producción",
+    "Adquisición o reparación de maquinaria",
+    "Capital de trabajo para ciclo productivo",
+  ],
+  "Asalariado": [
+    "Mejoras al hogar o vivienda",
+    "Gastos de educación o salud familiar",
+    "Consolidación de deudas",
+  ],
+  "AgroResilia": [
+    "Instalación de sistema de riego por goteo",
+    "Construcción de cosecha de agua (reservorio / pila)",
+    "Instalación de sistema fotovoltaico para bombeo",
+    "Construcción de macrotúnel o casa malla para producción protegida",
+    "Establecimiento de sistema agroforestal o diversificación de cultivos",
+    "Instalación de secadora solar para poscosecha",
+  ],
+  "Otra": [],
 };
 
 function Seccion3({
@@ -985,9 +1039,38 @@ function Seccion4({
 
       <div>
         <Label req>Destino del crédito</Label>
+        {/* Sugerencias dinámicas según actividad y producto */}
+        {(() => {
+          const actKey = data.producto === "agroresilia" ? "AgroResilia" : (data.tipo_actividad || "");
+          const sugerencias = DESTINOS_SUGERIDOS[actKey] || [];
+          return sugerencias.length > 0 ? (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {sugerencias.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setData({ destino: s })}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                    data.destino === s
+                      ? "border-fieldcredit-green bg-fieldcredit-green text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-fieldcredit-green hover:text-fieldcredit-green dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          ) : null;
+        })()}
         <textarea rows={3}
+          placeholder="Describí el destino específico del crédito..."
           className={cn(inputBase, errores.destino ? inputErr : inputOk)}
           value={data.destino || ""} onChange={(e) => setData({ destino: e.target.value })} />
+        <p className="mt-1 text-xs text-slate-400">
+          El destino debe coincidir con la actividad económica declarada.
+          Seleccioná una sugerencia o escribí libremente.
+        </p>
         <ErrorText msg={errores.destino} />
       </div>
 
