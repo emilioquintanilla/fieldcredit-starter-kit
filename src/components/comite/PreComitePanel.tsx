@@ -92,7 +92,7 @@ export function PreComitePanel({ expedienteId }: Props) {
     const idxEndeuda = totalActivos > 0 ? (totalPasivos / totalActivos) * 100 : 0;
 
     const gar = exp.garantias;
-    const valorGar = (gar?.bienes?.reduce((s, b) => s + (b.valor_estimado ?? 0), 0) ?? 0)
+    const valorGar = (gar?.bienes?.reduce((s, b) => s + (b.valor_mercado ?? 0), 0) ?? 0)
       + (gar?.inmueble?.valor_mercado ?? 0);
     const cobGar = d.monto && d.monto > 0 ? (valorGar / d.monto) * 100 : 0;
 
