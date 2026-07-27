@@ -1,12 +1,11 @@
 // Estado de Resultados con cuentas dinámicas por actividad económica.
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { useExpedientes, type ValorCuenta } from "@/stores/expedientes";
 import { useCuentasActividad } from "@/hooks/useCuentasActividad";
-import { preLlenarDesdeflujo } from "@/utils/prefillEstados";
 import { CampoFinanciero } from "./CampoFinanciero";
 import { BannerActividad } from "./BannerActividad";
 import { cn } from "@/lib/utils";
@@ -23,33 +22,14 @@ const fmt = (n: number) => `C$ ${Math.round(n).toLocaleString("es-NI")}`;
 export function EstadoResultadosModule({ expedienteId, tipoActividad, cuotaEstimada, onSwitchToSolicitud }: Props) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId]);
   const guardarValor = useExpedientes((s) => s.guardarValorEstado);
-  const hidratar = useExpedientes((s) => s.hidratarEstadoDesdeflujo);
   const actualizarObs = useExpedientes((s) => s.actualizarObservacionesEstado);
 
   const cuentas = useCuentasActividad(tipoActividad);
   const datos = exp?.estadoResultados;
   const valores = datos?.valores ?? {};
 
-  // Pre-llenado inicial desde el flujo (una vez por expediente)
-  useEffect(() => {
-    if (!exp || datos?.preLlenadoDesdeflujo) return;
-    const flujoVals = exp.flujo?.valores;
-    const plazo = exp.flujo?.plazoMeses || exp.data.plazo || 12;
-    if (!flujoVals) return;
-    const todasCuentas = [
-      ...cuentas.ingresos,
-      ...cuentas.costos,
-      ...cuentas.gastosOperacion,
-      ...cuentas.consumoFamiliar,
-    ];
-    const auto = preLlenarDesdeflujo(flujoVals, todasCuentas, plazo);
-    if (Object.keys(auto).length > 0) {
-      hidratar(expedienteId, "resultados", tipoActividad, auto);
-    } else {
-      hidratar(expedienteId, "resultados", tipoActividad, {});
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expedienteId, cuentas.tipoActividad]);
+  // Pre-llenado ahora gestionado por useSincronizarEstados (montado en expedientes.$id.tsx).
+  // Ese hook observa el flujo reactivamente y propaga cambios aquí automáticamente.
 
   // Totales calculados
   const totales = useMemo(() => {
