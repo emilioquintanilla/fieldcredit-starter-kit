@@ -13,6 +13,7 @@ import { SituacionFinancieraModule, estadoSituacionStatus } from "@/components/e
 import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
 import { DocsExpedientePage, estadoDocsSoporte } from "@/components/docs/DocsExpedientePage";
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
+import { AsistenteVoz } from "@/components/ia/AsistenteVoz";
 
 import { useExpedientes } from "@/stores/expedientes";
 import { useAutosaveExpediente } from "@/hooks/useAutosaveExpediente";
@@ -185,7 +186,7 @@ function ExpedienteDetalle() {
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
 
       <AsistenteBarraCampo expediente={exp} moduloActual={tab} />
-      <AsistenteVoz contexto={tab} expedienteId={id} />   {/* ← agregar esta línea */}
+      <AsistenteVoz contexto={tab} expedienteId={id} />
     </AppLayout>
   );
 }
