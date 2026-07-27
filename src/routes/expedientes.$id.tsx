@@ -15,6 +15,7 @@ import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
 import { DocsExpedientePage, estadoDocsSoporte } from "@/components/docs/DocsExpedientePage";
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 import { AsistenteVoz } from "@/components/ia/AsistenteVoz";
+import { PreComitePanel } from "@/components/comite/PreComitePanel";
 
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useAutosaveExpediente } from "@/hooks/useAutosaveExpediente";
@@ -313,6 +314,10 @@ function TabDocumentos({ expedienteId }: { expedienteId: string }) {
   return (
     <section className="space-y-4">
       <DocsExpedientePage expedienteId={expedienteId} />
+
+      {/* Panel de verificación pre-comité */}
+      <PreComitePanel expedienteId={expedienteId} />
+
       <div className="rounded-xl border border-fieldcredit-teal/40 bg-fieldcredit-teal-light/40 p-4 dark:border-teal-800/60 dark:bg-teal-900/20">
         <h3 className="mb-2 text-sm font-bold text-fieldcredit-teal-dark dark:text-teal-200">
           ⚖️ Enviar a comité de crédito
