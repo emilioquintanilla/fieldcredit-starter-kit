@@ -104,6 +104,30 @@ export async function cambiarPasswordUsuario(id: number, nuevaPassword: string):
   return true;
 }
 
+export async function eliminarUsuario(id: number): Promise<{ ok: boolean; mensaje?: string }> {
+  const { error } = await supabase.from("usuarios").delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") {
+      return { ok: false, mensaje: "No se puede eliminar: el usuario tiene expedientes o créditos asociados. Desactívalo en su lugar." };
+    }
+    console.error("[admin] eliminarUsuario", error.message);
+    return { ok: false, mensaje: error.message };
+  }
+  return { ok: true };
+}
+
+export async function eliminarUsuario(id: number): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from("usuarios").delete().eq("id", id);
+  if (error) {
+    if (error.message.includes("foreign key") || error.message.includes("violates") || error.code === "23503") {
+      return { ok: false, error: "Este usuario tiene expedientes o créditos asociados. Desactívalo en lugar de eliminarlo." };
+    }
+    console.error("[admin] eliminarUsuario", error.message);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
 // ── Productos ───────────────────────────────────────────────────────────────
 export async function listarProductos(): Promise<ProductoAdmin[]> {
   const { data, error } = await supabase
@@ -155,6 +179,30 @@ export async function crearProducto(datos: {
     return null;
   }
   return data as ProductoAdmin;
+}
+
+export async function eliminarProducto(id: number): Promise<{ ok: boolean; mensaje?: string }> {
+  const { error } = await supabase.from("productos_credito").delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") {
+      return { ok: false, mensaje: "No se puede eliminar: el producto tiene créditos asociados. Desactívalo en su lugar." };
+    }
+    console.error("[admin] eliminarProducto", error.message);
+    return { ok: false, mensaje: error.message };
+  }
+  return { ok: true };
+}
+
+export async function eliminarProducto(id: number): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from("productos_credito").delete().eq("id", id);
+  if (error) {
+    if (error.message.includes("foreign key") || error.message.includes("violates") || error.code === "23503") {
+      return { ok: false, error: "Este producto tiene créditos asociados. Desactívalo en lugar de eliminarlo." };
+    }
+    console.error("[admin] eliminarProducto", error.message);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
 }
 
 // ── Parámetros ──────────────────────────────────────────────────────────────
