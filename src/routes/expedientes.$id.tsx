@@ -185,6 +185,7 @@ function ExpedienteDetalle() {
       {tab === "docs" && <TabDocumentos expedienteId={id} />}
 
       <AsistenteBarraCampo expediente={exp} moduloActual={tab} />
+      <AsistenteVoz contexto={tab} expedienteId={id} />   {/* ← agregar esta línea */}
     </AppLayout>
   );
 }
