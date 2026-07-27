@@ -56,9 +56,9 @@ export const RUBROS_INGRESOS_FIJOS: Record<TipoActividad, RubroDef[]> = {
     { key: "otrosIngAsal",    label: "Otros ingresos",                   ayuda: "Remesas, alquileres, pensión u otros" },
   ],
   [TIPOS_ACTIVIDAD.AGRORESILIA]: [
-    { key: "ingresosLecheAr",  label: "Ingresos por leche / lácteos",    ayuda: "Si el sistema AgroResilia incluye ganadería" },
-    { key: "ahorroTecnologia", label: "Ahorro por tecnología AgroResilia", ayuda: "Reducción de costos gracias al sistema financiado (riego, paneles, etc.)" },
-    { key: "otrosIngAr",       label: "Otros ingresos fijos del sistema", ayuda: "Subproductos, servicios, alquileres de equipo" },
+    { key: "ahorroTecnologia", label: "Ahorro por tecnología AgroResilia (C$/mes)", ayuda: "Reducción de costos por el sistema financiado: menos gastos en riego, energía o agua" },
+    { key: "ingresosLecheAr",  label: "Ingresos pecuarios complementarios (C$/mes)", ayuda: "Si el sistema también incluye actividad ganadera (leche, queso, crema)" },
+    { key: "otrosIngAr",       label: "Otros ingresos fijos del proyecto (C$/mes)", ayuda: "Alquiler de equipo, servicios, subproductos mensuales" },
   ],
   [TIPOS_ACTIVIDAD.OTRO]: [
     { key: "ingresoPrincipal",  label: "Ingreso principal",              ayuda: "Principal fuente de ingresos del cliente" },
@@ -107,10 +107,14 @@ export const RUBROS_INGRESOS_ESTACIONALES: Record<TipoActividad, RubroDef[]> = {
     { key: "bonusEsp",      label: "Bonos o pagos especiales",            ayuda: "Bonos de productividad, incentivos anuales u otros" },
   ],
   [TIPOS_ACTIVIDAD.AGRORESILIA]: [
-    { key: "cosechaArP",        label: "Cosecha primera — cultivo AgroResilia",  ayuda: "Producción del cultivo principal del proyecto" },
-    { key: "cosechaArPo",       label: "Cosecha postrera — cultivo AgroResilia", ayuda: "Si el cultivo tiene ciclo postrera" },
-    { key: "ventaSubproductos", label: "Venta de subproductos",                  ayuda: "Rastrojos, abono orgánico, subproductos del sistema" },
-    { key: "bonoVerde",         label: "Bono Verde AgroResilia",                 ayuda: "Si aplica bono por cumplimiento — registrar en el mes que lo recibe" },
+    { key: "cosechaArP",        label: "Cosecha primera — cultivo principal",    ayuda: "Ej: quintales de frijol × precio, o cajas de hortalizas × precio (ciclo primera)" },
+    { key: "cosechaArPo",       label: "Cosecha postrera — cultivo principal",   ayuda: "Si el cultivo tiene ciclo postrera o segunda siembra del año" },
+    { key: "cosechaFrijolP",    label: "Cosecha de frijol primera",              ayuda: "Si el proyecto financia frijol: qq vendidos × precio. Dejar en 0 si no aplica" },
+    { key: "cosechaFrijolPo",   label: "Cosecha de frijol postrera",             ayuda: "Segunda cosecha de frijol del año. Dejar en 0 si no aplica" },
+    { key: "cosechaCafe",       label: "Cosecha de café",                        ayuda: "Si el sistema AgroResilia incluye café: qq uva × precio" },
+    { key: "cosechaSorgo",      label: "Cosecha de sorgo / millón",              ayuda: "Si el sistema incluye sorgo o maíz: qq vendidos × precio" },
+    { key: "ventaSubproductos", label: "Venta de subproductos",                  ayuda: "Rastrojos, abono orgánico, otros subproductos del sistema" },
+    { key: "bonoVerde",         label: "Bono Verde AgroResilia",                 ayuda: "Incentivo por cumplimiento — registrar en el mes que se recibe" },
   ],
   [TIPOS_ACTIVIDAD.OTRO]: [
     { key: "ingresoExtra1", label: "Ingreso estacional 1", ayuda: "Ingreso que solo llega en algunos meses del año" },
