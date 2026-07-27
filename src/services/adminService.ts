@@ -54,10 +54,7 @@ export async function listarUsuarios(): Promise<UsuarioAdmin[]> {
     .from("usuarios")
     .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
     .order("nombre");
-  if (error) {
-    console.error("[admin] listarUsuarios", error.message);
-    return [];
-  }
+  if (error) { console.error("[admin] listarUsuarios", error.message); return []; }
   return (data as unknown as UsuarioAdmin[]) ?? [];
 }
 
@@ -73,10 +70,7 @@ export async function crearUsuario(datos: {
     .insert({ ...datos, activo: true })
     .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
     .single();
-  if (error) {
-    console.error("[admin] crearUsuario", error.message);
-    return null;
-  }
+  if (error) { console.error("[admin] crearUsuario", error.message); return null; }
   return data as unknown as UsuarioAdmin;
 }
 
@@ -85,10 +79,7 @@ export async function actualizarUsuario(
   patch: Partial<Pick<UsuarioAdmin, "nombre" | "rol" | "sucursal_id" | "activo">>,
 ): Promise<boolean> {
   const { error } = await supabase.from("usuarios").update(patch).eq("id", id);
-  if (error) {
-    console.error("[admin] actualizarUsuario", error.message);
-    return false;
-  }
+  if (error) { console.error("[admin] actualizarUsuario", error.message); return false; }
   return true;
 }
 
@@ -97,10 +88,7 @@ export async function cambiarPasswordUsuario(id: number, nuevaPassword: string):
     .from("usuarios")
     .update({ password_hash: nuevaPassword })
     .eq("id", id);
-  if (error) {
-    console.error("[admin] cambiarPassword", error.message);
-    return false;
-  }
+  if (error) { console.error("[admin] cambiarPassword", error.message); return false; }
   return true;
 }
 
@@ -108,22 +96,10 @@ export async function eliminarUsuario(id: number): Promise<{ ok: boolean; mensaj
   const { error } = await supabase.from("usuarios").delete().eq("id", id);
   if (error) {
     if (error.code === "23503") {
-      return { ok: false, mensaje: "No se puede eliminar: el usuario tiene expedientes o créditos asociados. Desactívalo en su lugar." };
+      return { ok: false, mensaje: "No se puede eliminar: tiene expedientes o créditos asociados. Desactívalo en su lugar." };
     }
     console.error("[admin] eliminarUsuario", error.message);
     return { ok: false, mensaje: error.message };
-  }
-  return { ok: true };
-}
-
-export async function eliminarUsuario(id: number): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase.from("usuarios").delete().eq("id", id);
-  if (error) {
-    if (error.message.includes("foreign key") || error.message.includes("violates") || error.code === "23503") {
-      return { ok: false, error: "Este usuario tiene expedientes o créditos asociados. Desactívalo en lugar de eliminarlo." };
-    }
-    console.error("[admin] eliminarUsuario", error.message);
-    return { ok: false, error: error.message };
   }
   return { ok: true };
 }
@@ -134,10 +110,7 @@ export async function listarProductos(): Promise<ProductoAdmin[]> {
     .from("productos_credito")
     .select("*")
     .order("nombre");
-  if (error) {
-    console.error("[admin] listarProductos", error.message);
-    return [];
-  }
+  if (error) { console.error("[admin] listarProductos", error.message); return []; }
   return (data as ProductoAdmin[]) ?? [];
 }
 
@@ -149,10 +122,7 @@ export async function actualizarProducto(
     .from("productos_credito")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) {
-    console.error("[admin] actualizarProducto", error.message);
-    return false;
-  }
+  if (error) { console.error("[admin] actualizarProducto", error.message); return false; }
   return true;
 }
 
@@ -174,10 +144,7 @@ export async function crearProducto(datos: {
     .insert({ ...datos, activo: true })
     .select("*")
     .single();
-  if (error) {
-    console.error("[admin] crearProducto", error.message);
-    return null;
-  }
+  if (error) { console.error("[admin] crearProducto", error.message); return null; }
   return data as ProductoAdmin;
 }
 
@@ -185,22 +152,10 @@ export async function eliminarProducto(id: number): Promise<{ ok: boolean; mensa
   const { error } = await supabase.from("productos_credito").delete().eq("id", id);
   if (error) {
     if (error.code === "23503") {
-      return { ok: false, mensaje: "No se puede eliminar: el producto tiene créditos asociados. Desactívalo en su lugar." };
+      return { ok: false, mensaje: "No se puede eliminar: tiene créditos asociados. Desactívalo en su lugar." };
     }
     console.error("[admin] eliminarProducto", error.message);
     return { ok: false, mensaje: error.message };
-  }
-  return { ok: true };
-}
-
-export async function eliminarProducto(id: number): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase.from("productos_credito").delete().eq("id", id);
-  if (error) {
-    if (error.message.includes("foreign key") || error.message.includes("violates") || error.code === "23503") {
-      return { ok: false, error: "Este producto tiene créditos asociados. Desactívalo en lugar de eliminarlo." };
-    }
-    console.error("[admin] eliminarProducto", error.message);
-    return { ok: false, error: error.message };
   }
   return { ok: true };
 }
@@ -212,10 +167,7 @@ export async function listarParametros(): Promise<ParametroAdmin[]> {
     .select("*")
     .order("categoria")
     .order("clave");
-  if (error) {
-    console.error("[admin] listarParametros", error.message);
-    return [];
-  }
+  if (error) { console.error("[admin] listarParametros", error.message); return []; }
   return (data as ParametroAdmin[]) ?? [];
 }
 
@@ -232,23 +184,17 @@ export async function actualizarParametro(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
-  if (error) {
-    console.error("[admin] actualizarParametro", error.message);
-    return false;
-  }
+  if (error) { console.error("[admin] actualizarParametro", error.message); return false; }
   return true;
 }
 
-// ── Sucursales (solo lectura por ahora) ─────────────────────────────────────
+// ── Sucursales ───────────────────────────────────────────────────────────────
 export async function listarSucursalesAdmin(): Promise<SucursalAdmin[]> {
   const { data, error } = await supabase
     .from("sucursales")
     .select("id, nombre, region, activa")
     .order("nombre");
-  if (error) {
-    console.error("[admin] listarSucursales", error.message);
-    return [];
-  }
+  if (error) { console.error("[admin] listarSucursales", error.message); return []; }
   return (data as SucursalAdmin[]) ?? [];
 }
 
