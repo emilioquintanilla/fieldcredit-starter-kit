@@ -10,6 +10,7 @@ import {
   CheckCircle2, XCircle, Info, Send,
 } from "lucide-react";
 import { useExpedientes } from "@/stores/expedientes";
+import { AlertasCoherencia } from "@/components/ia/AlertasCoherencia";
 import {
   BLOQUE_META, BLOQUE_BG, COLORES_GRAFICO,
   generarMeses, mesActualISO, type Bloque,
