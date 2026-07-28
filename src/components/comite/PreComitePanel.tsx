@@ -7,6 +7,7 @@
  */
 import { useMemo } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertasCoherencia } from "@/components/ia/AlertasCoherencia";
 import { useExpedientes } from "@/stores/expedientes";
 import {
   CUENTAS_INGRESOS, CUENTAS_COSTOS, CUENTAS_GASTOS_OPERACION,
@@ -318,6 +319,9 @@ export function PreComitePanel({ expedienteId }: Props) {
           )}
         </div>
       )}
+
+      {/* Verificación de coherencia de datos */}
+      <AlertasCoherencia expedienteId={expedienteId} modoCompacto />
 
       {/* Aviso si hay errores */}
       {!listoEnviar && (
