@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PageHeader } from "@/components/PageHeader";
 import { useApp, useRolActivo } from "@/stores/app";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
+import { PanelAlertaTemprana } from "@/components/ia/PanelAlertaTemprana";
 import {
   obtenerKpiInstitucional, obtenerExposicionClimatica, obtenerColocacion,
   fmtC$corto, fmtPct,
@@ -248,6 +249,13 @@ function DashboardPage() {
           </ul>
         </div>
       </section>
+
+      {/* ── Alerta temprana de mora (coordinador, gerente, admin) ── */}
+      {!esAsesor && (
+        <section className="mt-4">
+          <PanelAlertaTemprana limite={5} soloSucursal={rol === "coordinador"} />
+        </section>
+      )}
 
       {/* ── Acceso rápido (móvil) ── */}
       <section className="mt-4 md:hidden">
