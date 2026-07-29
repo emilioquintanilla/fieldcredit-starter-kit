@@ -12,6 +12,8 @@ const MapaExpediente = lazy(() => import("./MapaExpediente"));
 type Estado = "pendiente" | "progreso" | "completo" | "alerta";
 
 // Estado del módulo geo — usado por la barra de tabs
+import { PerfilClimatico } from "@/components/climatico/PerfilClimatico";
+
 export function estadoGeoStatus(exp: { geolocalizacion?: Partial<Record<TipoUbicacion, UbicacionGeo | null>> } | undefined): Estado {
   const g = exp?.geolocalizacion;
   if (!g) return "pendiente";
@@ -279,6 +281,17 @@ export function GeoModule({ expedienteId, aplicaFiador, fiadorTieneNegocio }: Pr
           </div>
         </div>
       </div>
+
+      {/* Perfil climático de la parcela — datos NASA ClimateSERV */}
+      {geo.negocioDeudor?.lat && geo.negocioDeudor?.lng && (
+        <div className="mt-4">
+          <PerfilClimatico
+            lat={geo.negocioDeudor.lat}
+            lng={geo.negocioDeudor.lng}
+            departamento={geo.negocioDeudor.departamento ?? exp?.data?.departamento_residencia}
+          />
+        </div>
+      )}
 
       {/* Overlay de captura */}
       {(estado === "capturando" || estado === "geocodificando") && (
