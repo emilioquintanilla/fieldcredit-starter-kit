@@ -23,6 +23,7 @@ import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index
 import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
 import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ApiIaCompletarRouteImport } from './routes/api/ia/completar'
+import { Route as ApiPublicIpRouteImport } from './routes/api/public/ip'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
   path: '/api/ia/completar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicIpRoute = ApiPublicIpRouteImport.update({
+  id: '/api/public/ip',
+  path: '/api/public/ip',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/comite/': typeof ComiteIndexRoute
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
+  '/api/public/ip': typeof ApiPublicIpRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/comite': typeof ComiteIndexRoute
   '/expedientes': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
+  '/api/public/ip': typeof ApiPublicIpRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/comite/': typeof ComiteIndexRoute
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
+  '/api/public/ip': typeof ApiPublicIpRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/comite/'
     | '/expedientes/'
     | '/api/ia/completar'
+    | '/api/public/ip'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/comite'
     | '/expedientes'
     | '/api/ia/completar'
+    | '/api/public/ip'
   id:
     | '__root__'
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/comite/'
     | '/expedientes/'
     | '/api/ia/completar'
+    | '/api/public/ip'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -206,6 +218,7 @@ export interface RootRouteChildren {
   ExpedientesNuevoRoute: typeof ExpedientesNuevoRoute
   ExpedientesIndexRoute: typeof ExpedientesIndexRoute
   ApiIaCompletarRoute: typeof ApiIaCompletarRoute
+  ApiPublicIpRoute: typeof ApiPublicIpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -308,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiIaCompletarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ip': {
+      id: '/api/public/ip'
+      path: '/api/public/ip'
+      fullPath: '/api/public/ip'
+      preLoaderRoute: typeof ApiPublicIpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -337,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExpedientesNuevoRoute: ExpedientesNuevoRoute,
   ExpedientesIndexRoute: ExpedientesIndexRoute,
   ApiIaCompletarRoute: ApiIaCompletarRoute,
+  ApiPublicIpRoute: ApiPublicIpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

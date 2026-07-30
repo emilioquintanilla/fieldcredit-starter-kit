@@ -120,6 +120,7 @@ export interface RegistroBitacora {
   entidad: string | null;
   entidad_id: string | null;
   descripcion: string | null;
+  ip: string | null;
   created_at: string;
 }
 

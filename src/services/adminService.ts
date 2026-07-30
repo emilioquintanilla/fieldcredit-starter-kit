@@ -209,10 +209,12 @@ export async function registrarBitacora(registro: {
   descripcion?: string;
   valor_anterior?: unknown;
   valor_nuevo?: unknown;
+  ip?: string | null;
 }): Promise<void> {
   try {
     await supabase.from("bitacora_auditoria").insert({
       ...registro,
+      ip: registro.ip ?? null,
       valor_anterior: registro.valor_anterior ? JSON.stringify(registro.valor_anterior) : null,
       valor_nuevo: registro.valor_nuevo ? JSON.stringify(registro.valor_nuevo) : null,
     });
