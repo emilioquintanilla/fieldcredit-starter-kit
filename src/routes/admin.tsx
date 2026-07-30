@@ -64,14 +64,14 @@ function PanelAdmin() {
         subtitle="Gestión de usuarios, productos, parámetros y trazabilidad"
       />
 
-      <nav className="mt-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
+      <nav className="mt-4 flex gap-1 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-700">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 sm:px-4 text-sm font-medium transition-colors ${
                 tab === t.id
                   ? "border-fieldcredit-green text-fieldcredit-green"
                   : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"

@@ -215,7 +215,7 @@ function ExpedienteDetalle() {
 
       {/* Barra de módulos */}
       <nav
-        className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800"
+        className="mb-4 flex gap-1 overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800"
         aria-label="Módulos del expediente"
       >
         {tabs.filter((t) => t.visible).map((t) => (
