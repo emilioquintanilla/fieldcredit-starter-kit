@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { NavBar } from "./NavBar";
 import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
 import { useApp } from "@/stores/app";
 
 export function AppLayout({ children }: { children: ReactNode }) {
