@@ -1,5 +1,12 @@
+/**
+ * Cliente Supabase — apunta al proyecto de MiCrédito/FieldCredit.
+ * Ruta: src/lib/supabase.ts
+ */
 import { createClient } from "@supabase/supabase-js";
 
+// Tu proyecto de Supabase (bdxtdhkbmabwuluvvhdl)
+// Las variables de entorno tienen prioridad; el fallback garantiza
+// que la app funcione mientras no estén configuradas en Lovable.
 const SUPABASE_URL =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
   "https://bdxtdhkbmabwuluvvhdl.supabase.co";
@@ -13,6 +20,5 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    storage: localStorage,
   },
 });
