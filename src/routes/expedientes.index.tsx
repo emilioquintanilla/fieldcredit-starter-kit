@@ -1,16 +1,18 @@
 // Listado de expedientes del asesor (leído desde Supabase, con acciones
 // de archivar y eliminar). Fase 1 de la migración a Cloud.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ChevronRight, MoreVertical, Plus, Search, Archive, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProgresoSolicitud } from "@/components/ProgresoSolicitud";
 import { useApp } from "@/stores/app";
 import { useExpedientesSync } from "@/hooks/useExpedientesSync";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
-import type { ExpedienteDB } from "@/services/expedientesService";
+import { obtenerSolicitudesDe, type ExpedienteDB } from "@/services/expedientesService";
+import type { SolicitudData } from "@/stores/expedientes";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/expedientes/")({
@@ -41,8 +43,30 @@ function ExpedientesPage() {
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [menuAbierto, setMenuAbierto] = useState<number | null>(null);
+  const [solicitudes, setSolicitudes] = useState<Record<number, SolicitudData>>({});
 
   useExpedientesSync();
+
+  // Carga las solicitudes de los borradores para calcular su progreso.
+  const idsBorrador = useMemo(
+    () => expedientes.filter((e) => e.estado === "borrador").map((e) => e.id),
+    [expedientes],
+  );
+  const claveBorradores = idsBorrador.join(",");
+  useEffect(() => {
+    if (!claveBorradores) {
+      setSolicitudes({});
+      return;
+    }
+    let activo = true;
+    void obtenerSolicitudesDe(claveBorradores.split(",").map(Number)).then((mapa) => {
+      if (activo) setSolicitudes(mapa as Record<number, SolicitudData>);
+    });
+    return () => {
+      activo = false;
+    };
+  }, [claveBorradores]);
+
 
   const lista = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -138,7 +162,10 @@ function ExpedientesPage() {
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     {e.codigo} · {money(e.monto_solicitado)}
                   </div>
-                  <div className="mt-1"><StatusBadge status={e.estado} /></div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={e.estado} />
+                    {e.estado === "borrador" && <ProgresoSolicitud data={solicitudes[e.id]} />}
+                  </div>
                 </div>
                 <ChevronRight size={18} className="shrink-0 text-slate-400" />
               </Link>
@@ -199,7 +226,12 @@ function ExpedientesPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{e.codigo}</td>
                 <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{money(e.monto_solicitado)}</td>
-                <td className="px-4 py-3"><StatusBadge status={e.estado} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={e.estado} />
+                    {e.estado === "borrador" && <ProgresoSolicitud data={solicitudes[e.id]} />}
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                   {new Date(e.created_at).toLocaleDateString("es-NI")}
                 </td>

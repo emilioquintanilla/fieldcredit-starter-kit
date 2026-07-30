@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProgresoSolicitud } from "@/components/ProgresoSolicitud";
 import { FiadorModule } from "@/components/FiadorModule";
 import { GarantiasModule } from "@/components/GarantiasModule";
 import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";
@@ -189,17 +190,23 @@ function ExpedienteDetalle() {
           <div className="flex items-center gap-2">
             <StatusBadge status={estado} />
             {estado === "borrador" && (
-              <Link
-                to="/expedientes/nuevo"
-                search={{ id }}
-                className="inline-flex items-center gap-1 rounded-md bg-fieldcredit-green px-3 py-1.5 text-xs font-semibold text-white hover:bg-fieldcredit-green-dark"
-              >
-                <Pencil size={13} /> Continuar solicitud
-              </Link>
+              <>
+                <ProgresoSolicitud data={d} />
+                <Link
+                  to="/expedientes/nuevo"
+                  search={{ id }}
+                  className="inline-flex items-center gap-1 rounded-md bg-fieldcredit-green px-3 py-1.5 text-xs font-semibold text-white hover:bg-fieldcredit-green-dark"
+                >
+                  <Pencil size={13} /> Continuar solicitud
+                </Link>
+              </>
             )}
           </div>
         }
       />
+
+      {estado === "borrador" && <ProgresoSolicitud data={d} variante="detallado" className="mb-3" />}
+
 
 
       <Link to="/expedientes" className="mb-3 inline-flex items-center gap-1 text-xs text-slate-600 hover:underline dark:text-slate-400">

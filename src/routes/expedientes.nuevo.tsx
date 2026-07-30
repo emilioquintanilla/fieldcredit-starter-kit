@@ -24,6 +24,22 @@ import {
   relacionesFiador, tiposGarantia,
 } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  validarSeccionSolicitud,
+  calcularProgresoSolicitud,
+  
+  NOMBRES_SECCION as NOMBRES_SECCION_BASE,
+} from "@/lib/progresoSolicitud";
 
 
 export const Route = createFileRoute("/expedientes/nuevo")({
@@ -35,9 +51,8 @@ export const Route = createFileRoute("/expedientes/nuevo")({
 });
 
 
-const NOMBRES_SECCION = [
-  "Institución", "Deudor", "Actividad", "Crédito", "Fiador", "Garantías", "Firma",
-];
+const NOMBRES_SECCION = NOMBRES_SECCION_BASE;
+
 
 // Utilidades
 const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
@@ -79,6 +94,8 @@ function NuevaSolicitud() {
   const [seccionesConError, setSeccionesConError] = useState<Set<number>>(new Set());
   const [seccionesCompletadas, setSeccionesCompletadas] = useState<Set<number>>(new Set());
   const [scannerVisible, setScannerVisible] = useState(true);
+  const [confirmarEnvio, setConfirmarEnvio] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const creandoRef = useRef(false);
 
   // Modo edición: descarga el borrador existente desde la nube y lo fusiona
@@ -128,52 +145,10 @@ function NuevaSolicitud() {
   useAutosaveSolicitud(exp?.supabaseId, exp?.data);
 
 
-  // Validación por sección
-  const validarSeccion = (n: number): Record<string, string> => {
-    const err: Record<string, string> = {};
-    if (n === 1) {
-      if (!data.tipo_solicitud) err.tipo_solicitud = "Requerido";
-    }
-    if (n === 2) {
-      if (!data.primer_apellido) err.primer_apellido = "Requerido";
-      if (!data.primer_nombre) err.primer_nombre = "Requerido";
-      if (!data.cedula || !regexCedula.test(data.cedula)) err.cedula = "Formato: 000-000000-0000X";
-      if (!data.fecha_nacimiento) err.fecha_nacimiento = "Requerido";
-      if (!data.sexo) err.sexo = "Requerido";
-      if (!data.estado_civil) err.estado_civil = "Requerido";
-      if (!data.departamento_residencia) err.departamento_residencia = "Requerido";
-      if (!data.direccion_domiciliar) err.direccion_domiciliar = "Requerido";
-      if (!data.tipo_vivienda) err.tipo_vivienda = "Requerido";
-      if (data.dependientes === undefined || data.dependientes === null) err.dependientes = "Requerido";
-      if (data.correo && !/^\S+@\S+\.\S+$/.test(data.correo)) err.correo = "Correo inválido";
-    }
-    if (n === 3) {
-      if (!data.tipo_actividad) err.tipo_actividad = "Requerido";
-      if (!data.descripcion_actividad || data.descripcion_actividad.length < 20)
-        err.descripcion_actividad = "Mínimo 20 caracteres";
-      if (data.antiguedad_anios === undefined && data.antiguedad_meses === undefined)
-        err.antiguedad = "Requerido";
-      if (!data.departamento_operacion) err.departamento_operacion = "Requerido";
-    }
-    if (n === 4) {
-      if (!data.producto) err.producto = "Requerido";
-      if (!data.monto || data.monto <= 0) err.monto = "Monto mayor a 0";
-      if (!data.plazo) err.plazo = "Requerido";
-      if (!data.frecuencia_pago) err.frecuencia_pago = "Requerido";
-      if (!data.destino || data.destino.length < 20) err.destino = "Mínimo 20 caracteres";
-    }
-    if (n === 5) {
-      if (data.aplica_fiador && !data.relacion_fiador) err.relacion_fiador = "Requerido";
-    }
-    if (n === 6) {
-      if (data.aplica_garantia && !(data.tipos_garantia && data.tipos_garantia.length > 0))
-        err.tipos_garantia = "Seleccione al menos un tipo";
-    }
-    if (n === 7) {
-      if (!data.firma_digital) err.firma_digital = "Firma requerida";
-    }
-    return err;
-  };
+  // Validación por sección (compartida con listado/detalle)
+  const validarSeccion = (n: number): Record<string, string> =>
+    validarSeccionSolicitud(data, n);
+
 
   const irSeccion = (n: number, forzar = false) => {
     if (!forzar) {
@@ -224,7 +199,9 @@ function NuevaSolicitud() {
     );
   };
 
-  const enviarSolicitud = async () => {
+  // Valida todas las secciones y, si todo está correcto, abre el diálogo
+  // de confirmación para evitar envíos accidentales.
+  const intentarEnviar = () => {
     const todosErr: Record<string, string> = {};
     const secErr = new Set<number>();
     for (let i = 1; i <= 7; i++) {
@@ -245,27 +222,38 @@ function NuevaSolicitud() {
       }, 100);
       return;
     }
-    if (!expedienteId) return;
-    completarSolicitud(expedienteId);
-
-    const supabaseId = useExpedientes.getState().expedientes[expedienteId]?.supabaseId;
-    if (!supabaseId) {
-      toast.error("El expediente aún no está sincronizado con la nube. Intente de nuevo.");
-      return;
-    }
-
-    // Guarda todo el formulario ANTES de navegar, para que cualquier
-    // usuario/dispositivo vea exactamente los mismos datos.
-    const ok = await sincronizarConNube();
-    if (!ok) {
-      toast.error("No se pudo guardar la solicitud en la nube. Revise su conexión.");
-      return;
-    }
-    await cambiarEstadoRemote(supabaseId, "en_revision");
-
-    toast.success("Solicitud enviada ✓");
-    navigate({ to: "/expedientes/$id", params: { id: String(supabaseId) } });
+    setConfirmarEnvio(true);
   };
+
+  const enviarSolicitud = async () => {
+    if (!expedienteId || enviando) return;
+    setEnviando(true);
+    try {
+      completarSolicitud(expedienteId);
+
+      const supabaseId = useExpedientes.getState().expedientes[expedienteId]?.supabaseId;
+      if (!supabaseId) {
+        toast.error("El expediente aún no está sincronizado con la nube. Intente de nuevo.");
+        return;
+      }
+
+      // Guarda todo el formulario ANTES de navegar, para que cualquier
+      // usuario/dispositivo vea exactamente los mismos datos.
+      const ok = await sincronizarConNube();
+      if (!ok) {
+        toast.error("No se pudo guardar la solicitud en la nube. Revise su conexión.");
+        return;
+      }
+      await cambiarEstadoRemote(supabaseId, "en_revision");
+
+      setConfirmarEnvio(false);
+      toast.success("Solicitud enviada ✓");
+      navigate({ to: "/expedientes/$id", params: { id: String(supabaseId) } });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
 
 
   // Auto-completa desde OCR solo los campos vacíos
@@ -317,19 +305,27 @@ function NuevaSolicitud() {
     setData({ [campo]: valor, auto_campos: auto } as Partial<SolicitudData>);
   };
 
-  // Progreso general (secciones completadas + activa proporcional)
-  const progreso = Math.round((seccionesCompletadas.size / 7) * 100);
+  // Progreso real: secciones válidas según los datos guardados
+  // (unidas a las que el asesor ya validó manualmente en esta sesión).
+  const progresoData = useMemo(() => calcularProgresoSolicitud(data), [data]);
+  const completas = useMemo(() => {
+    const s = new Set(progresoData.completadas);
+    seccionesCompletadas.forEach((n) => s.add(n));
+    return s;
+  }, [progresoData, seccionesCompletadas]);
+  const progreso = Math.round((completas.size / 7) * 100);
 
   const pasos: Paso[] = useMemo(
     () =>
       NOMBRES_SECCION.map((nombre, i) => ({
         num: i + 1,
         nombre,
-        completado: seccionesCompletadas.has(i + 1),
+        completado: completas.has(i + 1),
         conError: seccionesConError.has(i + 1),
       })),
-    [seccionesCompletadas, seccionesConError],
+    [completas, seccionesConError],
   );
+
 
   if (!exp) {
     return (
@@ -418,7 +414,7 @@ function NuevaSolicitud() {
           ) : (
             <button
               type="button"
-              onClick={enviarSolicitud}
+              onClick={intentarEnviar}
               className="inline-flex items-center gap-1 rounded-md bg-fieldcredit-green px-4 py-2 text-sm font-semibold text-white hover:bg-fieldcredit-green-dark"
             >
               <Send size={16} /> Enviar solicitud
@@ -427,10 +423,37 @@ function NuevaSolicitud() {
         </div>
       </div>
 
+      <AlertDialog open={confirmarEnvio} onOpenChange={(o) => !enviando && setConfirmarEnvio(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Enviar la solicitud a revisión?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La solicitud {data.numero_solicitud} de{" "}
+              {[data.primer_nombre, data.primer_apellido].filter(Boolean).join(" ") || "el cliente"}{" "}
+              pasará al estado <strong>En revisión</strong> y dejará de ser un borrador editable
+              desde este formulario. Verifique que la información esté completa y correcta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={enviando}>Revisar de nuevo</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void enviarSolicitud();
+              }}
+              disabled={enviando}
+            >
+              {enviando ? "Enviando…" : "Sí, enviar solicitud"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AsistenteBarraCampo expediente={exp} moduloActual="solicitud" />
     </AppLayout>
   );
 }
+
 
 /* ============================================================
    Helpers UI reutilizables
