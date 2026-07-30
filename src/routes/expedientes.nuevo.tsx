@@ -13,6 +13,7 @@ import { useApp } from "@/stores/app";
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { useAutosaveSolicitud } from "@/hooks/useAutosaveSolicitud";
+import { guardarSolicitud, actualizarExpedienteHeader } from "@/services/expedientesService";
 import { sucursales } from "@/data/mock";
 import { departamentos, municipiosPorDepartamento } from "@/data/municipios";
 import {
@@ -179,8 +180,35 @@ function NuevaSolicitud() {
     setSeccion(n);
   };
 
-  const guardarBorrador = () => {
-    toast.success("Borrador guardado ✓");
+  // Persiste TODO el formulario en Supabase (fuente de verdad cross-device).
+  const sincronizarConNube = async (): Promise<boolean> => {
+    const actual = useExpedientes.getState().expedientes[expedienteId ?? ""];
+    if (!actual?.supabaseId) return false;
+    const d = actual.data;
+    try {
+      await guardarSolicitud(actual.supabaseId, d as Record<string, unknown>);
+      const nombre = [d.primer_nombre, d.segundo_nombre, d.primer_apellido, d.segundo_apellido]
+        .filter(Boolean).join(" ").trim();
+      await actualizarExpedienteHeader(actual.supabaseId, {
+        cliente: nombre || null,
+        cedula: d.cedula ?? null,
+        tipo_producto: d.producto ?? null,
+        monto_solicitado: d.monto ?? null,
+        plazo_meses: d.plazo ?? null,
+        actividad: d.tipo_actividad ?? null,
+      });
+      return true;
+    } catch (e) {
+      console.error("[sincronizar solicitud]", e);
+      return false;
+    }
+  };
+
+  const guardarBorrador = async () => {
+    const ok = await sincronizarConNube();
+    toast[ok ? "success" : "error"](
+      ok ? "Borrador guardado en la nube ✓" : "No se pudo guardar en la nube",
+    );
   };
 
   const enviarSolicitud = async () => {
@@ -206,11 +234,24 @@ function NuevaSolicitud() {
     }
     if (!expedienteId) return;
     completarSolicitud(expedienteId);
-    if (exp?.supabaseId) {
-      await cambiarEstadoRemote(exp.supabaseId, "en_revision");
+
+    const supabaseId = useExpedientes.getState().expedientes[expedienteId]?.supabaseId;
+    if (!supabaseId) {
+      toast.error("El expediente aún no está sincronizado con la nube. Intente de nuevo.");
+      return;
     }
+
+    // Guarda todo el formulario ANTES de navegar, para que cualquier
+    // usuario/dispositivo vea exactamente los mismos datos.
+    const ok = await sincronizarConNube();
+    if (!ok) {
+      toast.error("No se pudo guardar la solicitud en la nube. Revise su conexión.");
+      return;
+    }
+    await cambiarEstadoRemote(supabaseId, "en_revision");
+
     toast.success("Solicitud enviada ✓");
-    navigate({ to: "/expedientes/$id", params: { id: expedienteId } });
+    navigate({ to: "/expedientes/$id", params: { id: String(supabaseId) } });
   };
 
 
