@@ -210,8 +210,8 @@ function TabUsuarios({ adminUser }: { adminUser: NonNullable<ReturnType<typeof u
           {[1,2,3].map((i) => <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />)}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
