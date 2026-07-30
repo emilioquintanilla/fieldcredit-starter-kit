@@ -1,7 +1,3 @@
-/**
- * Cliente Supabase — usa variables de entorno con fallback a las keys del proyecto.
- * Ruta: src/lib/supabase.ts
- */
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL =
