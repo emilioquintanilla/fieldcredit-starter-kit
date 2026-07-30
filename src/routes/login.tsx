@@ -49,12 +49,12 @@ function LoginPage() {
     }
     setError(null);
     setLoading(true);
-    const u = await login(usuario.trim(), password, Number(sucursalId));
+    const { usuario: u, error: motivo } = await login(usuario.trim(), password, Number(sucursalId));
     setLoading(false);
     if (u) {
       navigate({ to: "/dashboard" });
     } else {
-      setError("Usuario o contraseña incorrectos. Verificá tus credenciales.");
+      setError(motivo ?? "Usuario o contraseña incorrectos. Verificá tus credenciales.");
     }
   };
 
@@ -98,7 +98,7 @@ function LoginPage() {
             <input
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
-              placeholder="Ingresa tu usuario"
+              placeholder="Usuario o correo electrónico"
               autoComplete="username"
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-fieldcredit-green focus:outline-none focus:ring-2 focus:ring-fieldcredit-green/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
