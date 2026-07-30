@@ -137,14 +137,14 @@ function NavLink({
       to={item.to}
       onClick={onClose}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "flex h-12 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors",
         active
-          ? "bg-fieldcredit-green text-white"
-          : "text-white/80 hover:bg-white/10 hover:text-white",
+          ? "bg-fieldcredit-green text-white shadow-sm ring-1 ring-white/30"
+          : "text-white/80 hover:bg-white/10 hover:text-white active:bg-white/20",
       )}
       title={item.label}
     >
-      <span className="text-lg">{item.icon}</span>
+      <span className="w-6 shrink-0 text-center text-xl leading-none">{item.icon}</span>
       <span className={cn("flex-1 truncate", collapsed && "md:hidden")}>
         {item.label}
       </span>
