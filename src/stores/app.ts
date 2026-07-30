@@ -125,8 +125,7 @@ export const useApp = create<AppState>((set, get) => ({
     return { usuario: authUser };
   },
 
-  logout: async () => {
-    await supabase.auth.signOut();
+  logout: () => {
     set({ usuario: null, rolSimulado: null });
     if (typeof localStorage !== "undefined") localStorage.removeItem(STORAGE_KEY_USER);
   },
@@ -144,32 +143,21 @@ export const useApp = create<AppState>((set, get) => ({
     set({ theme: savedTheme });
     applyThemeClass(savedTheme);
 
-    // Verificar sesión activa en Supabase Auth
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: perfil } = await supabase
-        .from("usuarios")
-        .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
-        .eq("auth_user_id", session.user.id)
-        .eq("activo", true)
-        .maybeSingle();
-      if (perfil) {
-        const authUser = toAuthUser(perfil as unknown as UsuarioDB);
-        set({ usuario: authUser });
-        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(authUser));
-      } else {
-        set({ usuario: null });
+    // Sesión persistida en localStorage (login contra tabla `usuarios`)
+    const cache = localStorage.getItem(STORAGE_KEY_USER);
+    if (cache) {
+      try {
+        set({ usuario: JSON.parse(cache) as AuthUser });
+      } catch {
         localStorage.removeItem(STORAGE_KEY_USER);
+        set({ usuario: null });
       }
-    } else {
-      // Sin sesión válida — limpiar caché
-      set({ usuario: null });
-      localStorage.removeItem(STORAGE_KEY_USER);
     }
     if (get().sucursales.length === 0) {
       void get().cargarSucursales();
     }
   },
+
 
   cargarSucursales: async () => {
     const data = await obtenerSucursales();
