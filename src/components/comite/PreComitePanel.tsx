@@ -5,10 +5,11 @@
  * Se integra en TabDocumentos de expedientes.$id.tsx, encima del botón "Enviar al comité".
  * Ruta: src/components/comite/PreComitePanel.tsx
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, ChevronRight } from "lucide-react";
 import { AlertasCoherencia } from "@/components/ia/AlertasCoherencia";
 import { useExpedientes } from "@/stores/expedientes";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   CUENTAS_INGRESOS, CUENTAS_COSTOS, CUENTAS_GASTOS_OPERACION,
   CUENTAS_CONSUMO_FAMILIAR, CUENTAS_ACTIVOS, CUENTAS_PASIVOS,
@@ -31,6 +32,10 @@ interface Props {
 
 export function PreComitePanel({ expedienteId }: Props) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId]);
+  const esMovil = useIsMobile();
+  const [manual, setManual] = useState<boolean | null>(null);
+  const abierto = manual ?? !esMovil;
+  const setAbierto = (fn: (v: boolean) => boolean) => setManual(fn(abierto));
 
   const { checks, ratios } = useMemo(() => {
     if (!exp) return { checks: [], ratios: null };
