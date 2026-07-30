@@ -37,7 +37,7 @@ import {
 import {
   validarSeccionSolicitud,
   calcularProgresoSolicitud,
-  nombreSeccion,
+  
   NOMBRES_SECCION as NOMBRES_SECCION_BASE,
 } from "@/lib/progresoSolicitud";
 
