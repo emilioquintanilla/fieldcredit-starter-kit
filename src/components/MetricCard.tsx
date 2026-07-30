@@ -18,15 +18,15 @@ const COLORS: Record<NonNullable<Props["color"]>, string> = {
 
 export function MetricCard({ title, value, icon, color = "green", trend }: Props) {
   return (
-    <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow duration-150 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+    <div className="group rounded-2xl border border-border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
       <div className="flex items-center justify-between">
         <span className={cn("grid h-10 w-10 place-items-center rounded-lg text-xl", COLORS[color])}>
           {icon}
         </span>
-        {trend && <span className="text-xs text-slate-500 dark:text-slate-400">{trend}</span>}
+        {trend && <span className="text-xs text-muted-foreground">{trend}</span>}
       </div>
-      <div className="mt-3 text-3xl font-bold text-slate-900 dark:text-slate-50">{value}</div>
-      <div className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{title}</div>
+      <div className="mt-3 text-3xl font-bold text-foreground">{value}</div>
+      <div className="mt-1 text-xs font-medium text-muted-foreground">{title}</div>
     </div>
   );
 }
