@@ -18,6 +18,8 @@ interface State {
   error: string | null;
   guardandoId: number | null;
   ultimoGuardado: number | null; // timestamp para el badge "Guardado"
+  guardandoSolicitud: boolean; // autoguardado / guardado manual en curso
+  errorGuardado: string | null; // último error de guardado del formulario
 
   cargar: (filtros?: Filtros) => Promise<void>;
   crear: (datos: { asesorId: number; sucursalId: number; cliente?: string }) => Promise<ExpedienteDB | null>;
@@ -33,6 +35,8 @@ export const useExpedientesRemote = create<State>((set) => ({
   error: null,
   guardandoId: null,
   ultimoGuardado: null,
+  guardandoSolicitud: false,
+  errorGuardado: null,
 
   cargar: async (filtros) => {
     set({ cargando: true, error: null });

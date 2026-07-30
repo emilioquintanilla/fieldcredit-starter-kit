@@ -14,6 +14,7 @@ import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { useAutosaveSolicitud } from "@/hooks/useAutosaveSolicitud";
 import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
+import { EstadoAutoguardado } from "@/components/EstadoAutoguardado";
 
 import { guardarSolicitud, actualizarExpedienteHeader } from "@/services/expedientesService";
 import { sucursales } from "@/data/mock";
@@ -96,7 +97,10 @@ function NuevaSolicitud() {
   const [scannerVisible, setScannerVisible] = useState(true);
   const [confirmarEnvio, setConfirmarEnvio] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [guardandoManual, setGuardandoManual] = useState(false);
   const creandoRef = useRef(false);
+  const reanudadoRef = useRef(false);
+  const enfocarErroresRef = useRef(false);
 
   // Modo edición: descarga el borrador existente desde la nube y lo fusiona
   // en el store local antes de editarlo.
@@ -193,10 +197,43 @@ function NuevaSolicitud() {
   };
 
   const guardarBorrador = async () => {
+    if (guardandoManual) return;
+    setGuardandoManual(true);
+    useExpedientesRemote.setState({ guardandoSolicitud: true });
+    const id = toast.loading("Guardando borrador…");
     const ok = await sincronizarConNube();
-    toast[ok ? "success" : "error"](
-      ok ? "Borrador guardado en la nube ✓" : "No se pudo guardar en la nube",
-    );
+    useExpedientesRemote.setState({
+      guardandoSolicitud: false,
+      ...(ok
+        ? { ultimoGuardado: Date.now(), errorGuardado: null }
+        : { errorGuardado: "No se pudo guardar en la nube" }),
+    });
+    if (ok) {
+      toast.success("Borrador guardado ✓", {
+        id,
+        description: `Última versión en la nube: ${new Date().toLocaleString("es-NI")}`,
+      });
+    } else {
+      toast.error("No se pudo guardar el borrador", {
+        id,
+        description: "Revise su conexión a internet y vuelva a pulsar «Guardar borrador».",
+      });
+    }
+    setGuardandoManual(false);
+  };
+
+  // Enfoca y desplaza hacia el primer campo con error de la sección visible.
+  const enfocarPrimerError = () => {
+    setTimeout(() => {
+      const marca = document.querySelector<HTMLElement>("[data-error='true']");
+      if (!marca) return;
+      const contenedor = marca.parentElement ?? marca;
+      const campo = contenedor.querySelector<HTMLElement>(
+        "input, select, textarea, button[type='button']",
+      );
+      (campo ?? marca).scrollIntoView({ behavior: "smooth", block: "center" });
+      campo?.focus({ preventScroll: true });
+    }, 120);
   };
 
   // Valida todas las secciones y, si todo está correcto, abre el diálogo
@@ -214,12 +251,13 @@ function NuevaSolicitud() {
     if (secErr.size > 0) {
       setErrores(todosErr);
       setSeccionesConError(secErr);
-      setSeccion(Math.min(...Array.from(secErr)));
-      toast.error("Faltan campos obligatorios en secciones marcadas");
-      setTimeout(() => {
-        const first = document.querySelector<HTMLElement>("[data-error='true']");
-        first?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
+      const faltantes = Array.from(secErr).sort((a, b) => a - b);
+      setSeccion(faltantes[0]);
+      toast.error("No se puede enviar: faltan datos obligatorios", {
+        description: `Complete ${faltantes.map((n) => NOMBRES_SECCION[n - 1]).join(", ")}. Los campos en rojo indican qué corregir.`,
+      });
+      enfocarErroresRef.current = true;
+      enfocarPrimerError();
       return;
     }
     setConfirmarEnvio(true);
@@ -228,12 +266,19 @@ function NuevaSolicitud() {
   const enviarSolicitud = async () => {
     if (!expedienteId || enviando) return;
     setEnviando(true);
+    const idToast = toast.loading("Enviando solicitud…", {
+      description: "Guardando la información en la nube.",
+    });
     try {
       completarSolicitud(expedienteId);
 
       const supabaseId = useExpedientes.getState().expedientes[expedienteId]?.supabaseId;
       if (!supabaseId) {
-        toast.error("El expediente aún no está sincronizado con la nube. Intente de nuevo.");
+        toast.error("El expediente aún no está sincronizado", {
+          id: idToast,
+          description:
+            "Espere unos segundos con conexión activa y pulse «Enviar solicitud» de nuevo.",
+        });
         return;
       }
 
@@ -241,13 +286,29 @@ function NuevaSolicitud() {
       // usuario/dispositivo vea exactamente los mismos datos.
       const ok = await sincronizarConNube();
       if (!ok) {
-        toast.error("No se pudo guardar la solicitud en la nube. Revise su conexión.");
+        toast.error("No se pudo enviar la solicitud", {
+          id: idToast,
+          description:
+            "Falló el guardado en la nube. Verifique su conexión y reintente; el borrador conserva sus datos.",
+        });
         return;
       }
       await cambiarEstadoRemote(supabaseId, "en_revision");
+      const errRemoto = useExpedientesRemote.getState().error;
+      if (errRemoto) {
+        toast.error("La solicitud se guardó pero no cambió de estado", {
+          id: idToast,
+          description: `${errRemoto}. Reintente el envío desde el detalle del expediente.`,
+        });
+        return;
+      }
 
+      useExpedientesRemote.setState({ ultimoGuardado: Date.now(), errorGuardado: null });
       setConfirmarEnvio(false);
-      toast.success("Solicitud enviada ✓");
+      toast.success("Solicitud enviada a revisión ✓", {
+        id: idToast,
+        description: `${data.numero_solicitud ?? "Solicitud"} · ${new Date().toLocaleString("es-NI")}`,
+      });
       navigate({ to: "/expedientes/$id", params: { id: String(supabaseId) } });
     } finally {
       setEnviando(false);
@@ -305,6 +366,31 @@ function NuevaSolicitud() {
     setData({ [campo]: valor, auto_campos: auto } as Partial<SolicitudData>);
   };
 
+  // Al continuar un borrador: abre la primera sección pendiente, marca sus
+  // errores y enfoca el primer campo faltante.
+  useEffect(() => {
+    if (!esEdicion || reanudadoRef.current || !exp || cargandoEdicion) return;
+    reanudadoRef.current = true;
+    const { pendientes } = calcularProgresoSolicitud(exp.data);
+    if (pendientes.length === 0) return;
+    const primera = pendientes[0];
+    setSeccion(primera);
+    setSeccionesConError(new Set(pendientes));
+    setErrores(validarSeccionSolicitud(exp.data, primera));
+    enfocarErroresRef.current = true;
+    toast.info(`Continuando en la sección ${primera}: ${NOMBRES_SECCION[primera - 1]}`, {
+      description: `Faltan ${pendientes.length} sección(es) por completar.`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esEdicion, exp, cargandoEdicion]);
+
+  useEffect(() => {
+    if (!enfocarErroresRef.current) return;
+    enfocarErroresRef.current = false;
+    enfocarPrimerError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seccion, errores]);
+
   // Progreso real: secciones válidas según los datos guardados
   // (unidas a las que el asesor ya validó manualmente en esta sesión).
   const progresoData = useMemo(() => calcularProgresoSolicitud(data), [data]);
@@ -347,6 +433,7 @@ function NuevaSolicitud() {
       <PageHeader
         title={esEdicion ? "Continuar solicitud de crédito" : "Nueva solicitud de crédito"}
         subtitle={`N.° ${data.numero_solicitud} · ${data.fecha_solicitud}`}
+        actions={<EstadoAutoguardado />}
       />
 
 
@@ -398,10 +485,11 @@ function NuevaSolicitud() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={guardarBorrador}
-            className="inline-flex items-center gap-1 rounded-md border border-fieldcredit-teal bg-white px-3 py-2 text-sm font-medium text-fieldcredit-teal-dark hover:bg-fieldcredit-teal-pale dark:bg-slate-800"
+            onClick={() => void guardarBorrador()}
+            disabled={guardandoManual}
+            className="inline-flex items-center gap-1 rounded-md border border-fieldcredit-teal bg-white px-3 py-2 text-sm font-medium text-fieldcredit-teal-dark hover:bg-fieldcredit-teal-pale disabled:opacity-60 dark:bg-slate-800"
           >
-            <Save size={16} /> Guardar borrador
+            <Save size={16} /> {guardandoManual ? "Guardando…" : "Guardar borrador"}
           </button>
           {seccion < 7 ? (
             <button
