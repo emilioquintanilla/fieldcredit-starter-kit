@@ -5,7 +5,12 @@ import { create } from "zustand";
 import { obtenerSucursales, type SucursalDB, type UsuarioDB } from "@/services/expedientesService";
 import { supabase } from "@/lib/supabase";
 import { registrarBitacora } from "@/services/adminService";
-import { describirDispositivo, obtenerDispositivo, obtenerIpCliente } from "@/lib/dispositivo";
+import {
+  describirDispositivo,
+  describirUbicacion,
+  obtenerDispositivo,
+  obtenerUbicacionIp,
+} from "@/lib/dispositivo";
 
 export type Rol = "asesor" | "coordinador" | "gerente" | "admin";
 
