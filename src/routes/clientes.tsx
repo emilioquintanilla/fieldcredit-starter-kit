@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { MapaMini } from "@/components/geo/MapaMini";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MenuAccionesExpediente } from "@/components/MenuAccionesExpediente";
-import { useExpedientes, type ExpedienteBorrador, type SolicitudData } from "@/stores/expedientes";
+import { useExpedientes, type EstadoExpediente, type ExpedienteBorrador, type SolicitudData } from "@/stores/expedientes";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { useExpedientesSync } from "@/hooks/useExpedientesSync";
 import { obtenerSolicitudesDe } from "@/services/expedientesService";
@@ -50,7 +50,7 @@ export type ClienteVista = {
   id: string;
   codigo: string;
   data: SolicitudData;
-  estado: string;
+  estado: EstadoExpediente;
   geolocalizacion?: ExpedienteBorrador["geolocalizacion"];
   comite?: ExpedienteBorrador["comite"];
 };
@@ -108,7 +108,7 @@ function ClientesPage() {
           id: String(r.id),
           codigo: r.codigo,
           data,
-          estado: r.estado,
+          estado: (r.estado === "archivado" ? "borrador" : r.estado) as EstadoExpediente,
           geolocalizacion: local?.geolocalizacion,
           comite: local?.comite,
         };
