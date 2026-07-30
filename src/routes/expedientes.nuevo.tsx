@@ -295,19 +295,27 @@ function NuevaSolicitud() {
     setData({ [campo]: valor, auto_campos: auto } as Partial<SolicitudData>);
   };
 
-  // Progreso general (secciones completadas + activa proporcional)
-  const progreso = Math.round((seccionesCompletadas.size / 7) * 100);
+  // Progreso real: secciones válidas según los datos guardados
+  // (unidas a las que el asesor ya validó manualmente en esta sesión).
+  const progresoData = useMemo(() => calcularProgresoSolicitud(data), [data]);
+  const completas = useMemo(() => {
+    const s = new Set(progresoData.completadas);
+    seccionesCompletadas.forEach((n) => s.add(n));
+    return s;
+  }, [progresoData, seccionesCompletadas]);
+  const progreso = Math.round((completas.size / 7) * 100);
 
   const pasos: Paso[] = useMemo(
     () =>
       NOMBRES_SECCION.map((nombre, i) => ({
         num: i + 1,
         nombre,
-        completado: seccionesCompletadas.has(i + 1),
+        completado: completas.has(i + 1),
         conError: seccionesConError.has(i + 1),
       })),
-    [seccionesCompletadas, seccionesConError],
+    [completas, seccionesConError],
   );
+
 
   if (!exp) {
     return (
