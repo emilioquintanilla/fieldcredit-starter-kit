@@ -5,6 +5,7 @@
  * Ruta: src/components/ia/AlertasCoherencia.tsx
  */
 import { useMemo, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertTriangle, Info, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useExpedientes } from "@/stores/expedientes";
 import {
@@ -36,7 +37,10 @@ const TEXTO = {
 
 export function AlertasCoherencia({ expedienteId, modoCompacto = false }: Props) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId]);
-  const [expandido, setExpandido] = useState(!modoCompacto);
+  const esMovil = useIsMobile();
+  const [manual, setManual] = useState<boolean | null>(null);
+  const expandido = manual ?? (!modoCompacto && !esMovil);
+  const setExpandido = (v: boolean) => setManual(v);
 
   const alertas = useMemo(() => verificarCoherencia(exp), [exp]);
   const resumen = useMemo(() => resumenAlertas(alertas), [alertas]);
@@ -57,7 +61,7 @@ export function AlertasCoherencia({ expedienteId, modoCompacto = false }: Props)
       {/* Header */}
       <button
         onClick={() => setExpandido(!expandido)}
-        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-amber-50/50 dark:hover:bg-slate-700/50 transition-colors"
+        className="flex w-full items-center gap-3 px-3 py-3 text-left sm:px-4 sm:py-2.5 hover:bg-amber-50/50 dark:hover:bg-slate-700/50 transition-colors"
       >
         <AlertTriangle size={16} className="shrink-0 text-amber-500" />
         <div className="flex-1">
