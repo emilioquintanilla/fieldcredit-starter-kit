@@ -13,6 +13,8 @@ import { useApp } from "@/stores/app";
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { useAutosaveSolicitud } from "@/hooks/useAutosaveSolicitud";
+import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
+
 import { guardarSolicitud, actualizarExpedienteHeader } from "@/services/expedientesService";
 import { sucursales } from "@/data/mock";
 import { departamentos, municipiosPorDepartamento } from "@/data/municipios";
