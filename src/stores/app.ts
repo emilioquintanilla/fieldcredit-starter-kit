@@ -144,7 +144,7 @@ export const useApp = create<AppState>((set, get) => ({
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(authUser));
     }
-    return authUser;
+    return { usuario: authUser };
   },
 
   logout: async () => {
