@@ -1,7 +1,7 @@
 // Detalle de expediente con barra de módulos (tabs)
 import { useCallback, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FileImage, ArrowLeft } from "lucide-react";
+import { FileImage, ArrowLeft, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -185,8 +185,22 @@ function ExpedienteDetalle() {
       <PageHeader
         title={`Expediente ${exp.id}`}
         subtitle={nombre}
-        actions={<StatusBadge status={estado} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <StatusBadge status={estado} />
+            {estado === "borrador" && (
+              <Link
+                to="/expedientes/nuevo"
+                search={{ id }}
+                className="inline-flex items-center gap-1 rounded-md bg-fieldcredit-green px-3 py-1.5 text-xs font-semibold text-white hover:bg-fieldcredit-green-dark"
+              >
+                <Pencil size={13} /> Continuar solicitud
+              </Link>
+            )}
+          </div>
+        }
       />
+
 
       <Link to="/expedientes" className="mb-3 inline-flex items-center gap-1 text-xs text-slate-600 hover:underline dark:text-slate-400">
         <ArrowLeft size={12} /> Volver al listado

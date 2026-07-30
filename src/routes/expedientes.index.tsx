@@ -142,6 +142,16 @@ function ExpedientesPage() {
                 </div>
                 <ChevronRight size={18} className="shrink-0 text-slate-400" />
               </Link>
+              {e.estado === "borrador" && (
+                <Link
+                  to="/expedientes/nuevo"
+                  search={{ id: String(e.id) }}
+                  className="shrink-0 rounded-md border border-fieldcredit-green px-2 py-1 text-[11px] font-semibold text-fieldcredit-green-dark dark:text-fieldcredit-green"
+                >
+                  Continuar
+                </Link>
+              )}
+
               <MenuAcciones
                 exp={e}
                 rol={usuario?.rol}
@@ -195,6 +205,16 @@ function ExpedientesPage() {
                 </td>
                 <td className="relative px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-1">
+                    {e.estado === "borrador" && (
+                      <Link
+                        to="/expedientes/nuevo"
+                        search={{ id: String(e.id) }}
+                        className="rounded-md border border-fieldcredit-green px-2 py-1 text-xs font-semibold text-fieldcredit-green-dark dark:text-fieldcredit-green"
+                      >
+                        Continuar
+                      </Link>
+                    )}
+
                     <Link
                       to="/expedientes/$id"
                       params={{ id: String(e.id) }}

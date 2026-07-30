@@ -13,6 +13,8 @@ import { useApp } from "@/stores/app";
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { useAutosaveSolicitud } from "@/hooks/useAutosaveSolicitud";
+import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
+
 import { guardarSolicitud, actualizarExpedienteHeader } from "@/services/expedientesService";
 import { sucursales } from "@/data/mock";
 import { departamentos, municipiosPorDepartamento } from "@/data/municipios";
@@ -25,9 +27,13 @@ import { cn } from "@/lib/utils";
 
 
 export const Route = createFileRoute("/expedientes/nuevo")({
-  head: () => ({ meta: [{ title: "Nueva solicitud — FieldCredit" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    id: typeof search.id === "string" && search.id ? search.id : undefined,
+  }),
+  head: () => ({ meta: [{ title: "Solicitud de crédito — FieldCredit" }] }),
   component: NuevaSolicitud,
 });
+
 
 const NOMBRES_SECCION = [
   "Institución", "Deudor", "Actividad", "Crédito", "Fiador", "Garantías", "Firma",
@@ -55,6 +61,8 @@ function NuevaSolicitud() {
   const usuario = useApp((s) => s.usuario);
   const sucursal = sucursales.find((s) => s.id === usuario?.sucursal_id);
   const navigate = useNavigate();
+  const { id: idEdicion } = Route.useSearch();
+  const esEdicion = !!idEdicion;
 
   const crearExpediente = useExpedientes((s) => s.crearExpediente);
   const setSupabaseId = useExpedientes((s) => s.setSupabaseId);
@@ -64,7 +72,7 @@ function NuevaSolicitud() {
   const crearRemote = useExpedientesRemote((s) => s.crear);
   const cambiarEstadoRemote = useExpedientesRemote((s) => s.cambiarEstado);
 
-  const [expedienteId, setExpedienteId] = useState<string | null>(null);
+  const [expedienteId, setExpedienteId] = useState<string | null>(idEdicion ?? null);
   const [errorCreacion, setErrorCreacion] = useState<string | null>(null);
   const [seccion, setSeccion] = useState(1);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -73,9 +81,13 @@ function NuevaSolicitud() {
   const [scannerVisible, setScannerVisible] = useState(true);
   const creandoRef = useRef(false);
 
-  // Crea el expediente localmente + en Supabase en cuanto entra
+  // Modo edición: descarga el borrador existente desde la nube y lo fusiona
+  // en el store local antes de editarlo.
+  const { cargando: cargandoEdicion, noEncontrado } = useCargarExpediente(idEdicion ?? "");
+
+  // Crea el expediente localmente + en Supabase en cuanto entra (solo modo nuevo)
   useEffect(() => {
-    if (expedienteId || !usuario || creandoRef.current) return;
+    if (esEdicion || expedienteId || !usuario || creandoRef.current) return;
     creandoRef.current = true;
     (async () => {
       const idLocal = crearExpediente();
@@ -99,7 +111,8 @@ function NuevaSolicitud() {
       }
       creandoRef.current = false;
     })();
-  }, [expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador, crearRemote, setSupabaseId]);
+  }, [esEdicion, expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador, crearRemote, setSupabaseId]);
+
 
   // Suscripción reactiva al expediente — si usáramos getExpediente() aquí
   // el componente NO se re-renderiza al teclear y los inputs parecen bloqueados.
@@ -321,8 +334,14 @@ function NuevaSolicitud() {
   if (!exp) {
     return (
       <AppLayout>
-        <PageHeader title="Nueva solicitud" />
-        <div className="text-sm text-slate-500">Preparando expediente...</div>
+        <PageHeader title={esEdicion ? "Continuar solicitud" : "Nueva solicitud"} />
+        <div className="text-sm text-slate-500">
+          {esEdicion && noEncontrado && !cargandoEdicion
+            ? "No se encontró el borrador solicitado."
+            : esEdicion
+              ? "Cargando borrador desde la nube…"
+              : "Preparando expediente..."}
+        </div>
       </AppLayout>
     );
   }
@@ -330,9 +349,10 @@ function NuevaSolicitud() {
   return (
     <AppLayout>
       <PageHeader
-        title="Nueva solicitud de crédito"
+        title={esEdicion ? "Continuar solicitud de crédito" : "Nueva solicitud de crédito"}
         subtitle={`N.° ${data.numero_solicitud} · ${data.fecha_solicitud}`}
       />
+
 
       {errorCreacion && (
         <div className="mb-3 rounded-lg border border-fieldcredit-red/40 bg-rose-50 p-3 text-xs text-fieldcredit-red dark:bg-rose-900/20">
