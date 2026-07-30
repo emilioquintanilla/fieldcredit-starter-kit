@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProgresoSolicitud } from "@/components/ProgresoSolicitud";
 import { FiadorModule } from "@/components/FiadorModule";
 import { GarantiasModule } from "@/components/GarantiasModule";
 import { FlujoModule, estadoFlujo } from "@/components/FlujoModule";

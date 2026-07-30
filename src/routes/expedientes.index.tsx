@@ -7,10 +7,12 @@ import { ChevronRight, MoreVertical, Plus, Search, Archive, Trash2 } from "lucid
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProgresoSolicitud } from "@/components/ProgresoSolicitud";
 import { useApp } from "@/stores/app";
 import { useExpedientesSync } from "@/hooks/useExpedientesSync";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
-import type { ExpedienteDB } from "@/services/expedientesService";
+import { obtenerSolicitudesDe, type ExpedienteDB } from "@/services/expedientesService";
+import type { SolicitudData } from "@/stores/expedientes";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/expedientes/")({
