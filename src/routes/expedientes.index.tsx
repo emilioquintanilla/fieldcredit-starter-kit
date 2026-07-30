@@ -1,6 +1,6 @@
 // Listado de expedientes del asesor (leído desde Supabase, con acciones
 // de archivar y eliminar). Fase 1 de la migración a Cloud.
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ChevronRight, MoreVertical, Plus, Search, Archive, Trash2 } from "lucide-react";
@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useApp } from "@/stores/app";
+import { useExpedientesSync } from "@/hooks/useExpedientesSync";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import type { ExpedienteDB } from "@/services/expedientesService";
 import { cn } from "@/lib/utils";
@@ -35,21 +36,13 @@ function ExpedientesPage() {
   const usuario = useApp((s) => s.usuario);
   const expedientes = useExpedientesRemote((s) => s.expedientes);
   const cargando = useExpedientesRemote((s) => s.cargando);
-  const cargar = useExpedientesRemote((s) => s.cargar);
   const archivar = useExpedientesRemote((s) => s.archivar);
   const eliminar = useExpedientesRemote((s) => s.eliminar);
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [menuAbierto, setMenuAbierto] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!usuario) return;
-    void cargar(
-      usuario.rol === "asesor"
-        ? { asesorId: usuario.id }
-        : { sucursalId: usuario.sucursal_id },
-    );
-  }, [usuario, cargar]);
+  useExpedientesSync();
 
   const lista = useMemo(() => {
     const s = q.trim().toLowerCase();

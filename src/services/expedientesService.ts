@@ -104,6 +104,20 @@ export async function obtenerExpedientes(filtros?: {
   return (data as ExpedienteDB[]) ?? [];
 }
 
+export async function obtenerExpediente(id: number): Promise<ExpedienteDB | null> {
+  const { data, error } = await supabase
+    .from("expedientes")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    console.error("obtenerExpediente", error);
+    return null;
+  }
+  return (data as ExpedienteDB | null) ?? null;
+}
+
+
 export async function crearExpediente(datos: {
   asesorId: number;
   sucursalId: number;
@@ -324,4 +338,24 @@ export async function obtenerDocumentos(expedienteId: number): Promise<Documento
     return [];
   }
   return (data as DocumentoDB[]) ?? [];
+}
+
+// Devuelve las solicitudes (datos completos) de varios expedientes de una vez.
+export async function obtenerSolicitudesDe(
+  ids: number[],
+): Promise<Record<number, Record<string, unknown>>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("solicitudes")
+    .select("expediente_id, datos_completos")
+    .in("expediente_id", ids);
+  if (error) {
+    console.error("obtenerSolicitudesDe", error);
+    return {};
+  }
+  const mapa: Record<number, Record<string, unknown>> = {};
+  for (const row of (data ?? []) as Array<{ expediente_id: number; datos_completos: unknown }>) {
+    mapa[row.expediente_id] = (row.datos_completos as Record<string, unknown>) ?? {};
+  }
+  return mapa;
 }

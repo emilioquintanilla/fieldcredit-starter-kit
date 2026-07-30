@@ -1,13 +1,16 @@
 // Módulo de clientes mejorado con filtros, badge ARS y estadísticas
 // Ruta: src/routes/clientes.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { MapaMini } from "@/components/geo/MapaMini";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MenuAccionesExpediente } from "@/components/MenuAccionesExpediente";
-import { useExpedientes } from "@/stores/expedientes";
+import { useExpedientes, type EstadoExpediente, type ExpedienteBorrador, type SolicitudData } from "@/stores/expedientes";
+import { useExpedientesRemote } from "@/stores/expedientesRemote";
+import { useExpedientesSync } from "@/hooks/useExpedientesSync";
+import { obtenerSolicitudesDe } from "@/services/expedientesService";
 import { useRolActivo } from "@/stores/app";
 
 export const Route = createFileRoute("/clientes")({
@@ -41,16 +44,77 @@ const PRODUCTOS_FILTRO = [
   { value: "otro",        label: "Tradicional" },
 ];
 
+// Vista unificada: cabecera + solicitud desde Supabase (fuente de verdad),
+// enriquecida con los módulos locales (geo, comité) cuando existen.
+export type ClienteVista = {
+  id: string;
+  codigo: string;
+  data: SolicitudData;
+  estado: EstadoExpediente;
+  geolocalizacion?: ExpedienteBorrador["geolocalizacion"];
+  comite?: ExpedienteBorrador["comite"];
+};
+
 function ClientesPage() {
-  const expedientes = useExpedientes((s) => s.expedientes);
+  useExpedientesSync();
+  const remotos = useExpedientesRemote((s) => s.expedientes);
+  const cargandoRemoto = useExpedientesRemote((s) => s.cargando);
+  const locales = useExpedientes((s) => s.expedientes);
+  const [solicitudes, setSolicitudes] = useState<Record<number, Record<string, unknown>>>({});
   const rol = useRolActivo();
+
+  const idsRemotos = useMemo(() => remotos.map((e) => e.id).join(","), [remotos]);
+  useEffect(() => {
+    const ids = idsRemotos ? idsRemotos.split(",").map(Number) : [];
+    if (ids.length === 0) { setSolicitudes({}); return; }
+    let vivo = true;
+    void obtenerSolicitudesDe(ids).then((m) => { if (vivo) setSolicitudes(m); });
+    return () => { vivo = false; };
+  }, [idsRemotos]);
+
+  const localPorSupabaseId = useMemo(() => {
+    const m: Record<number, ExpedienteBorrador> = {};
+    Object.values(locales).forEach((e) => {
+      if (e.supabaseId) m[e.supabaseId] = e;
+    });
+    return m;
+  }, [locales]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroProducto, setFiltroProducto] = useState("todos");
   const [vistaLista, setVistaLista] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
 
-  const lista = useMemo(() => Object.values(expedientes), [expedientes]);
+  const lista: ClienteVista[] = useMemo(
+    () =>
+      remotos.map((r) => {
+        const local = localPorSupabaseId[r.id];
+        const remota = (solicitudes[r.id] as SolicitudData | undefined) ?? {};
+        const nombreRemoto = (r.cliente ?? "").split(" ").filter(Boolean);
+        const data: SolicitudData = {
+          primer_nombre: nombreRemoto[0],
+          segundo_nombre: nombreRemoto.length > 2 ? nombreRemoto[1] : undefined,
+          primer_apellido: nombreRemoto.length > 2 ? nombreRemoto[2] : nombreRemoto[1],
+          segundo_apellido: nombreRemoto[3],
+          cedula: r.cedula ?? undefined,
+          producto: r.tipo_producto ?? undefined,
+          monto: r.monto_solicitado ?? undefined,
+          plazo: r.plazo_meses ?? undefined,
+          tipo_actividad: r.actividad ?? undefined,
+          ...remota,
+          numero_solicitud: r.codigo,
+        };
+        return {
+          id: String(r.id),
+          codigo: r.codigo,
+          data,
+          estado: (r.estado === "archivado" ? "borrador" : r.estado) as EstadoExpediente,
+          geolocalizacion: local?.geolocalizacion,
+          comite: local?.comite,
+        };
+      }),
+    [remotos, solicitudes, localPorSupabaseId],
+  );
 
   const resultados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
@@ -60,12 +124,12 @@ function ClientesPage() {
       const nombre = [d.primer_nombre, d.segundo_nombre, d.primer_apellido, d.segundo_apellido]
         .filter(Boolean).join(" ").toLowerCase();
       const cedula = (d.cedula || "").replace(/-/g, "");
-      const codigo = (d.numero_solicitud || exp.id || "").toLowerCase();
+      const codigo = (exp.codigo || d.numero_solicitud || "").toLowerCase();
 
       const pasaBusqueda = !term ||
         nombre.includes(term) || cedula.includes(soloDigitos) || codigo.includes(term);
 
-      const estadoReal = exp.estado === "completada" ? "en_revision" : exp.estado;
+      const estadoReal = exp.estado;
       const pasaEstado = filtroEstado === "todos" || estadoReal === filtroEstado;
 
       const esVerde = d.producto === "agroresilia";
@@ -89,7 +153,7 @@ function ClientesPage() {
     <AppLayout>
       <PageHeader
         title="Clientes"
-        subtitle={`${resultados.length} de ${stats.total} expedientes`}
+        subtitle={cargandoRemoto ? "Sincronizando…" : `${resultados.length} de ${stats.total} expedientes`}
       />
 
       {/* Estadísticas rápidas */}
@@ -182,7 +246,7 @@ function ClientesPage() {
 function VistaLista({
   resultados, rol,
 }: {
-  resultados: ReturnType<typeof useExpedientes.getState>["expedientes"][string][];
+  resultados: ClienteVista[];
   rol: string;
 }) {
   return (
@@ -202,13 +266,13 @@ function VistaLista({
           {resultados.map((exp) => {
             const d = exp.data;
             const nombre = [d.primer_nombre, d.primer_apellido, d.segundo_apellido].filter(Boolean).join(" ") || "—";
-            const estado = exp.estado === "completada" ? "en_revision" : exp.estado;
+            const estado = exp.estado;
             const ars = exp.comite?.dictamenIA?.scoreARS;
             return (
               <tr key={exp.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                 <td className="px-4 py-2.5">
                   <p className="font-medium text-slate-800 dark:text-slate-100">{nombre}</p>
-                  <p className="text-slate-400">{exp.id}</p>
+                  <p className="text-slate-400">{exp.codigo}</p>
                 </td>
                 <td className="hidden px-4 py-2.5 text-slate-500 sm:table-cell">{d.cedula || "—"}</td>
                 <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-200">
@@ -237,7 +301,7 @@ function VistaLista({
 function TarjetaCliente({
   expediente, menuAbierto, onToggleMenu, onCerrarMenu,
 }: {
-  expediente: ReturnType<typeof useExpedientes.getState>["expedientes"][string];
+  expediente: ClienteVista;
   menuAbierto: boolean;
   onToggleMenu: () => void;
   onCerrarMenu: () => void;
@@ -249,7 +313,7 @@ function TarjetaCliente({
   const d = expediente.data;
   const nombre = [d.primer_nombre, d.segundo_nombre, d.primer_apellido, d.segundo_apellido]
     .filter(Boolean).join(" ") || "Sin nombre";
-  const estado = expediente.estado === "completada" ? "en_revision" : expediente.estado;
+  const estado = expediente.estado;
   const ars = expediente.comite?.dictamenIA?.scoreARS;
   const esVerde = d.producto === "agroresilia";
 
@@ -263,7 +327,7 @@ function TarjetaCliente({
             <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{nombre}</p>
           </div>
           <p className="text-xs text-slate-500">
-            {expediente.id}
+            {expediente.codigo}
             {d.tipo_actividad ? ` · ${d.tipo_actividad}` : ""}
           </p>
           {d.cedula && <p className="text-xs text-slate-400">{d.cedula}</p>}
@@ -272,7 +336,7 @@ function TarjetaCliente({
           <StatusBadge status={estado} />
           <MenuAccionesExpediente
             expedienteId={expediente.id}
-            codigoVisible={d.numero_solicitud ?? expediente.id}
+            codigoVisible={expediente.codigo}
             abierto={menuAbierto}
             onToggle={onToggleMenu}
             onCerrar={onCerrarMenu}

@@ -934,10 +934,15 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
 
   archivarExpediente: async (id) => {
     const exp = get().expedientes[id];
-    if (exp?.supabaseId) {
+    const remotoId = exp?.supabaseId ?? (Number(id) > 0 ? Number(id) : undefined);
+    if (remotoId) {
       try {
         const svc = await import("@/services/expedientesService");
-        await svc.archivarExpediente(exp.supabaseId);
+        await svc.archivarExpediente(remotoId);
+        const { useExpedientesRemote } = await import("@/stores/expedientesRemote");
+        useExpedientesRemote.setState((r) => ({
+          expedientes: r.expedientes.filter((e) => e.id !== remotoId),
+        }));
       } catch (e) {
         console.warn("[archivarExpediente] fallo remoto", e);
       }
@@ -951,10 +956,15 @@ export const useExpedientes = create<State>()(persist((set, get) => ({
 
   eliminarExpediente: async (id) => {
     const exp = get().expedientes[id];
-    if (exp?.supabaseId) {
+    const remotoId = exp?.supabaseId ?? (Number(id) > 0 ? Number(id) : undefined);
+    if (remotoId) {
       try {
         const svc = await import("@/services/expedientesService");
-        await svc.eliminarExpedienteDefinitivo(exp.supabaseId);
+        await svc.eliminarExpedienteDefinitivo(remotoId);
+        const { useExpedientesRemote } = await import("@/stores/expedientesRemote");
+        useExpedientesRemote.setState((r) => ({
+          expedientes: r.expedientes.filter((e) => e.id !== remotoId),
+        }));
       } catch (e) {
         console.warn("[eliminarExpediente] fallo remoto", e);
       }

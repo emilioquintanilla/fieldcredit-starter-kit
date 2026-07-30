@@ -19,7 +19,7 @@ import { PreComitePanel } from "@/components/comite/PreComitePanel";
 
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
 import { useAutosaveExpediente } from "@/hooks/useAutosaveExpediente";
-import { useHidratarExpediente } from "@/hooks/useHidratarExpediente";
+import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
 import { useSincronizarEstados } from "@/hooks/useSincronizarEstados";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ function ExpedienteDetalle() {
   const actualizarBorrador = useExpedientes((s) => s.actualizarBorrador);
   const [tab, setTab] = useState<TabId>("solicitud");
 
-  useHidratarExpediente(exp);
+  const { cargando, noEncontrado } = useCargarExpediente(id);
   useAutosaveExpediente(exp);
   // Motor de sincronización reactiva: flujo → Estado de Resultados + Situación Financiera.
   // Corre en background con debounce 800ms. Respeta campos editados manualmente.
@@ -133,12 +133,21 @@ function ExpedienteDetalle() {
 
   const estadoFlujoMod: Estado = useMemo(() => estadoFlujo(exp?.flujo), [exp?.flujo]);
 
+  if (!exp && cargando) {
+    return (
+      <AppLayout>
+        <PageHeader title={`Expediente ${id}`} subtitle="Cargando desde la nube…" />
+        <p className="text-sm text-slate-500">Sincronizando expediente…</p>
+      </AppLayout>
+    );
+  }
+
   if (!exp) {
     return (
       <AppLayout>
-        <PageHeader title={`Expediente ${id}`} subtitle="No encontrado" />
+        <PageHeader title={`Expediente ${id}`} subtitle={noEncontrado ? "No encontrado" : "No disponible"} />
         <p className="text-sm text-slate-500">
-          Este expediente no existe en el borrador local.{" "}
+          Este expediente no existe o no está disponible para su usuario.{" "}
           <Link to="/expedientes" className="text-fieldcredit-green underline">Volver</Link>
         </p>
       </AppLayout>
