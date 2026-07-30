@@ -127,7 +127,7 @@ function TabUsuarios({ adminUser }: { adminUser: NonNullable<ReturnType<typeof u
     if (form.sucursal_id === 0 && sucursales.length > 0) {
       form.sucursal_id = sucursales[0].id;
     }
-    const nuevo = await crearUsuario({
+    const { usuario: nuevo, error } = await crearUsuario({
       nombre: form.nombre.trim(),
       usuario: form.usuario.trim(),
       password_hash: form.password,
@@ -145,8 +145,9 @@ function TabUsuarios({ adminUser }: { adminUser: NonNullable<ReturnType<typeof u
       setCreando(false);
       void cargar();
     } else {
-      toast.error("Error al crear usuario. Verifica que el nombre de usuario no esté duplicado.");
+      toast.error(error ?? "Error al crear usuario.");
     }
+
   };
 
   return (

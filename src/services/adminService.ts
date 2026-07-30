@@ -64,15 +64,28 @@ export async function crearUsuario(datos: {
   password_hash: string;
   rol: UsuarioAdmin["rol"];
   sucursal_id: number;
-}): Promise<UsuarioAdmin | null> {
+}): Promise<{ usuario: UsuarioAdmin | null; error?: string }> {
   const { data, error } = await supabase
     .from("usuarios")
     .insert({ ...datos, activo: true })
     .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
     .single();
-  if (error) { console.error("[admin] crearUsuario", error.message); return null; }
-  return data as unknown as UsuarioAdmin;
+  if (error) {
+    console.error("[admin] crearUsuario", error.code, error.message);
+    let mensaje = error.message;
+    if (error.code === "23505") {
+      mensaje = `El nombre de usuario "${datos.usuario}" ya existe.`;
+    } else if (error.code === "42501") {
+      mensaje =
+        "La base de datos bloquea la creación de usuarios (política RLS de la tabla usuarios). Se requiere una política que permita insertar.";
+    } else if (error.code === "23503") {
+      mensaje = "La sucursal seleccionada no existe.";
+    }
+    return { usuario: null, error: mensaje };
+  }
+  return { usuario: data as unknown as UsuarioAdmin };
 }
+
 
 export async function actualizarUsuario(
   id: number,
