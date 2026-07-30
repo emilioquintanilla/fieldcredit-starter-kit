@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Pencil, Save, X, Eye, EyeOff, Shield, Users, Package, Settings, ClipboardList, Trash2 } from "lucide-react";
+import { Plus, Pencil, Save, X, Eye, EyeOff, Shield, Users, Package, Settings, ClipboardList, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -840,34 +840,219 @@ function TabParametros({ adminUser }: { adminUser: NonNullable<ReturnType<typeof
 // ═════════════════════════════════════════════════════════════════════════════
 // BITÁCORA
 // ═════════════════════════════════════════════════════════════════════════════
+type MetaBitacora = {
+  ubicacion?: { ciudad?: string | null; pais?: string | null; region?: string | null } | null;
+  dispositivo?: { modelo?: string; tipo?: string; so?: string; navegador?: string } | null;
+  sucursal_id?: number | null;
+};
+
+function parsearMeta(valor: string | null): MetaBitacora {
+  if (!valor) return {};
+  try {
+    return JSON.parse(valor) as MetaBitacora;
+  } catch {
+    return {};
+  }
+}
+
+function textoUbicacion(meta: MetaBitacora): string {
+  const u = meta.ubicacion;
+  if (!u) return "—";
+  const partes = [u.ciudad, u.pais].filter(Boolean);
+  return partes.length ? partes.join(", ") : "—";
+}
+
+function textoDispositivo(meta: MetaBitacora): string {
+  const d = meta.dispositivo;
+  if (!d) return "—";
+  return [d.modelo, d.so, d.navegador].filter(Boolean).join(" · ") || "—";
+}
+
 function TabBitacora() {
   const [registros, setRegistros] = useState<RegistroBitacora[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
+  const [sucursales, setSucursales] = useState<SucursalAdmin[]>([]);
   const [cargando, setCargando] = useState(true);
 
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
+  const [fSucursal, setFSucursal] = useState<number | "">("");
+  const [fUsuario, setFUsuario] = useState<number | "">("");
+  const [fTipo, setFTipo] = useState("");
+
   useEffect(() => {
-    void obtenerBitacora(50).then((data) => {
-      setRegistros(data);
-      setCargando(false);
-    });
+    void Promise.all([obtenerBitacora(500), listarUsuarios(), listarSucursalesAdmin()]).then(
+      ([b, u, s]) => {
+        setRegistros(b);
+        setUsuarios(u);
+        setSucursales(s);
+        setCargando(false);
+      },
+    );
   }, []);
 
+  const sucursalDeUsuario = useCallback(
+    (usuarioId: number | null) => usuarios.find((u) => u.id === usuarioId)?.sucursal_id ?? null,
+    [usuarios],
+  );
+
+  const tipos = Array.from(new Set(registros.map((r) => r.accion))).sort();
+
+  const filtrados = registros.filter((r) => {
+    const meta = parsearMeta(r.valor_nuevo);
+    const fecha = new Date(r.created_at);
+    if (desde && fecha < new Date(`${desde}T00:00:00`)) return false;
+    if (hasta && fecha > new Date(`${hasta}T23:59:59`)) return false;
+    if (fUsuario !== "" && r.usuario_id !== fUsuario) return false;
+    if (fTipo && r.accion !== fTipo) return false;
+    if (fSucursal !== "") {
+      const suc = meta.sucursal_id ?? sucursalDeUsuario(r.usuario_id);
+      if (suc !== fSucursal) return false;
+    }
+    return true;
+  });
+
+  const limpiar = () => {
+    setDesde("");
+    setHasta("");
+    setFSucursal("");
+    setFUsuario("");
+    setFTipo("");
+  };
+
+  const exportarCSV = () => {
+    if (filtrados.length === 0) {
+      toast.error("No hay registros que exportar con los filtros actuales.");
+      return;
+    }
+    const cols = [
+      "Fecha",
+      "Usuario",
+      "Rol",
+      "Acción",
+      "Entidad",
+      "Entidad ID",
+      "Descripción",
+      "IP",
+      "Ciudad",
+      "País",
+      "Dispositivo",
+      "Sucursal",
+    ];
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const filas = filtrados.map((r) => {
+      const meta = parsearMeta(r.valor_nuevo);
+      const sucId = meta.sucursal_id ?? sucursalDeUsuario(r.usuario_id);
+      return [
+        new Date(r.created_at).toLocaleString("es-NI"),
+        r.usuario_nombre ?? "Sistema",
+        r.usuario_rol ?? "",
+        r.accion,
+        r.entidad ?? "",
+        r.entidad_id ?? "",
+        r.descripcion ?? "",
+        r.ip ?? "",
+        meta.ubicacion?.ciudad ?? "",
+        meta.ubicacion?.pais ?? "",
+        textoDispositivo(meta),
+        sucursales.find((s) => s.id === sucId)?.nombre ?? "",
+      ].map(esc).join(",");
+    });
+    const csv = "\uFEFF" + [cols.map(esc).join(","), ...filas].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bitacora_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${filtrados.length} registros exportados.`);
+  };
+
   if (cargando) return <div className="h-40 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />;
+
+  const inputCls =
+    "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-fieldcredit-green focus:outline-none focus:ring-2 focus:ring-fieldcredit-green/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100";
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500 dark:text-slate-400">
-        Registro inmutable de operaciones. Cada acción administrativa queda trazada.
+        Registro inmutable de operaciones y accesos. Los inicios de sesión incluyen dispositivo, IP
+        y ubicación aproximada.
       </p>
 
-      {registros.length === 0 ? (
+      <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-500">Desde</label>
+            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-500">Hasta</label>
+            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-500">Sucursal</label>
+            <select
+              value={fSucursal}
+              onChange={(e) => setFSucursal(e.target.value === "" ? "" : Number(e.target.value))}
+              className={inputCls}
+            >
+              <option value="">Todas</option>
+              {sucursales.map((s) => (
+                <option key={s.id} value={s.id}>{s.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-500">Usuario</label>
+            <select
+              value={fUsuario}
+              onChange={(e) => setFUsuario(e.target.value === "" ? "" : Number(e.target.value))}
+              className={inputCls}
+            >
+              <option value="">Todos</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-500">Tipo</label>
+            <select value={fTipo} onChange={(e) => setFTipo(e.target.value)} className={inputCls}>
+              <option value="">Todos</option>
+              {tipos.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            onClick={exportarCSV}
+            className="flex items-center gap-1.5 rounded-md bg-fieldcredit-green px-3 py-1.5 text-xs font-semibold text-white hover:bg-fieldcredit-green-dark"
+          >
+            <Download size={14} /> Exportar CSV
+          </button>
+          <button
+            onClick={limpiar}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            Limpiar filtros
+          </button>
+          <span className="text-xs text-slate-500">
+            {filtrados.length} de {registros.length} registros
+          </span>
+        </div>
+      </div>
+
+      {filtrados.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-6 text-center dark:border-slate-700 dark:bg-slate-800">
           <ClipboardList size={32} className="mx-auto mb-2 text-slate-300" />
-          <p className="text-sm text-slate-500">
-            La bitácora se alimenta automáticamente. Intenta crear o editar un usuario y vuelve aquí.
-          </p>
+          <p className="text-sm text-slate-500">No hay registros con los filtros seleccionados.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
               <tr>
@@ -877,37 +1062,44 @@ function TabBitacora() {
                 <th className="px-4 py-2.5 hidden sm:table-cell">Entidad</th>
                 <th className="px-4 py-2.5 hidden md:table-cell">Descripción</th>
                 <th className="px-4 py-2.5 hidden lg:table-cell">IP</th>
+                <th className="px-4 py-2.5 hidden lg:table-cell">Ubicación</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {registros.map((r) => (
-                <tr key={r.id}>
-                  <td className="px-4 py-2 text-slate-500">
-                    {new Date(r.created_at).toLocaleString("es-NI", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                  </td>
-                  <td className="px-4 py-2 text-slate-700 dark:text-slate-200">
-                    {r.usuario_nombre ?? "Sistema"}
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      r.accion === "crear" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                      : r.accion === "eliminar" || r.accion === "desactivar" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                    }`}>
-                      {r.accion}
-                    </span>
-                  </td>
-                  <td className="hidden px-4 py-2 text-slate-500 sm:table-cell">
-                    {r.entidad}{r.entidad_id ? ` #${r.entidad_id}` : ""}
-                  </td>
-                  <td className="hidden px-4 py-2 text-slate-500 md:table-cell">
-                    {r.descripcion ?? "—"}
-                  </td>
-                  <td className="hidden px-4 py-2 font-mono text-[10px] text-slate-500 lg:table-cell">
-                    {r.ip ?? "—"}
-                  </td>
-                </tr>
-              ))}
+              {filtrados.map((r) => {
+                const meta = parsearMeta(r.valor_nuevo);
+                return (
+                  <tr key={r.id}>
+                    <td className="px-4 py-2 whitespace-nowrap text-slate-500">
+                      {new Date(r.created_at).toLocaleString("es-NI", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="px-4 py-2 text-slate-700 dark:text-slate-200">
+                      {r.usuario_nombre ?? "Sistema"}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        r.accion === "crear" || r.accion === "login" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                        : r.accion === "eliminar" || r.accion === "desactivar" || r.accion === "login_fallido" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      }`}>
+                        {r.accion}
+                      </span>
+                    </td>
+                    <td className="hidden px-4 py-2 text-slate-500 sm:table-cell">
+                      {r.entidad}{r.entidad_id ? ` #${r.entidad_id}` : ""}
+                    </td>
+                    <td className="hidden px-4 py-2 text-slate-500 md:table-cell">
+                      {r.descripcion ?? "—"}
+                    </td>
+                    <td className="hidden px-4 py-2 font-mono text-[10px] text-slate-500 lg:table-cell">
+                      {r.ip ?? "—"}
+                    </td>
+                    <td className="hidden px-4 py-2 text-slate-500 lg:table-cell">
+                      {textoUbicacion(meta)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -915,3 +1107,4 @@ function TabBitacora() {
     </div>
   );
 }
+
