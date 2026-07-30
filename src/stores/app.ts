@@ -71,59 +71,37 @@ export const useApp = create<AppState>((set, get) => ({
   login: async (username, password, sucursalId?: number) => {
     set({ cargandoLogin: true });
 
-    const email = username.trim().includes("@")
-      ? username.trim()
-      : `${username.trim()}@fieldcredit.local`;
+    // Login contra la tabla `usuarios` (password_hash).
+    // Se acepta tanto "usuario" como "usuario@dominio" (se toma la parte local).
+    const ingresado = username.trim();
+    const user = ingresado.includes("@") ? ingresado.split("@")[0] : ingresado;
 
-    // Supabase Auth — bcrypt, seguro
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (authError || !authData.session) {
-      set({ cargandoLogin: false });
-      const code = (authError as { code?: string } | null)?.code ?? "";
-      const msg = authError?.message ?? "";
-      console.warn("[login] fallo de autenticación", { email, code, msg });
-
-      let error = "No se pudo iniciar sesión. Intentá de nuevo.";
-      if (code === "invalid_credentials" || /invalid login credentials/i.test(msg)) {
-        error = `Usuario o contraseña incorrectos (se intentó con el correo ${email}).`;
-      } else if (code === "email_not_confirmed" || /not confirmed/i.test(msg)) {
-        error = "La cuenta existe pero el correo no está confirmado. Contactá al administrador.";
-      } else if (code === "over_email_send_rate_limit" || /rate limit/i.test(msg)) {
-        error = "Demasiados intentos. Esperá unos minutos y volvé a probar.";
-      } else if (/fetch|network/i.test(msg)) {
-        error = "Sin conexión con el servidor. Revisá tu internet.";
-      } else if (msg) {
-        error = msg;
-      }
-      return { usuario: null, error };
-    }
-
-    // Obtener perfil del usuario desde la tabla usuarios
     const { data: perfil, error: perfilError } = await supabase
       .from("usuarios")
-      .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
-      .eq("auth_user_id", authData.user.id)
+      .select("id, nombre, usuario, rol, sucursal_id, activo, password_hash, sucursales(nombre, region)")
+      .eq("usuario", user)
       .eq("activo", true)
       .maybeSingle();
 
-    if (!perfil) {
-      await supabase.auth.signOut();
+    if (perfilError) {
       set({ cargandoLogin: false });
-      console.warn("[login] sin perfil en `usuarios`", {
-        auth_user_id: authData.user.id,
-        error: perfilError?.message,
-      });
+      console.warn("[login] error al leer perfil", perfilError.message);
+      return { usuario: null, error: `No se pudo verificar el usuario: ${perfilError.message}` };
+    }
+
+    if (!perfil) {
+      set({ cargandoLogin: false });
       return {
         usuario: null,
-        error: perfilError
-          ? `No se pudo leer tu perfil: ${perfilError.message}`
-          : "Tu cuenta no tiene un perfil activo asignado. Contactá al administrador.",
+        error: `El usuario "${user}" no existe o está inactivo.`,
       };
     }
+
+    if ((perfil as { password_hash?: string }).password_hash !== password) {
+      set({ cargandoLogin: false });
+      return { usuario: null, error: "Contraseña incorrecta." };
+    }
+
 
     const authUser = toAuthUser(perfil as unknown as UsuarioDB);
 
@@ -147,8 +125,7 @@ export const useApp = create<AppState>((set, get) => ({
     return { usuario: authUser };
   },
 
-  logout: async () => {
-    await supabase.auth.signOut();
+  logout: () => {
     set({ usuario: null, rolSimulado: null });
     if (typeof localStorage !== "undefined") localStorage.removeItem(STORAGE_KEY_USER);
   },
@@ -166,32 +143,21 @@ export const useApp = create<AppState>((set, get) => ({
     set({ theme: savedTheme });
     applyThemeClass(savedTheme);
 
-    // Verificar sesión activa en Supabase Auth
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: perfil } = await supabase
-        .from("usuarios")
-        .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
-        .eq("auth_user_id", session.user.id)
-        .eq("activo", true)
-        .maybeSingle();
-      if (perfil) {
-        const authUser = toAuthUser(perfil as unknown as UsuarioDB);
-        set({ usuario: authUser });
-        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(authUser));
-      } else {
-        set({ usuario: null });
+    // Sesión persistida en localStorage (login contra tabla `usuarios`)
+    const cache = localStorage.getItem(STORAGE_KEY_USER);
+    if (cache) {
+      try {
+        set({ usuario: JSON.parse(cache) as AuthUser });
+      } catch {
         localStorage.removeItem(STORAGE_KEY_USER);
+        set({ usuario: null });
       }
-    } else {
-      // Sin sesión válida — limpiar caché
-      set({ usuario: null });
-      localStorage.removeItem(STORAGE_KEY_USER);
     }
     if (get().sucursales.length === 0) {
       void get().cargarSucursales();
     }
   },
+
 
   cargarSucursales: async () => {
     const data = await obtenerSucursales();
