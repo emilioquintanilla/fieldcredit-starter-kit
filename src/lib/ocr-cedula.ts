@@ -1,7 +1,6 @@
 // OCR de cédula nicaragüense — corre 100% en el navegador con Tesseract.js
 // No requiere backend ni claves. El modelo `spa` se descarga en el primer uso
 // y queda cacheado por el navegador para llamadas siguientes.
-import Tesseract from "tesseract.js";
 
 export interface CamposOCR {
   cedula?: string;
@@ -92,6 +91,7 @@ export async function reconocerCedula(
   onProgress?: (progress: number, status: string) => void,
 ): Promise<ResultadoOCR> {
   try {
+    const Tesseract = (await import("tesseract.js")).default;
     const { data } = await Tesseract.recognize(imageBase64, "spa", {
       logger: (m: { status: string; progress: number }) => {
         if (onProgress) onProgress(m.progress ?? 0, m.status ?? "");

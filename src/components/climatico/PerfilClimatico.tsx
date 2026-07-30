@@ -76,14 +76,18 @@ export function PerfilClimatico({ lat, lng, departamento, modoCompacto = false }
 
   if (!perfil) return null;
 
+  const sinScore = perfil.scoreClimatico === null;
+  const scoreNum = perfil.scoreClimatico ?? 0;
   const scoreColor =
-    perfil.scoreClimatico >= 70 ? "text-green-600 dark:text-green-400" :
-    perfil.scoreClimatico >= 40 ? "text-amber-600 dark:text-amber-400" :
+    sinScore ? "text-slate-400" :
+    scoreNum >= 70 ? "text-green-600 dark:text-green-400" :
+    scoreNum >= 40 ? "text-amber-600 dark:text-amber-400" :
     "text-red-600 dark:text-red-400";
 
   const scoreBg =
-    perfil.scoreClimatico >= 70 ? "bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800/40" :
-    perfil.scoreClimatico >= 40 ? "bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/40" :
+    sinScore ? "bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700" :
+    scoreNum >= 70 ? "bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800/40" :
+    scoreNum >= 40 ? "bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/40" :
     "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/40";
 
   // Datos para el gráfico de precipitación
@@ -102,7 +106,7 @@ export function PerfilClimatico({ lat, lng, departamento, modoCompacto = false }
         </div>
         <div className="flex-1">
           <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
-            Score climático ARS: <span className={scoreColor}>{perfil.scoreClimatico}/100</span>
+            Score climático ARS: <span className={scoreColor}>{sinScore ? "sin datos" : `${scoreNum}/100`}</span>
           </p>
           <p className="text-[10px] text-slate-500 dark:text-slate-400">
             {perfil.resumenTexto.substring(0, 120)}
@@ -141,8 +145,8 @@ export function PerfilClimatico({ lat, lng, departamento, modoCompacto = false }
       <div className="mb-4 grid grid-cols-3 gap-2">
         <div className={`rounded-lg border p-3 text-center ${scoreBg}`}>
           <p className="text-[10px] text-slate-500">Score climático</p>
-          <p className={`text-2xl font-bold ${scoreColor}`}>{perfil.scoreClimatico}</p>
-          <p className="text-[10px] text-slate-400">/100</p>
+          <p className={`text-2xl font-bold ${scoreColor}`}>{sinScore ? "—" : scoreNum}</p>
+          <p className="text-[10px] text-slate-400">{sinScore ? "sin datos" : "/100"}</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
           <CloudRain size={16} className="mx-auto mb-1 text-blue-400" />

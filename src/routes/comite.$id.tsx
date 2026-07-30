@@ -14,6 +14,7 @@ import { AnalisisFinanciero } from "@/components/comite/AnalisisFinanciero";
 import { DecisionComite } from "@/components/comite/DecisionComite";
 import { ChatCopiloto } from "@/components/comite/ChatCopiloto";
 import { ExportarDictamenPDF } from "@/components/comite/ExportarDictamenPDF";
+import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
 import { useExpedientes, type DictamenIA } from "@/stores/expedientes";
 import { llamarIA } from "@/services/ia/adaptadorIA";
 import { construirContextoExpediente } from "@/services/ia/contextoExpediente";
@@ -53,6 +54,7 @@ type Fase = "idle" | "procesando" | "listo" | "error";
 function DictamenPage() {
   const { id } = Route.useParams();
   const exp = useExpedientes((s) => s.expedientes[id]);
+  const { cargando: cargandoExp } = useCargarExpediente(id);
   const guardarDictamen = useExpedientes((s) => s.guardarDictamenIA);
   const marcarEnComite = useExpedientes((s) => s.marcarEnComite);
 
@@ -64,6 +66,15 @@ function DictamenPage() {
   useEffect(() => {
     if (exp && exp.estado !== "en_comite" && !exp.comite?.decision) marcarEnComite(id);
   }, [exp, id, marcarEnComite]);
+
+  if (!exp && cargandoExp) {
+    return (
+      <AppLayout>
+        <PageHeader title={`Comité ${id}`} subtitle="Cargando desde la nube…" />
+        <p className="text-sm text-slate-500">Sincronizando expediente…</p>
+      </AppLayout>
+    );
+  }
 
   if (!exp) {
     return (

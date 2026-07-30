@@ -107,6 +107,7 @@ function ExpedientesPage() {
             <EstadoAutoguardado variante="compacto" className="hidden sm:inline-flex" />
           <Link
             to="/expedientes/nuevo"
+            search={{ id: undefined }}
             className="inline-flex items-center gap-1.5 rounded-md bg-fieldcredit-green px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-fieldcredit-green-dark"
           >
             <Plus size={16} /> <span className="hidden sm:inline">Nuevo expediente</span>
