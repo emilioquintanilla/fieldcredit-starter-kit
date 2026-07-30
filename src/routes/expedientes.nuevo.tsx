@@ -334,8 +334,14 @@ function NuevaSolicitud() {
   if (!exp) {
     return (
       <AppLayout>
-        <PageHeader title="Nueva solicitud" />
-        <div className="text-sm text-slate-500">Preparando expediente...</div>
+        <PageHeader title={esEdicion ? "Continuar solicitud" : "Nueva solicitud"} />
+        <div className="text-sm text-slate-500">
+          {esEdicion && noEncontrado && !cargandoEdicion
+            ? "No se encontró el borrador solicitado."
+            : esEdicion
+              ? "Cargando borrador desde la nube…"
+              : "Preparando expediente..."}
+        </div>
       </AppLayout>
     );
   }
@@ -343,9 +349,10 @@ function NuevaSolicitud() {
   return (
     <AppLayout>
       <PageHeader
-        title="Nueva solicitud de crédito"
+        title={esEdicion ? "Continuar solicitud de crédito" : "Nueva solicitud de crédito"}
         subtitle={`N.° ${data.numero_solicitud} · ${data.fecha_solicitud}`}
       />
+
 
       {errorCreacion && (
         <div className="mb-3 rounded-lg border border-fieldcredit-red/40 bg-rose-50 p-3 text-xs text-fieldcredit-red dark:bg-rose-900/20">
