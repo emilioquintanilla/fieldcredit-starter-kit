@@ -876,6 +876,7 @@ function TabBitacora() {
                 <th className="px-4 py-2.5">Acción</th>
                 <th className="px-4 py-2.5 hidden sm:table-cell">Entidad</th>
                 <th className="px-4 py-2.5 hidden md:table-cell">Descripción</th>
+                <th className="px-4 py-2.5 hidden lg:table-cell">IP</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -901,6 +902,9 @@ function TabBitacora() {
                   </td>
                   <td className="hidden px-4 py-2 text-slate-500 md:table-cell">
                     {r.descripcion ?? "—"}
+                  </td>
+                  <td className="hidden px-4 py-2 font-mono text-[10px] text-slate-500 lg:table-cell">
+                    {r.ip ?? "—"}
                   </td>
                 </tr>
               ))}
