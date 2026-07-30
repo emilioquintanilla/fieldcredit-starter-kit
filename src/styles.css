@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* ── Paleta MiCrédito ── */
   --color-fieldcredit-green: #5eb837;
   --color-fieldcredit-green-dark: #3d7a21;
   --color-fieldcredit-green-light: #d4f0b8;
@@ -21,10 +22,39 @@
   --color-fieldcredit-amber-light: #fef3c7;
   --color-fieldcredit-red: #dc2626;
   --color-fieldcredit-red-light: #fee2e2;
+
+  /* ── Animaciones ── */
   --animate-fade-in: fadeIn 0.25s ease-out;
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  --animate-slide-up: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  --animate-scale-in: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  --animate-check-draw: checkDraw 0.4s ease-out forwards;
+  @keyframes checkDraw {
+    from { stroke-dashoffset: 24; }
+    to { stroke-dashoffset: 0; }
+  }
+  --animate-shake: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60% { transform: translateX(3px); }
   }
 }
 
@@ -86,7 +116,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -165,9 +195,35 @@
     border-color: var(--color-border);
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Transiciones suaves en todos los interactivos */
+  button, a, [role="button"], select {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Focus rings accesibles y consistentes con la marca */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-fieldcredit-teal);
+  }
+
+  /* Active state sutil para botones y tarjetas tocables */
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active {
+    transform: scale(0.97);
   }
 
   /* Móvil: inputs táctiles (44px) y 16px de fuente para evitar el zoom de iOS */
@@ -204,5 +260,35 @@
 
 @utility mb-safe {
   margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Skeleton shimmer — alternativa moderna al animate-pulse */
+@utility skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.95 0 0) 25%,
+    oklch(0.90 0 0) 50%,
+    oklch(0.95 0 0) 75%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+.dark {
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      oklch(0.22 0.04 265) 25%,
+      oklch(0.28 0.04 260) 50%,
+      oklch(0.22 0.04 265) 75%
+    );
+    background-size: 200% 100%;
+  }
+}
+
+/* Backdrop blur para overlays y bottom sheets */
+@utility backdrop-blur-overlay {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
 }
 
