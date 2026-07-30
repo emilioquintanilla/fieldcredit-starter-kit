@@ -114,6 +114,7 @@ export interface ParametroInstitucional {
 
 export interface RegistroBitacora {
   id: number;
+  usuario_id: number | null;
   usuario_nombre: string | null;
   usuario_rol: string | null;
   accion: string;
@@ -121,6 +122,7 @@ export interface RegistroBitacora {
   entidad_id: string | null;
   descripcion: string | null;
   ip: string | null;
+  valor_nuevo: string | null;
   created_at: string;
 }
 
