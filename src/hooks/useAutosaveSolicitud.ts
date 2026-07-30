@@ -27,6 +27,7 @@ export function useAutosaveSolicitud(
     const { id, data: d } = ultimoRef.current;
     if (!id || !d || enVuelo.current) return;
     enVuelo.current = true;
+    useExpedientesRemote.setState({ guardandoSolicitud: true });
     try {
       await guardarSolicitud(id, d as Record<string, unknown>);
       const nombre = [d.primer_nombre, d.segundo_nombre, d.primer_apellido, d.segundo_apellido]
@@ -42,11 +43,15 @@ export function useAutosaveSolicitud(
         actividad: d.tipo_actividad ?? null,
       });
       pendiente.current = false;
-      useExpedientesRemote.setState({ ultimoGuardado: Date.now() });
+      useExpedientesRemote.setState({ ultimoGuardado: Date.now(), errorGuardado: null });
     } catch (e) {
       console.error("[autosave]", e);
+      useExpedientesRemote.setState({
+        errorGuardado: e instanceof Error ? e.message : "No se pudo guardar en la nube",
+      });
     } finally {
       enVuelo.current = false;
+      useExpedientesRemote.setState({ guardandoSolicitud: false });
     }
   };
 
