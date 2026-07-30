@@ -86,7 +86,7 @@ export function NavBar({ onToggleSidebar }: Props) {
 
           <button
             onClick={toggleTheme}
-            className="grid h-9 w-9 place-items-center rounded-md text-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="hidden h-9 w-9 place-items-center rounded-md text-lg hover:bg-slate-100 dark:hover:bg-slate-700 sm:grid"
             aria-label="Cambiar tema"
           >
             {theme === "light" ? "☀️" : "🌙"}
@@ -104,11 +104,12 @@ export function NavBar({ onToggleSidebar }: Props) {
               logout();
               navigate({ to: "/login" });
             }}
-            className="grid h-9 w-9 place-items-center rounded-md text-slate-600 hover:bg-fieldcredit-red-light hover:text-fieldcredit-red dark:text-slate-300 dark:hover:bg-red-900/30"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-slate-600 hover:bg-fieldcredit-red-light hover:text-fieldcredit-red dark:text-slate-300 dark:hover:bg-red-900/30 sm:h-9 sm:w-9"
             aria-label="Cerrar sesión"
           >
-            <LogOut size={18} />
+            <LogOut size={20} />
           </button>
+
         </div>
       </header>
     </>
