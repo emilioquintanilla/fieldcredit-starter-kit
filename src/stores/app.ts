@@ -96,7 +96,7 @@ async function auditarSesion(params: {
       ip,
       valor_nuevo: {
         usuario: params.usuarioIntento,
-        sucursal_id: params.sucursalId ?? get().usuario?.sucursal_id ?? null,
+        sucursal_id: params.sucursalId ?? params.usuario?.sucursal_id ?? null,
         ip,
         ubicacion,
         dispositivo: disp,
