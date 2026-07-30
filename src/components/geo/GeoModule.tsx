@@ -102,7 +102,7 @@ export function GeoModule({ expedienteId, aplicaFiador, fiadorTieneNegocio }: Pr
         <button
           onClick={() => setVistaMovil("captura")}
           className={cn(
-            "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
+            "h-11 flex-1 rounded-lg text-sm font-medium transition-colors",
             vistaMovil === "captura" ? "bg-fieldcredit-green text-white" : "text-slate-600 dark:text-slate-300",
           )}
         >
@@ -111,7 +111,7 @@ export function GeoModule({ expedienteId, aplicaFiador, fiadorTieneNegocio }: Pr
         <button
           onClick={() => setVistaMovil("mapa")}
           className={cn(
-            "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
+            "h-11 flex-1 rounded-lg text-sm font-medium transition-colors",
             vistaMovil === "mapa" ? "bg-fieldcredit-green text-white" : "text-slate-600 dark:text-slate-300",
           )}
         >
