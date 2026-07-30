@@ -24,6 +24,12 @@ import {
   relacionesFiador, tiposGarantia,
 } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
+import {
+  validarSeccionSolicitud,
+  calcularProgresoSolicitud,
+  nombreSeccion,
+  NOMBRES_SECCION as NOMBRES_SECCION_BASE,
+} from "@/lib/progresoSolicitud";
 
 
 export const Route = createFileRoute("/expedientes/nuevo")({
@@ -35,9 +41,8 @@ export const Route = createFileRoute("/expedientes/nuevo")({
 });
 
 
-const NOMBRES_SECCION = [
-  "Institución", "Deudor", "Actividad", "Crédito", "Fiador", "Garantías", "Firma",
-];
+const NOMBRES_SECCION = NOMBRES_SECCION_BASE;
+
 
 // Utilidades
 const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
