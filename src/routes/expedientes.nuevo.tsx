@@ -59,6 +59,8 @@ function NuevaSolicitud() {
   const usuario = useApp((s) => s.usuario);
   const sucursal = sucursales.find((s) => s.id === usuario?.sucursal_id);
   const navigate = useNavigate();
+  const { id: idEdicion } = Route.useSearch();
+  const esEdicion = !!idEdicion;
 
   const crearExpediente = useExpedientes((s) => s.crearExpediente);
   const setSupabaseId = useExpedientes((s) => s.setSupabaseId);
@@ -68,7 +70,7 @@ function NuevaSolicitud() {
   const crearRemote = useExpedientesRemote((s) => s.crear);
   const cambiarEstadoRemote = useExpedientesRemote((s) => s.cambiarEstado);
 
-  const [expedienteId, setExpedienteId] = useState<string | null>(null);
+  const [expedienteId, setExpedienteId] = useState<string | null>(idEdicion ?? null);
   const [errorCreacion, setErrorCreacion] = useState<string | null>(null);
   const [seccion, setSeccion] = useState(1);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -77,9 +79,13 @@ function NuevaSolicitud() {
   const [scannerVisible, setScannerVisible] = useState(true);
   const creandoRef = useRef(false);
 
-  // Crea el expediente localmente + en Supabase en cuanto entra
+  // Modo edición: descarga el borrador existente desde la nube y lo fusiona
+  // en el store local antes de editarlo.
+  const { cargando: cargandoEdicion, noEncontrado } = useCargarExpediente(idEdicion ?? "");
+
+  // Crea el expediente localmente + en Supabase en cuanto entra (solo modo nuevo)
   useEffect(() => {
-    if (expedienteId || !usuario || creandoRef.current) return;
+    if (esEdicion || expedienteId || !usuario || creandoRef.current) return;
     creandoRef.current = true;
     (async () => {
       const idLocal = crearExpediente();
@@ -103,7 +109,8 @@ function NuevaSolicitud() {
       }
       creandoRef.current = false;
     })();
-  }, [expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador, crearRemote, setSupabaseId]);
+  }, [esEdicion, expedienteId, usuario, sucursal, crearExpediente, actualizarBorrador, crearRemote, setSupabaseId]);
+
 
   // Suscripción reactiva al expediente — si usáramos getExpediente() aquí
   // el componente NO se re-renderiza al teclear y los inputs parecen bloqueados.
