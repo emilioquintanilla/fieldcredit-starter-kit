@@ -75,7 +75,8 @@ async function auditarSesion(params: {
 }) {
   try {
     const disp = obtenerDispositivo();
-    const ip = await obtenerIpCliente();
+    const ubicacion = await obtenerUbicacionIp();
+    const ip = ubicacion.ip;
     const etiqueta =
       params.accion === "login"
         ? "Inicio de sesión"
@@ -89,18 +90,20 @@ async function auditarSesion(params: {
       accion: params.accion,
       entidad: "sesion",
       entidad_id: params.usuario ? String(params.usuario.id) : params.usuarioIntento,
-      descripcion: `${etiqueta} · ${describirDispositivo(disp)} · IP ${ip ?? "desconocida"}${
-        params.detalle ? ` · ${params.detalle}` : ""
-      }`,
+      descripcion: `${etiqueta} · ${describirDispositivo(disp)} · IP ${ip ?? "desconocida"} · ${describirUbicacion(
+        ubicacion,
+      )}${params.detalle ? ` · ${params.detalle}` : ""}`,
       ip,
       valor_nuevo: {
         usuario: params.usuarioIntento,
-        sucursal_id: params.sucursalId ?? null,
+        sucursal_id: params.sucursalId ?? get().usuario?.sucursal_id ?? null,
         ip,
+        ubicacion,
         dispositivo: disp,
         fecha: new Date().toISOString(),
       },
     });
+
   } catch (e) {
     console.warn("[auditoría sesión] no se pudo registrar:", e);
   }
