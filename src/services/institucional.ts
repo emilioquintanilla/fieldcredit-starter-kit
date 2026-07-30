@@ -175,7 +175,9 @@ export async function obtenerParametros(): Promise<ParametroInstitucional[]> {
 export async function obtenerBitacora(limite = 25): Promise<RegistroBitacora[]> {
   const { data, error } = await supabase
     .from("bitacora_auditoria")
-    .select("id, usuario_nombre, usuario_rol, accion, entidad, entidad_id, descripcion, created_at")
+    .select(
+      "id, usuario_id, usuario_nombre, usuario_rol, accion, entidad, entidad_id, descripcion, ip, valor_nuevo, created_at",
+    )
     .order("created_at", { ascending: false })
     .limit(limite);
   if (error) {
