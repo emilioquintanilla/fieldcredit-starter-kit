@@ -115,6 +115,11 @@ export function FlujoModule({ expedienteId, plazoMeses, tipoActividad, montoSoli
         </div>
       )}
 
+      {/* Alertas de coherencia en tiempo real durante la captura */}
+      <AlertasCoherencia expedienteId={expedienteId} modoCompacto />
+
+
+
       <div className="grid gap-4 lg:grid-cols-2">
         <div className={cn("space-y-4", vista === "graficos" && "hidden lg:block")}>
           <VistaDatos
