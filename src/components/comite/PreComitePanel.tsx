@@ -343,6 +343,8 @@ export function PreComitePanel({ expedienteId }: Props) {
           </p>
         </div>
       )}
+      </>
+      )}
     </div>
   );
 }
