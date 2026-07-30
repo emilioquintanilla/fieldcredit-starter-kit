@@ -39,14 +39,22 @@ function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!usuario.trim() || !password) {
+      setError("Ingresá tu usuario y contraseña.");
+      return;
+    }
+    if (sucursalId === "") {
+      setError("Seleccioná tu sucursal.");
+      return;
+    }
     setError(null);
     setLoading(true);
-    const u = await login(usuario.trim(), password);
+    const u = await login(usuario.trim(), password, Number(sucursalId));
     setLoading(false);
     if (u) {
       navigate({ to: "/dashboard" });
     } else {
-      setError("Usuario o contraseña incorrectos.");
+      setError("Usuario o contraseña incorrectos. Verificá tus credenciales.");
     }
   };
 
