@@ -2,7 +2,8 @@
 // Fase 1: login usa la tabla `usuarios` de Supabase; se persiste el usuario
 // en localStorage como caché para no re-loguear en cada refresh.
 import { create } from "zustand";
-import { verificarLogin, obtenerSucursales, type SucursalDB, type UsuarioDB } from "@/services/expedientesService";
+import { obtenerSucursales, type SucursalDB, type UsuarioDB } from "@/services/expedientesService";
+import { supabase } from "@/lib/supabase";
 
 export type Rol = "asesor" | "coordinador" | "gerente" | "admin";
 
@@ -29,7 +30,7 @@ interface AppState {
   rolSimulado: Rol | null;
   setRolSimulado: (rol: Rol | null) => void;
 
-  login: (username: string, password: string) => Promise<AuthUser | null>;
+  login: (username: string, password: string, sucursalId?: number) => Promise<AuthUser | null>;
   logout: () => void;
   toggleTheme: () => void;
   hydrate: () => Promise<void>;
@@ -63,14 +64,53 @@ export const useApp = create<AppState>((set, get) => ({
 
   setRolSimulado: (rol) => set({ rolSimulado: rol }),
 
-  login: async (username, password) => {
+  login: async (username, password, sucursalId?: number) => {
     set({ cargandoLogin: true });
-    const u = await verificarLogin(username.trim(), password);
-    if (!u) {
+
+    const email = username.trim().includes("@")
+      ? username.trim()
+      : `${username.trim()}@fieldcredit.local`;
+
+    // Supabase Auth — bcrypt, seguro
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError || !authData.session) {
       set({ cargandoLogin: false });
       return null;
     }
-    const authUser = toAuthUser(u);
+
+    // Obtener perfil del usuario desde la tabla usuarios
+    const { data: perfil } = await supabase
+      .from("usuarios")
+      .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
+      .eq("auth_user_id", authData.user.id)
+      .eq("activo", true)
+      .maybeSingle();
+
+    if (!perfil) {
+      await supabase.auth.signOut();
+      set({ cargandoLogin: false });
+      return null;
+    }
+
+    const authUser = toAuthUser(perfil as unknown as UsuarioDB);
+
+    // Si el asesor seleccionó una sucursal distinta a la asignada,
+    // la guardamos como sucursal de trabajo para esta sesión.
+    // La sucursal base del usuario no cambia en la BD.
+    if (sucursalId && sucursalId !== authUser.sucursal_id) {
+      const suc = get().sucursales.find((s) => s.id === sucursalId);
+      if (suc) {
+        authUser.sucursalNombre = suc.nombre;
+        authUser.sucursalRegion = suc.region ?? undefined;
+        // Guardamos el sucursal_id de sesión sin modificar el registro base
+        (authUser as AuthUser & { sucursal_sesion_id?: number }).sucursal_sesion_id = sucursalId;
+      }
+    }
+
     set({ usuario: authUser, cargandoLogin: false, rolSimulado: null });
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(authUser));
@@ -78,7 +118,8 @@ export const useApp = create<AppState>((set, get) => ({
     return authUser;
   },
 
-  logout: () => {
+  logout: async () => {
+    await supabase.auth.signOut();
     set({ usuario: null, rolSimulado: null });
     if (typeof localStorage !== "undefined") localStorage.removeItem(STORAGE_KEY_USER);
   },
@@ -93,17 +134,31 @@ export const useApp = create<AppState>((set, get) => ({
   hydrate: async () => {
     if (typeof window === "undefined") return;
     const savedTheme = (localStorage.getItem(STORAGE_KEY_THEME) as "light" | "dark") || "light";
-    const rawUser = localStorage.getItem(STORAGE_KEY_USER);
-    let usuario: AuthUser | null = null;
-    if (rawUser) {
-      try {
-        usuario = JSON.parse(rawUser) as AuthUser;
-      } catch {
-        usuario = null;
-      }
-    }
-    set({ theme: savedTheme, usuario });
+    set({ theme: savedTheme });
     applyThemeClass(savedTheme);
+
+    // Verificar sesión activa en Supabase Auth
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: perfil } = await supabase
+        .from("usuarios")
+        .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
+        .eq("auth_user_id", session.user.id)
+        .eq("activo", true)
+        .maybeSingle();
+      if (perfil) {
+        const authUser = toAuthUser(perfil as unknown as UsuarioDB);
+        set({ usuario: authUser });
+        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(authUser));
+      } else {
+        set({ usuario: null });
+        localStorage.removeItem(STORAGE_KEY_USER);
+      }
+    } else {
+      // Sin sesión válida — limpiar caché
+      set({ usuario: null });
+      localStorage.removeItem(STORAGE_KEY_USER);
+    }
     if (get().sucursales.length === 0) {
       void get().cargarSucursales();
     }
