@@ -49,12 +49,12 @@ function LoginPage() {
     }
     setError(null);
     setLoading(true);
-    const u = await login(usuario.trim(), password, Number(sucursalId));
+    const { usuario: u, error: motivo } = await login(usuario.trim(), password, Number(sucursalId));
     setLoading(false);
     if (u) {
       navigate({ to: "/dashboard" });
     } else {
-      setError("Usuario o contraseña incorrectos. Verificá tus credenciales.");
+      setError(motivo ?? "Usuario o contraseña incorrectos. Verificá tus credenciales.");
     }
   };
 
