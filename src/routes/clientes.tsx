@@ -183,7 +183,7 @@ function ClientesPage() {
             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-fieldcredit-green dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
           <div className="flex gap-1">
             {ESTADOS_FILTRO.map((f) => (
               <button key={f.value} onClick={() => setFiltroEstado(f.value)}
@@ -250,8 +250,8 @@ function VistaLista({
   rol: string;
 }) {
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-      <table className="w-full text-left text-xs">
+    <div className="mt-3 overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+      <table className="w-full min-w-[620px] text-left text-xs">
         <thead className="bg-slate-50 text-slate-500 dark:bg-slate-700/50">
           <tr>
             <th className="px-4 py-2.5">Cliente</th>

@@ -5,10 +5,11 @@
  * Se integra en TabDocumentos de expedientes.$id.tsx, encima del botón "Enviar al comité".
  * Ruta: src/components/comite/PreComitePanel.tsx
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, ChevronRight } from "lucide-react";
 import { AlertasCoherencia } from "@/components/ia/AlertasCoherencia";
 import { useExpedientes } from "@/stores/expedientes";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   CUENTAS_INGRESOS, CUENTAS_COSTOS, CUENTAS_GASTOS_OPERACION,
   CUENTAS_CONSUMO_FAMILIAR, CUENTAS_ACTIVOS, CUENTAS_PASIVOS,
@@ -31,6 +32,10 @@ interface Props {
 
 export function PreComitePanel({ expedienteId }: Props) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId]);
+  const esMovil = useIsMobile();
+  const [manual, setManual] = useState<boolean | null>(null);
+  const abierto = manual ?? !esMovil;
+  const setAbierto = (fn: (v: boolean) => boolean) => setManual(fn(abierto));
 
   const { checks, ratios } = useMemo(() => {
     if (!exp) return { checks: [], ratios: null };
@@ -247,13 +252,17 @@ export function PreComitePanel({ expedienteId }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-      {/* Encabezado */}
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800 sm:p-4">
+      {/* Encabezado (toca para expandir en móvil) */}
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        className="mb-3 flex w-full items-center justify-between gap-2 text-left md:cursor-default"
+      >
+        <h3 className="min-w-0 truncate text-sm font-bold text-slate-800 dark:text-slate-100">
           📋 Lista de verificación — pre-comité
         </h3>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${
           errores > 0
             ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
             : alertas > 0
@@ -264,10 +273,17 @@ export function PreComitePanel({ expedienteId }: Props) {
            alertas > 0 ? `${alertas} alerta${alertas > 1 ? "s" : ""}` :
            "Listo para comité ✅"}
         </span>
-      </div>
+      </button>
 
+      {!abierto && (
+        <p className="text-[11px] text-slate-400">Tocá para ver el detalle de la verificación</p>
+      )}
+
+      {abierto && (
+      <>
       {/* Checks */}
       <div className="mb-4 space-y-2">
+
         {checks.map((c) => (
           <div key={c.id} className="flex items-start gap-2">
             {iconoEstado[c.estado]}
@@ -331,6 +347,8 @@ export function PreComitePanel({ expedienteId }: Props) {
             Podés enviarlo al comité de todas formas, pero el dictamen IA será menos preciso sin los datos completos.
           </p>
         </div>
+      )}
+      </>
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { NavBar } from "./NavBar";
 import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
 import { useApp } from "@/stores/app";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -37,10 +38,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <Sidebar open={open} collapsed={collapsed} onClose={() => setOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <NavBar onToggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-x-hidden p-4 animate-fade-in sm:p-6">
+        <main className="flex-1 overflow-x-hidden p-3 pb-20 animate-fade-in sm:p-6 md:pb-6">
           {children}
         </main>
       </div>
+      <BottomNav />
     </div>
   );
 }

@@ -254,7 +254,7 @@ export function ExportarDictamenPDF({ dictamen, expediente, clienteNombre }: Pro
   return (
     <button
       onClick={exportar}
-      className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-fieldcredit-green hover:text-fieldcredit-green dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-fieldcredit-green dark:hover:text-fieldcredit-green"
+      className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-fieldcredit-green hover:text-fieldcredit-green dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-fieldcredit-green dark:hover:text-fieldcredit-green"
       title="Exportar dictamen como PDF"
     >
       <Download size={15} />

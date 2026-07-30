@@ -27,15 +27,15 @@ export function NavBar({ onToggleSidebar }: Props) {
     <>
       {/* Franja de aviso cuando el rol está simulado */}
       {rolSimulado && (
-        <div className="flex items-center justify-center gap-2 bg-fieldcredit-amber px-3 py-1.5">
-          <Eye size={14} className="text-white" />
-          <span className="text-xs font-bold text-white">
+        <div className="flex items-center justify-center gap-1.5 bg-fieldcredit-amber px-2 py-1 sm:gap-2 sm:px-3 sm:py-1.5">
+          <Eye size={12} className="shrink-0 text-white sm:h-3.5 sm:w-3.5" />
+          <span className="truncate text-[10px] font-bold text-white sm:text-xs">
             Vista previa como {ROLES_DISPONIBLES.find((r) => r.rol === rolSimulado)?.label ?? rolSimulado}
           </span>
-          <span className="text-xs text-white/80">— no es el rol real</span>
+          <span className="hidden text-xs text-white/80 sm:inline">— no es el rol real</span>
           <button
             onClick={() => setRolSimulado(null)}
-            className="ml-2 rounded bg-white/20 px-2 py-0.5 text-xs font-bold text-white hover:bg-white/30"
+            className="ml-1 shrink-0 rounded bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 sm:ml-2 sm:text-xs"
           >
             Salir
           </button>
@@ -45,20 +45,22 @@ export function NavBar({ onToggleSidebar }: Props) {
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors dark:border-slate-700 dark:bg-slate-800/95 sm:px-4">
         <button
           onClick={onToggleSidebar}
-          className="grid h-9 w-9 place-items-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
           aria-label="Menú"
         >
-          <Menu size={20} />
+          <Menu size={22} />
         </button>
 
         <div className="flex min-w-0 items-center gap-3">
           <img src={logoUrl} alt="MiCrédito" className="h-8 shrink-0" />
-          <div className="h-6 w-px bg-slate-300 dark:bg-slate-600" />
-          <span className="truncate font-bold text-fieldcredit-green">FieldCredit</span>
+          <div className="hidden h-6 w-px bg-slate-300 dark:bg-slate-600 sm:block" />
+          <span className="hidden truncate font-bold text-fieldcredit-green sm:inline">FieldCredit</span>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <IndicadorGuardado />
+          <div className="hidden sm:block">
+            <IndicadorGuardado />
+          </div>
 
           {/* Selector de rol (solo visible para admin) */}
           {esAdmin && (
@@ -84,7 +86,7 @@ export function NavBar({ onToggleSidebar }: Props) {
 
           <button
             onClick={toggleTheme}
-            className="grid h-9 w-9 place-items-center rounded-md text-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="hidden h-9 w-9 place-items-center rounded-md text-lg hover:bg-slate-100 dark:hover:bg-slate-700 sm:grid"
             aria-label="Cambiar tema"
           >
             {theme === "light" ? "☀️" : "🌙"}
@@ -102,11 +104,12 @@ export function NavBar({ onToggleSidebar }: Props) {
               logout();
               navigate({ to: "/login" });
             }}
-            className="grid h-9 w-9 place-items-center rounded-md text-slate-600 hover:bg-fieldcredit-red-light hover:text-fieldcredit-red dark:text-slate-300 dark:hover:bg-red-900/30"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-slate-600 hover:bg-fieldcredit-red-light hover:text-fieldcredit-red dark:text-slate-300 dark:hover:bg-red-900/30 sm:h-9 sm:w-9"
             aria-label="Cerrar sesión"
           >
-            <LogOut size={18} />
+            <LogOut size={20} />
           </button>
+
         </div>
       </header>
     </>

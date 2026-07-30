@@ -370,10 +370,10 @@ function FilaRubro({
               </span>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <div className="flex gap-1" style={{ minWidth: `${meses.length * 84}px` }}>
+            <div className="-mx-1 overflow-x-auto scrollbar-hide px-1">
+              <div className="flex gap-1" style={{ minWidth: `${meses.length * 92}px` }}>
                 {meses.map((m, idx) => (
-                  <div key={idx} className="flex w-[80px] shrink-0 flex-col items-center">
+                  <div key={idx} className="flex w-[88px] shrink-0 flex-col items-center">
                     <label className="text-[10px] text-slate-500">{m}</label>
                     <input
                       type="number"
@@ -382,7 +382,7 @@ function FilaRubro({
                       onChange={(e) =>
                         actualizarValor(expedienteId, rubro.key, idx, parseFloat(e.target.value) || 0)
                       }
-                      className="w-full rounded border border-slate-300 bg-yellow-50 px-1 py-1 text-right text-xs dark:border-slate-600 dark:bg-yellow-900/20 dark:text-slate-100"
+                      className="h-11 w-full rounded border border-slate-300 bg-yellow-50 px-1 text-right text-sm dark:border-slate-600 dark:bg-yellow-900/20 dark:text-slate-100 sm:h-9"
                     />
                     {idx > 0 && (
                       <button
@@ -459,7 +459,7 @@ function BloqueSaldo({
         />
       </label>
 
-      <div className="overflow-x-auto">
+      <div className="-mx-3 overflow-x-auto scrollbar-hide px-3 sm:mx-0 sm:px-0">
         <table className="w-full min-w-max border-collapse text-xs">
           <thead>
             <tr className="bg-slate-100 dark:bg-slate-900/50">

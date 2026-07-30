@@ -64,14 +64,14 @@ function PanelAdmin() {
         subtitle="Gestión de usuarios, productos, parámetros y trazabilidad"
       />
 
-      <nav className="mt-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
+      <nav className="mt-4 flex gap-1 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-700">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 sm:px-4 text-sm font-medium transition-colors ${
                 tab === t.id
                   ? "border-fieldcredit-green text-fieldcredit-green"
                   : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
@@ -210,8 +210,8 @@ function TabUsuarios({ adminUser }: { adminUser: NonNullable<ReturnType<typeof u
           {[1,2,3].map((i) => <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />)}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
@@ -1053,8 +1053,8 @@ function TabBitacora() {
           <p className="text-sm text-slate-500">No hay registros con los filtros seleccionados.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+          <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-2.5">Fecha</th>

@@ -82,12 +82,12 @@ function PanelInstitucional() {
 
       <AvisoDemo />
 
-      <nav className="mt-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
+      <nav className="mt-4 flex gap-1 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-700">
         {PESTANAS.map((p) => (
           <button
             key={p.id}
             onClick={() => setTab(p.id)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 sm:px-4 text-sm font-medium transition-colors ${
               tab === p.id
                 ? "border-fieldcredit-green text-fieldcredit-green"
                 : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
@@ -353,8 +353,8 @@ function TabCartera({ d }: { d: Datos }) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel titulo="Concentración por rubro" nota="Riesgo sectorial de la cartera">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full min-w-[600px] text-left text-xs">
               <thead className="text-slate-500">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="py-2">Rubro</th>
@@ -382,8 +382,8 @@ function TabCartera({ d }: { d: Datos }) {
         </Panel>
 
         <Panel titulo="Desempeño por sucursal" nota="Cartera, mora y penetración de producto verde">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full min-w-[600px] text-left text-xs">
               <thead className="text-slate-500">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="py-2">Sucursal</th>
@@ -526,8 +526,8 @@ function TabGobernanza({ d }: { d: Datos }) {
             Sin registros todavía. La bitácora se alimenta automáticamente conforme se opera el sistema.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full min-w-[600px] text-left text-xs">
               <thead className="text-slate-500">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="py-2">Fecha</th>
