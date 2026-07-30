@@ -78,6 +78,13 @@ export function obtenerDispositivo(): InfoDispositivo {
   };
 }
 
+export interface UbicacionIp {
+  ip: string | null;
+  ciudad: string | null;
+  region: string | null;
+  pais: string | null;
+}
+
 /** IP pública del cliente (best effort, no bloquea el login). */
 export async function obtenerIpCliente(): Promise<string | null> {
   try {
@@ -100,6 +107,40 @@ export async function obtenerIpCliente(): Promise<string | null> {
   }
   return null;
 }
+
+/** IP + geolocalización aproximada (país / ciudad) vía ipapi.co (sin API key). */
+export async function obtenerUbicacionIp(): Promise<UbicacionIp> {
+  try {
+    const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
+    if (res.ok) {
+      const d = (await res.json()) as {
+        ip?: string;
+        city?: string;
+        region?: string;
+        country_name?: string;
+        error?: boolean;
+      };
+      if (!d.error && d.ip) {
+        return {
+          ip: d.ip,
+          ciudad: d.city ?? null,
+          region: d.region ?? null,
+          pais: d.country_name ?? null,
+        };
+      }
+    }
+  } catch {
+    /* ignorar */
+  }
+  return { ip: await obtenerIpCliente(), ciudad: null, region: null, pais: null };
+}
+
+/** Texto corto de ubicación: "Managua, Nicaragua". */
+export function describirUbicacion(u: UbicacionIp): string {
+  const partes = [u.ciudad, u.pais].filter(Boolean);
+  return partes.length ? partes.join(", ") : "Ubicación desconocida";
+}
+
 
 export function describirDispositivo(d: InfoDispositivo): string {
   return `${d.modelo} (${d.tipo}) · ${d.so} · ${d.navegador}`;
