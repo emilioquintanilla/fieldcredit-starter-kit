@@ -25,9 +25,13 @@ import { cn } from "@/lib/utils";
 
 
 export const Route = createFileRoute("/expedientes/nuevo")({
-  head: () => ({ meta: [{ title: "Nueva solicitud — FieldCredit" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    id: typeof search.id === "string" && search.id ? search.id : undefined,
+  }),
+  head: () => ({ meta: [{ title: "Solicitud de crédito — FieldCredit" }] }),
   component: NuevaSolicitud,
 });
+
 
 const NOMBRES_SECCION = [
   "Institución", "Deudor", "Actividad", "Crédito", "Fiador", "Garantías", "Firma",
