@@ -187,7 +187,9 @@ function NuevaSolicitud() {
     );
   };
 
-  const enviarSolicitud = async () => {
+  // Valida todas las secciones y, si todo está correcto, abre el diálogo
+  // de confirmación para evitar envíos accidentales.
+  const intentarEnviar = () => {
     const todosErr: Record<string, string> = {};
     const secErr = new Set<number>();
     for (let i = 1; i <= 7; i++) {
@@ -208,27 +210,38 @@ function NuevaSolicitud() {
       }, 100);
       return;
     }
-    if (!expedienteId) return;
-    completarSolicitud(expedienteId);
-
-    const supabaseId = useExpedientes.getState().expedientes[expedienteId]?.supabaseId;
-    if (!supabaseId) {
-      toast.error("El expediente aún no está sincronizado con la nube. Intente de nuevo.");
-      return;
-    }
-
-    // Guarda todo el formulario ANTES de navegar, para que cualquier
-    // usuario/dispositivo vea exactamente los mismos datos.
-    const ok = await sincronizarConNube();
-    if (!ok) {
-      toast.error("No se pudo guardar la solicitud en la nube. Revise su conexión.");
-      return;
-    }
-    await cambiarEstadoRemote(supabaseId, "en_revision");
-
-    toast.success("Solicitud enviada ✓");
-    navigate({ to: "/expedientes/$id", params: { id: String(supabaseId) } });
+    setConfirmarEnvio(true);
   };
+
+  const enviarSolicitud = async () => {
+    if (!expedienteId || enviando) return;
+    setEnviando(true);
+    try {
+      completarSolicitud(expedienteId);
+
+      const supabaseId = useExpedientes.getState().expedientes[expedienteId]?.supabaseId;
+      if (!supabaseId) {
+        toast.error("El expediente aún no está sincronizado con la nube. Intente de nuevo.");
+        return;
+      }
+
+      // Guarda todo el formulario ANTES de navegar, para que cualquier
+      // usuario/dispositivo vea exactamente los mismos datos.
+      const ok = await sincronizarConNube();
+      if (!ok) {
+        toast.error("No se pudo guardar la solicitud en la nube. Revise su conexión.");
+        return;
+      }
+      await cambiarEstadoRemote(supabaseId, "en_revision");
+
+      setConfirmarEnvio(false);
+      toast.success("Solicitud enviada ✓");
+      navigate({ to: "/expedientes/$id", params: { id: String(supabaseId) } });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
 
 
   // Auto-completa desde OCR solo los campos vacíos
