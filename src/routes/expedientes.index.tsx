@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProgresoSolicitud } from "@/components/ProgresoSolicitud";
+import { EstadoAutoguardado } from "@/components/EstadoAutoguardado";
 import { useApp } from "@/stores/app";
 import { useExpedientesSync } from "@/hooks/useExpedientesSync";
 import { useExpedientesRemote } from "@/stores/expedientesRemote";
@@ -102,12 +103,15 @@ function ExpedientesPage() {
         title="Expedientes"
         subtitle={cargando ? "Cargando…" : `${lista.length} solicitud(es)`}
         actions={
+          <>
+            <EstadoAutoguardado variante="compacto" className="hidden sm:inline-flex" />
           <Link
             to="/expedientes/nuevo"
             className="inline-flex items-center gap-1.5 rounded-md bg-fieldcredit-green px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-fieldcredit-green-dark"
           >
             <Plus size={16} /> <span className="hidden sm:inline">Nuevo expediente</span>
           </Link>
+          </>
         }
       />
 
