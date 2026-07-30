@@ -339,3 +339,23 @@ export async function obtenerDocumentos(expedienteId: number): Promise<Documento
   }
   return (data as DocumentoDB[]) ?? [];
 }
+
+// Devuelve las solicitudes (datos completos) de varios expedientes de una vez.
+export async function obtenerSolicitudesDe(
+  ids: number[],
+): Promise<Record<number, Record<string, unknown>>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("solicitudes")
+    .select("expediente_id, datos_completos")
+    .in("expediente_id", ids);
+  if (error) {
+    console.error("obtenerSolicitudesDe", error);
+    return {};
+  }
+  const mapa: Record<number, Record<string, unknown>> = {};
+  for (const row of (data ?? []) as Array<{ expediente_id: number; datos_completos: unknown }>) {
+    mapa[row.expediente_id] = (row.datos_completos as Record<string, unknown>) ?? {};
+  }
+  return mapa;
+}
