@@ -30,7 +30,11 @@ interface AppState {
   rolSimulado: Rol | null;
   setRolSimulado: (rol: Rol | null) => void;
 
-  login: (username: string, password: string, sucursalId?: number) => Promise<AuthUser | null>;
+  login: (
+    username: string,
+    password: string,
+    sucursalId?: number,
+  ) => Promise<{ usuario: AuthUser | null; error?: string }>;
   logout: () => void;
   toggleTheme: () => void;
   hydrate: () => Promise<void>;
