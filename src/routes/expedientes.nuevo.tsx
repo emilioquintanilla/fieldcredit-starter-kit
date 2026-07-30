@@ -84,6 +84,8 @@ function NuevaSolicitud() {
   const [seccionesConError, setSeccionesConError] = useState<Set<number>>(new Set());
   const [seccionesCompletadas, setSeccionesCompletadas] = useState<Set<number>>(new Set());
   const [scannerVisible, setScannerVisible] = useState(true);
+  const [confirmarEnvio, setConfirmarEnvio] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const creandoRef = useRef(false);
 
   // Modo edición: descarga el borrador existente desde la nube y lo fusiona
