@@ -169,4 +169,40 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+
+  /* Móvil: inputs táctiles (44px) y 16px de fuente para evitar el zoom de iOS */
+  @media (max-width: 639px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+    select {
+      min-height: 44px;
+    }
+    button:not([data-compact]) {
+      touch-action: manipulation;
+    }
+  }
 }
+
+/* Scroll horizontal suave sin barra visible (tabs y tablas en móvil) */
+@utility scrollbar-hide {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Padding seguro para teléfonos con notch */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
