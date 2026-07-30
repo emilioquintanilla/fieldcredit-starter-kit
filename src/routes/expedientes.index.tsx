@@ -1,6 +1,6 @@
 // Listado de expedientes del asesor (leído desde Supabase, con acciones
 // de archivar y eliminar). Fase 1 de la migración a Cloud.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ChevronRight, MoreVertical, Plus, Search, Archive, Trash2 } from "lucide-react";
@@ -43,8 +43,30 @@ function ExpedientesPage() {
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [menuAbierto, setMenuAbierto] = useState<number | null>(null);
+  const [solicitudes, setSolicitudes] = useState<Record<number, SolicitudData>>({});
 
   useExpedientesSync();
+
+  // Carga las solicitudes de los borradores para calcular su progreso.
+  const idsBorrador = useMemo(
+    () => expedientes.filter((e) => e.estado === "borrador").map((e) => e.id),
+    [expedientes],
+  );
+  const claveBorradores = idsBorrador.join(",");
+  useEffect(() => {
+    if (!claveBorradores) {
+      setSolicitudes({});
+      return;
+    }
+    let activo = true;
+    void obtenerSolicitudesDe(claveBorradores.split(",").map(Number)).then((mapa) => {
+      if (activo) setSolicitudes(mapa as Record<number, SolicitudData>);
+    });
+    return () => {
+      activo = false;
+    };
+  }, [claveBorradores]);
+
 
   const lista = useMemo(() => {
     const s = q.trim().toLowerCase();
