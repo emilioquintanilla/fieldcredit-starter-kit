@@ -104,6 +104,20 @@ export async function obtenerExpedientes(filtros?: {
   return (data as ExpedienteDB[]) ?? [];
 }
 
+export async function obtenerExpediente(id: number): Promise<ExpedienteDB | null> {
+  const { data, error } = await supabase
+    .from("expedientes")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    console.error("obtenerExpediente", error);
+    return null;
+  }
+  return (data as ExpedienteDB | null) ?? null;
+}
+
+
 export async function crearExpediente(datos: {
   asesorId: number;
   sucursalId: number;
