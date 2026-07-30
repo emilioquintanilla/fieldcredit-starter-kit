@@ -1053,8 +1053,8 @@ function TabBitacora() {
           <p className="text-sm text-slate-500">No hay registros con los filtros seleccionados.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+          <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-2.5">Fecha</th>
