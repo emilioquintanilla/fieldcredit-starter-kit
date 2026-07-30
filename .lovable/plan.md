@@ -1,34 +1,36 @@
-## Fase 2 — Migración a Supabase de creación, solicitud y documentos
+## Qué encontré
 
-**Objetivo:** que el alta de expediente, el formulario completo de Solicitud (7 pasos) y los Documentos de Soporte queden persistidos en Supabase con guardado automático. El resto de módulos (flujo, EDR, SF, geo, fiador, garantías, comité) queda en la Fase 3.
+Consulté la tabla `usuarios` del proyecto `bdxtdhkb…` con la llave pública: los 6 usuarios existen, están activos y **todos tienen `auth_user_id` enlazado** (por ejemplo `admin` → `771aab25-…`, `equintanilla` → `59e659c0-…`).
 
-### 1. Alta de expediente contra Supabase
-- `src/routes/expedientes.nuevo.tsx`: al montar, crear el expediente en Supabase vía `useExpedientesRemote.crear({ asesorId, sucursalId })` con el usuario logueado; usar el `id` numérico devuelto para todo el resto del formulario.
-- Se mantiene el store local (`useExpedientes`) como caché de los datos de secciones aún no migradas, pero indexado por el `id` de Supabase (no por el `codigo` local).
-- Si falla la creación, mostrar error inline y bloquear el formulario.
+Es decir: el enlace perfil ↔ cuenta de autenticación está bien. El error `invalid_credentials` que devuelve el servidor viene de la capa de autenticación, y solo puede deberse a una de dos cosas:
 
-### 2. Guardado automático de la Solicitud (7 pasos)
-- Nuevo hook `src/hooks/useAutosaveSolicitud.ts`: debounce 800 ms sobre los cambios de `SolicitudData` → llama `guardarSolicitud(expedienteId, datos)` del servicio.
-- Al terminar cada guardado, marcar `ultimoGuardado` en `useExpedientesRemote` para que el `IndicadorGuardado` del NavBar refleje el estado.
-- En paso final (firma + envío): además de guardar, cambiar el estado del expediente a `en_revision` con `cambiarEstado(id, "en_revision")`.
+1. La contraseña no es la que estás escribiendo (`Admin2024` no coincide con la almacenada).
+2. El correo con el que se creó la cuenta no es `admin@fieldcredit.local` (la app convierte el usuario `admin` en ese correo automáticamente).
 
-### 3. Carga de solicitud existente
-- Nuevo `obtenerSolicitud(expedienteId)` en `expedientesService.ts` (SELECT desde `solicitudes`).
-- Al abrir `/expedientes/$id`, si viene de Supabase, hidratar el store local con los datos de la solicitud para que los tabs actuales sigan funcionando sin cambios.
+No puedo leer los correos ni las contraseñas de las cuentas de autenticación desde aquí (por diseño, no son legibles), así que ese dato hay que confirmarlo desde el panel, al que ya dijiste que tenés acceso.
 
-### 4. Documentos de Soporte a Supabase
-- `src/components/docs/DocsExpedientePage.tsx`: al subir un archivo, llamar `guardarDocumento(expedienteId, categoriaId, archivo)` (ya existe stub); al eliminar, `eliminarDocumento(documentoId)`.
-- Nuevo `obtenerDocumentos(expedienteId)` para listar al abrir la pestaña. Se mantiene la UI actual (miniaturas, visor, toasts, confirmación).
+## Paso 1 — Confirmar y restablecer (lo hacés vos, 2 minutos)
 
-### 5. Cambios menores
-- `expedientesService.ts`: implementar `obtenerSolicitud` y `obtenerDocumentos` (los `guardar*` ya existen).
-- `IndicadorGuardado` (NavBar): ya está conectado a `ultimoGuardado`; no cambia.
+En el panel del proyecto `bdxtdhkb…`, sección **Authentication → Users**:
 
-### No incluido (queda para Fase 3)
-Flujo de efectivo, Estado de Resultados, Situación Financiera, Geolocalización, Fiador, Garantías, Comité (dictamen + decisión). Estos siguen en `localStorage` vía `useExpedientes` con `persist`.
+1. Buscá el usuario con ID `771aab25-60d5-45e2-8ebe-27176ee52d66` (es el perfil `admin`).
+2. Anotá el **correo exacto** que aparece. Si NO es `admin@fieldcredit.local`, decímelo: ajusto la app para que use el dominio correcto (o cambio el correo de la cuenta para que calce).
+3. Verificá que aparezca como confirmado. Si no lo está, confirmalo.
+4. Usá la opción de restablecer contraseña y ponéle una nueva (por ejemplo `Admin2024`).
 
-### Riesgos
-- El store local usa strings de `codigo` como id; hay que asegurar que el mapeo `id numérico Supabase ↔ codigo` quede consistente en `useExpedientes`. Propuesta: guardar `supabaseId` dentro del borrador local y usarlo como clave de sincronización.
-- El campo `documentos.base64` puede ser grande; se mantiene tal cual porque el esquema ya lo contempla, pero se recomienda pasar a Storage en una fase posterior.
+Con eso el login debería entrar. Si el correo era distinto, seguimos con el ajuste del paso 2.
 
-¿Procedo con esta fase 2 tal como está, o ajusto alcance (por ejemplo, dejar Documentos para más adelante o incluir también Flujo)?
+## Paso 2 — Mejoras en la app para que esto no vuelva a pasar a ciegas
+
+Independientemente del resultado, dejo el login más informativo y robusto:
+
+- **Mensajes de error diferenciados**: hoy cualquier fallo muestra "usuario o contraseña incorrectos". Voy a distinguir credenciales inválidas, correo sin confirmar, perfil inexistente/inactivo y error de red.
+- **Aceptar correo completo**: si escribís `equintanilla@otrodominio.com` la app ya lo respeta; lo dejo documentado en el placeholder del campo ("usuario o correo").
+- **Diagnóstico visible**: registro en consola del código de error real devuelto por el servidor, para futuros reportes.
+- **Pantalla de recuperación de contraseña** (opcional, decime si la querés): enlace "¿Olvidaste tu contraseña?" en `/login` más una ruta `/reset-password` que permita fijar una nueva sin entrar al panel. Requiere que el envío de correos esté activo en ese proyecto.
+
+## Detalles técnicos
+
+- `src/stores/app.ts` construye el correo como `` `${usuario}@fieldcredit.local` `` cuando el campo no contiene `@`; ahí se decide contra qué correo se autentica.
+- El perfil se resuelve luego por `auth_user_id` en `usuarios` con `activo = true`; ese paso ya está verificado como correcto.
+- Cambios previstos: `src/stores/app.ts` (devolver el motivo del fallo en lugar de `null`) y `src/routes/login.tsx` (mostrar ese motivo). Sin cambios de base de datos.
