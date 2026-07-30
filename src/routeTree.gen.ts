@@ -9,49 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as InstitucionalRouteImport } from './routes/institucional'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ComiteRouteImport } from './routes/comite'
-import { Route as ClientesRouteImport } from './routes/clientes'
-import { Route as AlertasRouteImport } from './routes/alertas'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ComiteRouteImport } from './routes/comite'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as InstitucionalRouteImport } from './routes/institucional'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ComiteIndexRouteImport } from './routes/comite.index'
-import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
-import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
 import { Route as ComiteIdRouteImport } from './routes/comite.$id'
+import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
+import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
+import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ApiIaCompletarRouteImport } from './routes/api/ia/completar'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InstitucionalRoute = InstitucionalRouteImport.update({
-  id: '/institucional',
-  path: '/institucional',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ComiteRoute = ComiteRouteImport.update({
-  id: '/comite',
-  path: '/comite',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClientesRoute = ClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AlertasRoute = AlertasRouteImport.update({
-  id: '/alertas',
-  path: '/alertas',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -59,14 +34,34 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExpedientesIndexRoute = ExpedientesIndexRouteImport.update({
-  id: '/expedientes/',
-  path: '/expedientes/',
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComiteRoute = ComiteRouteImport.update({
+  id: '/comite',
+  path: '/comite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstitucionalRoute = InstitucionalRouteImport.update({
+  id: '/institucional',
+  path: '/institucional',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComiteIndexRoute = ComiteIndexRouteImport.update({
@@ -74,9 +69,14 @@ const ComiteIndexRoute = ComiteIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ComiteRoute,
 } as any)
-const ExpedientesNuevoRoute = ExpedientesNuevoRouteImport.update({
-  id: '/expedientes/nuevo',
-  path: '/expedientes/nuevo',
+const ComiteIdRoute = ComiteIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ComiteRoute,
+} as any)
+const ExpedientesIndexRoute = ExpedientesIndexRouteImport.update({
+  id: '/expedientes/',
+  path: '/expedientes/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
@@ -84,10 +84,10 @@ const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
   path: '/expedientes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ComiteIdRoute = ComiteIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ComiteRoute,
+const ExpedientesNuevoRoute = ExpedientesNuevoRouteImport.update({
+  id: '/expedientes/nuevo',
+  path: '/expedientes/nuevo',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
   id: '/api/ia/completar',
@@ -210,46 +210,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/institucional': {
-      id: '/institucional'
-      path: '/institucional'
-      fullPath: '/institucional'
-      preLoaderRoute: typeof InstitucionalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/comite': {
-      id: '/comite'
-      path: '/comite'
-      fullPath: '/comite'
-      preLoaderRoute: typeof ComiteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/clientes': {
-      id: '/clientes'
-      path: '/clientes'
-      fullPath: '/clientes'
-      preLoaderRoute: typeof ClientesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/alertas': {
-      id: '/alertas'
-      path: '/alertas'
-      fullPath: '/alertas'
-      preLoaderRoute: typeof AlertasRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -259,18 +224,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/expedientes/': {
-      id: '/expedientes/'
-      path: '/expedientes'
-      fullPath: '/expedientes/'
-      preLoaderRoute: typeof ExpedientesIndexRouteImport
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comite': {
+      id: '/comite'
+      path: '/comite'
+      fullPath: '/comite'
+      preLoaderRoute: typeof ComiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/institucional': {
+      id: '/institucional'
+      path: '/institucional'
+      fullPath: '/institucional'
+      preLoaderRoute: typeof InstitucionalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/comite/': {
@@ -280,11 +273,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComiteIndexRouteImport
       parentRoute: typeof ComiteRoute
     }
-    '/expedientes/nuevo': {
-      id: '/expedientes/nuevo'
-      path: '/expedientes/nuevo'
-      fullPath: '/expedientes/nuevo'
-      preLoaderRoute: typeof ExpedientesNuevoRouteImport
+    '/comite/$id': {
+      id: '/comite/$id'
+      path: '/$id'
+      fullPath: '/comite/$id'
+      preLoaderRoute: typeof ComiteIdRouteImport
+      parentRoute: typeof ComiteRoute
+    }
+    '/expedientes/': {
+      id: '/expedientes/'
+      path: '/expedientes'
+      fullPath: '/expedientes/'
+      preLoaderRoute: typeof ExpedientesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/expedientes/$id': {
@@ -294,12 +294,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpedientesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/comite/$id': {
-      id: '/comite/$id'
-      path: '/$id'
-      fullPath: '/comite/$id'
-      preLoaderRoute: typeof ComiteIdRouteImport
-      parentRoute: typeof ComiteRoute
+    '/expedientes/nuevo': {
+      id: '/expedientes/nuevo'
+      path: '/expedientes/nuevo'
+      fullPath: '/expedientes/nuevo'
+      preLoaderRoute: typeof ExpedientesNuevoRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/ia/completar': {
       id: '/api/ia/completar'
@@ -341,3 +341,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
