@@ -10,9 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InstitucionalRouteImport } from './routes/institucional'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ComiteRouteImport } from './routes/comite'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
 import { Route as ComiteIndexRouteImport } from './routes/comite.index'
@@ -24,6 +27,11 @@ import { Route as ApiIaCompletarRouteImport } from './routes/api/ia/completar'
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstitucionalRoute = InstitucionalRouteImport.update({
+  id: '/institucional',
+  path: '/institucional',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -39,6 +47,16 @@ const ComiteRoute = ComiteRouteImport.update({
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -79,9 +97,12 @@ const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
@@ -92,8 +113,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/dashboard': typeof DashboardRoute
+  '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
@@ -105,9 +129,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
@@ -120,9 +147,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
+    | '/alertas'
     | '/clientes'
     | '/comite'
     | '/dashboard'
+    | '/institucional'
     | '/login'
     | '/comite/$id'
     | '/expedientes/$id'
@@ -133,8 +163,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
+    | '/alertas'
     | '/clientes'
     | '/dashboard'
+    | '/institucional'
     | '/login'
     | '/comite/$id'
     | '/expedientes/$id'
@@ -145,9 +178,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
+    | '/alertas'
     | '/clientes'
     | '/comite'
     | '/dashboard'
+    | '/institucional'
     | '/login'
     | '/comite/$id'
     | '/expedientes/$id'
@@ -159,9 +195,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AlertasRoute: typeof AlertasRoute
   ClientesRoute: typeof ClientesRoute
   ComiteRoute: typeof ComiteRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  InstitucionalRoute: typeof InstitucionalRoute
   LoginRoute: typeof LoginRoute
   ExpedientesIdRoute: typeof ExpedientesIdRoute
   ExpedientesNuevoRoute: typeof ExpedientesNuevoRoute
@@ -176,6 +215,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/institucional': {
+      id: '/institucional'
+      path: '/institucional'
+      fullPath: '/institucional'
+      preLoaderRoute: typeof InstitucionalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -197,6 +243,20 @@ declare module '@tanstack/react-router' {
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -266,9 +326,12 @@ const ComiteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AlertasRoute: AlertasRoute,
   ClientesRoute: ClientesRoute,
   ComiteRoute: ComiteRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  InstitucionalRoute: InstitucionalRoute,
   LoginRoute: LoginRoute,
   ExpedientesIdRoute: ExpedientesIdRoute,
   ExpedientesNuevoRoute: ExpedientesNuevoRoute,
