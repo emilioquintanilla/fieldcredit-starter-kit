@@ -162,7 +162,10 @@ function ExpedientesPage() {
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     {e.codigo} · {money(e.monto_solicitado)}
                   </div>
-                  <div className="mt-1"><StatusBadge status={e.estado} /></div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={e.estado} />
+                    {e.estado === "borrador" && <ProgresoSolicitud data={solicitudes[e.id]} />}
+                  </div>
                 </div>
                 <ChevronRight size={18} className="shrink-0 text-slate-400" />
               </Link>
@@ -223,7 +226,12 @@ function ExpedientesPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{e.codigo}</td>
                 <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{money(e.monto_solicitado)}</td>
-                <td className="px-4 py-3"><StatusBadge status={e.estado} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={e.estado} />
+                    {e.estado === "borrador" && <ProgresoSolicitud data={solicitudes[e.id]} />}
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                   {new Date(e.created_at).toLocaleDateString("es-NI")}
                 </td>
