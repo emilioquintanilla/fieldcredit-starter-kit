@@ -38,10 +38,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <Sidebar open={open} collapsed={collapsed} onClose={() => setOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <NavBar onToggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-x-hidden p-4 animate-fade-in sm:p-6">
+        <main className="flex-1 overflow-x-hidden p-3 pb-20 animate-fade-in sm:p-6 md:pb-6">
           {children}
         </main>
       </div>
+      <BottomNav />
     </div>
   );
 }
