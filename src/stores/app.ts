@@ -83,11 +83,27 @@ export const useApp = create<AppState>((set, get) => ({
 
     if (authError || !authData.session) {
       set({ cargandoLogin: false });
-      return null;
+      const code = (authError as { code?: string } | null)?.code ?? "";
+      const msg = authError?.message ?? "";
+      console.warn("[login] fallo de autenticación", { email, code, msg });
+
+      let error = "No se pudo iniciar sesión. Intentá de nuevo.";
+      if (code === "invalid_credentials" || /invalid login credentials/i.test(msg)) {
+        error = `Usuario o contraseña incorrectos (se intentó con el correo ${email}).`;
+      } else if (code === "email_not_confirmed" || /not confirmed/i.test(msg)) {
+        error = "La cuenta existe pero el correo no está confirmado. Contactá al administrador.";
+      } else if (code === "over_email_send_rate_limit" || /rate limit/i.test(msg)) {
+        error = "Demasiados intentos. Esperá unos minutos y volvé a probar.";
+      } else if (/fetch|network/i.test(msg)) {
+        error = "Sin conexión con el servidor. Revisá tu internet.";
+      } else if (msg) {
+        error = msg;
+      }
+      return { usuario: null, error };
     }
 
     // Obtener perfil del usuario desde la tabla usuarios
-    const { data: perfil } = await supabase
+    const { data: perfil, error: perfilError } = await supabase
       .from("usuarios")
       .select("id, nombre, usuario, rol, sucursal_id, activo, sucursales(nombre, region)")
       .eq("auth_user_id", authData.user.id)
@@ -97,7 +113,16 @@ export const useApp = create<AppState>((set, get) => ({
     if (!perfil) {
       await supabase.auth.signOut();
       set({ cargandoLogin: false });
-      return null;
+      console.warn("[login] sin perfil en `usuarios`", {
+        auth_user_id: authData.user.id,
+        error: perfilError?.message,
+      });
+      return {
+        usuario: null,
+        error: perfilError
+          ? `No se pudo leer tu perfil: ${perfilError.message}`
+          : "Tu cuenta no tiene un perfil activo asignado. Contactá al administrador.",
+      };
     }
 
     const authUser = toAuthUser(perfil as unknown as UsuarioDB);
