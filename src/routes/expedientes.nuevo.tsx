@@ -404,7 +404,7 @@ function NuevaSolicitud() {
           ) : (
             <button
               type="button"
-              onClick={enviarSolicitud}
+              onClick={intentarEnviar}
               className="inline-flex items-center gap-1 rounded-md bg-fieldcredit-green px-4 py-2 text-sm font-semibold text-white hover:bg-fieldcredit-green-dark"
             >
               <Send size={16} /> Enviar solicitud
@@ -413,10 +413,37 @@ function NuevaSolicitud() {
         </div>
       </div>
 
+      <AlertDialog open={confirmarEnvio} onOpenChange={(o) => !enviando && setConfirmarEnvio(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Enviar la solicitud a revisión?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La solicitud {data.numero_solicitud} de{" "}
+              {[data.primer_nombre, data.primer_apellido].filter(Boolean).join(" ") || "el cliente"}{" "}
+              pasará al estado <strong>En revisión</strong> y dejará de ser un borrador editable
+              desde este formulario. Verifique que la información esté completa y correcta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={enviando}>Revisar de nuevo</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void enviarSolicitud();
+              }}
+              disabled={enviando}
+            >
+              {enviando ? "Enviando…" : "Sí, enviar solicitud"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AsistenteBarraCampo expediente={exp} moduloActual="solicitud" />
     </AppLayout>
   );
 }
+
 
 /* ============================================================
    Helpers UI reutilizables
