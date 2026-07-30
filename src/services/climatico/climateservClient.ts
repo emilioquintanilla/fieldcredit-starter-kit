@@ -112,7 +112,8 @@ export interface PerfilClimaticoParcela {
   esi: ResumenClimatico | null;
   alertaSequia: boolean;
   alertaExceso: boolean;
-  scoreClimatico: number;
+  /** null cuando ClimateSERV no devolvió datos para la parcela */
+  scoreClimatico: number | null;
   resumenTexto: string;
 }
 
@@ -156,6 +157,7 @@ export async function obtenerPerfilClimatico(
   if (estres) score -= 15;
   if (esiProm > 0.5) score += 10;
   score = Math.min(100, Math.max(0, score));
+  const sinDatos = !chirps90 && !chirps30 && !esi;
 
   const partes: string[] = [];
   if (chirps90 && precipAcum90 > 0)
@@ -168,5 +170,5 @@ export async function obtenerPerfilClimatico(
   if (alertaExceso) partes.push("⚠️ Precipitación excesiva.");
   if (!partes.length) partes.push("Sin datos climáticos disponibles.");
 
-  return { lat, lng, chirps90, chirps30, esi, alertaSequia, alertaExceso, scoreClimatico: score, resumenTexto: partes.join(" ") };
+  return { lat, lng, chirps90, chirps30, esi, alertaSequia, alertaExceso, scoreClimatico: sinDatos ? null : score, resumenTexto: partes.join(" ") };
 }
