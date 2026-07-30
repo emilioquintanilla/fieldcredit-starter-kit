@@ -1,7 +1,7 @@
 // Detalle de expediente con barra de módulos (tabs)
 import { useCallback, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FileImage, ArrowLeft } from "lucide-react";
+import { FileImage, ArrowLeft, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
