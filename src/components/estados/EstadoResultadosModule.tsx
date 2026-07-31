@@ -1,4 +1,6 @@
 // Estado de Resultados con cuentas dinámicas por actividad económica.
+// Fase 2 UX: bloques colapsables en móvil, resumen pegajoso, gráficos
+// responsivos, tokens semánticos de color.
 import { useMemo } from "react";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
@@ -6,9 +8,13 @@ import {
 } from "recharts";
 import { useExpedientes, type ValorCuenta } from "@/stores/expedientes";
 import { useCuentasActividad } from "@/hooks/useCuentasActividad";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CampoFinanciero } from "./CampoFinanciero";
 import { BannerActividad } from "./BannerActividad";
-import { cn } from "@/lib/utils";
+import { ResumenPegajoso } from "./ResumenPegajoso";
+import {
+  BloqueFinanciero, SubtotalRow, ResumenBox, ListaAlertas,
+} from "./BloqueFinanciero";
 
 interface Props {
   expedienteId: string;
@@ -19,19 +25,20 @@ interface Props {
 
 const fmt = (n: number) => `C$ ${Math.round(n).toLocaleString("es-NI")}`;
 
-export function EstadoResultadosModule({ expedienteId, tipoActividad, cuotaEstimada, onSwitchToSolicitud }: Props) {
+export function EstadoResultadosModule({
+  expedienteId, tipoActividad, cuotaEstimada, onSwitchToSolicitud,
+}: Props) {
   const exp = useExpedientes((s) => s.expedientes[expedienteId]);
   const guardarValor = useExpedientes((s) => s.guardarValorEstado);
   const actualizarObs = useExpedientes((s) => s.actualizarObservacionesEstado);
+  const esMovil = useIsMobile();
 
   const cuentas = useCuentasActividad(tipoActividad);
   const datos = exp?.estadoResultados;
   const valores = datos?.valores ?? {};
 
-  // Pre-llenado ahora gestionado por useSincronizarEstados (montado en expedientes.$id.tsx).
-  // Ese hook observa el flujo reactivamente y propaga cambios aquí automáticamente.
+  // Pre-llenado gestionado por useSincronizarEstados (montado en expedientes.$id.tsx).
 
-  // Totales calculados
   const totales = useMemo(() => {
     const sum = (lista: { id: string }[]) =>
       lista.reduce((acc, c) => acc + (valores[c.id]?.valor || 0), 0);
@@ -45,13 +52,20 @@ export function EstadoResultadosModule({ expedienteId, tipoActividad, cuotaEstim
     const excedenteNeto = excedenteFamiliar - cuotaEstimada;
     const margenBruto = ingresos > 0 ? (utilidadBruta / ingresos) * 100 : 0;
     const capacidadPago = ingresos > 0 ? (cuotaEstimada / ingresos) * 100 : 0;
-    return { ingresos, costos, gastosOp, consumo, utilidadBruta, utilidadOperativa, excedenteFamiliar, excedenteNeto, margenBruto, capacidadPago };
+    return {
+      ingresos, costos, gastosOp, consumo, utilidadBruta, utilidadOperativa,
+      excedenteFamiliar, excedenteNeto, margenBruto, capacidadPago,
+    };
   }, [cuentas, valores, cuotaEstimada]);
 
-  // Datos para gráficos
+  // Cantidad de campos con valor por bloque, para el contador del encabezado.
+  const llenos = (lista: { id: string }[]) =>
+    lista.filter((c) => (valores[c.id]?.valor || 0) > 0).length;
+
   const donaIngresos = cuentas.ingresos
     .map((c) => ({ name: c.etiqueta.replace(/\s*\(.*\)$/, ""), value: valores[c.id]?.valor || 0 }))
     .filter((x) => x.value > 0);
+
   const cascada = [
     { name: "Ingresos", value: totales.ingresos, fill: "#12A150" },
     { name: "− Costos", value: -totales.costos, fill: "#DC2626" },
@@ -73,88 +87,148 @@ export function EstadoResultadosModule({ expedienteId, tipoActividad, cuotaEstim
 
   return (
     <section className="space-y-4">
+      {/* Resumen siempre visible mientras se captura (solo móvil) */}
+      <ResumenPegajoso
+        label="Excedente neto"
+        valor={totales.excedenteNeto}
+        secundario={{
+          label: "Cap. pago",
+          valor: totales.capacidadPago,
+          sufijo: "%",
+          alerta: totales.capacidadPago > 70,
+        }}
+        alertas={alertas.length}
+      />
+
       <BannerActividad
         tipoActividad={cuentas.tipoActividad}
         etiquetas={cuentas.etiquetas}
         onCambiarActividad={onSwitchToSolicitud}
       />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
         {/* Ingresos */}
-        <Bloque titulo="1. Ingresos" icono="💵" color="verde">
+        <BloqueFinanciero
+          titulo="1. Ingresos"
+          icono="💵"
+          color="verde"
+          subtotal={totales.ingresos}
+          llenos={llenos(cuentas.ingresos)}
+          total={cuentas.ingresos.length}
+          defaultAbierto
+        >
           {cuentas.ingresos.map((c) => (
             <CampoFinanciero key={c.id} cuenta={c} registro={valores[c.id]} onChange={onChange} />
           ))}
           <SubtotalRow label="Total ingresos" valor={totales.ingresos} tono="verde" />
-        </Bloque>
+        </BloqueFinanciero>
 
         {/* Costos */}
-        <Bloque titulo={`2. ${cuentas.etiquetas.costos}`} icono={cuentas.etiquetas.icono} color="rojo">
-          {cuentas.esAsalariado ? (
-            <p className="mb-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              El cliente es asalariado: no aplican costos de producción. Registrar únicamente gastos relacionados al empleo (si los hubiese).
+        <BloqueFinanciero
+          titulo={`2. ${cuentas.etiquetas.costos}`}
+          icono={cuentas.etiquetas.icono}
+          color="rojo"
+          subtotal={totales.costos}
+          llenos={llenos(cuentas.costos)}
+          total={cuentas.costos.length}
+        >
+          {cuentas.esAsalariado && (
+            <p className="mb-3 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+              El cliente es asalariado: no aplican costos de producción. Registrar únicamente
+              gastos relacionados al empleo (si los hubiese).
             </p>
-          ) : null}
+          )}
           {cuentas.costos.map((c) => (
             <CampoFinanciero key={c.id} cuenta={c} registro={valores[c.id]} onChange={onChange} />
           ))}
           <SubtotalRow label="Total costos" valor={totales.costos} tono="rojo" />
-          <SubtotalRow label="Utilidad bruta" valor={totales.utilidadBruta} tono={totales.utilidadBruta >= 0 ? "verde" : "rojo"} destacado />
-        </Bloque>
+          <SubtotalRow
+            label="Utilidad bruta"
+            valor={totales.utilidadBruta}
+            tono={totales.utilidadBruta >= 0 ? "verde" : "rojo"}
+            destacado
+          />
+        </BloqueFinanciero>
 
-        {/* Gastos operación */}
-        <Bloque titulo="3. Gastos de operación" icono="⚙️" color="ambar">
+        {/* Gastos de operación */}
+        <BloqueFinanciero
+          titulo="3. Gastos de operación"
+          icono="⚙️"
+          color="ambar"
+          subtotal={totales.gastosOp}
+          llenos={llenos(cuentas.gastosOperacion)}
+          total={cuentas.gastosOperacion.length}
+        >
           {cuentas.gastosOperacion.map((c) => (
             <CampoFinanciero key={c.id} cuenta={c} registro={valores[c.id]} onChange={onChange} />
           ))}
           <SubtotalRow label="Total operación" valor={totales.gastosOp} tono="ambar" />
-          <SubtotalRow label="Utilidad operativa" valor={totales.utilidadOperativa} tono={totales.utilidadOperativa >= 0 ? "verde" : "rojo"} destacado />
-        </Bloque>
+          <SubtotalRow
+            label="Utilidad operativa"
+            valor={totales.utilidadOperativa}
+            tono={totales.utilidadOperativa >= 0 ? "verde" : "rojo"}
+            destacado
+          />
+        </BloqueFinanciero>
 
         {/* Consumo familiar */}
-        <Bloque titulo="4. Consumo familiar" icono="🏠" color="teal">
+        <BloqueFinanciero
+          titulo="4. Consumo familiar"
+          icono="🏠"
+          color="teal"
+          subtotal={totales.consumo}
+          llenos={llenos(cuentas.consumoFamiliar)}
+          total={cuentas.consumoFamiliar.length}
+        >
           {cuentas.consumoFamiliar.map((c) => (
             <CampoFinanciero key={c.id} cuenta={c} registro={valores[c.id]} onChange={onChange} />
           ))}
           <SubtotalRow label="Total consumo" valor={totales.consumo} tono="teal" />
-        </Bloque>
+        </BloqueFinanciero>
       </div>
 
-      {/* Resultado final */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-        <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">5. Resultado del período</h3>
-        <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+      {/* Resultado del período */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">5. Resultado del período</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4">
           <ResumenBox label="Excedente familiar" valor={totales.excedenteFamiliar} />
           <ResumenBox label="Cuota estimada" valor={-cuotaEstimada} tono="amber" />
           <ResumenBox label="Excedente neto" valor={totales.excedenteNeto} destacado />
-          <ResumenBox label="Capacidad de pago" valor={totales.capacidadPago} sufijo="%" tono={totales.capacidadPago > 70 ? "red" : totales.capacidadPago > 50 ? "amber" : "green"} />
+          <ResumenBox
+            label="Capacidad de pago"
+            valor={totales.capacidadPago}
+            sufijo="%"
+            tono={totales.capacidadPago > 70 ? "red" : totales.capacidadPago > 50 ? "amber" : "green"}
+          />
         </div>
-        {alertas.length > 0 && (
-          <ul className="mt-3 space-y-1 text-xs">
-            {alertas.map((a, i) => (
-              <li key={i} className={cn(
-                "rounded-md px-2 py-1",
-                a.tipo === "roja" ? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200" : "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
-              )}>
-                {a.tipo === "roja" ? "🔴" : "⚠️"} {a.msg}
-              </li>
-            ))}
-          </ul>
-        )}
+        <ListaAlertas alertas={alertas} />
       </div>
 
       {/* Gráficos */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Cascada del resultado</h3>
-          <div className="h-64">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+          <h3 className="mb-2 text-sm font-semibold text-foreground">Cascada del resultado</h3>
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cascada}>
+              <BarChart data={cascada} margin={{ top: 4, right: 4, left: esMovil ? -20 : 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid,#e2e8f0)" />
-                <XAxis dataKey="name" fontSize={10} stroke="var(--chart-axis,#64748b)" />
-                <YAxis fontSize={10} stroke="var(--chart-axis,#64748b)" />
-                <Tooltip formatter={(v: number) => fmt(v)} />
-                <Bar dataKey="value">
+                <XAxis
+                  dataKey="name"
+                  fontSize={esMovil ? 9 : 10}
+                  stroke="var(--chart-axis,#64748b)"
+                  interval={0}
+                  angle={esMovil ? -35 : 0}
+                  textAnchor={esMovil ? "end" : "middle"}
+                  height={esMovil ? 44 : 30}
+                />
+                <YAxis
+                  fontSize={esMovil ? 9 : 10}
+                  stroke="var(--chart-axis,#64748b)"
+                  tickFormatter={(v: number) => (Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                  width={esMovil ? 38 : 60}
+                />
+                <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 12 }} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {cascada.map((d, i) => <Cell key={i} fill={d.fill} />)}
                 </Bar>
               </BarChart>
@@ -162,19 +236,35 @@ export function EstadoResultadosModule({ expedienteId, tipoActividad, cuotaEstim
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Composición del ingreso</h3>
-          <div className="h-64">
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+          <h3 className="mb-2 text-sm font-semibold text-foreground">Composición del ingreso</h3>
+          <div className="h-52 sm:h-64">
             {donaIngresos.length === 0 ? (
-              <p className="grid h-full place-items-center text-xs text-slate-500">Sin ingresos registrados</p>
+              <p className="grid h-full place-items-center text-xs text-muted-foreground">
+                Sin ingresos registrados
+              </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={donaIngresos} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40} label={(e) => `${e.name}`}>
+                  <Pie
+                    data={donaIngresos}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={esMovil ? 58 : 80}
+                    innerRadius={esMovil ? 30 : 40}
+                    /* En móvil las etiquetas alrededor de la dona se salen del
+                       contenedor y se cortan: la leyenda inferior las sustituye. */
+                    label={esMovil ? false : (e) => `${e.name}`}
+                  >
                     {donaIngresos.map((_, i) => <Cell key={i} fill={colores[i % colores.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmt(v)} />
-                  <Legend fontSize={10} />
+                  <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 12 }} />
+                  <Legend
+                    wrapperStyle={{ fontSize: esMovil ? 10 : 11 }}
+                    iconSize={8}
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -183,73 +273,31 @@ export function EstadoResultadosModule({ expedienteId, tipoActividad, cuotaEstim
       </div>
 
       {/* Observaciones */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-        <label className="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <label
+          htmlFor="obs-resultados"
+          className="mb-2 block text-xs font-medium text-foreground"
+        >
           Observaciones del asesor
         </label>
         <textarea
+          id="obs-resultados"
           rows={3}
           value={datos?.observacionesAsesor || ""}
           onChange={(e) => actualizarObs(expedienteId, "resultados", e.target.value)}
           placeholder="Notas sobre la calidad de la información, verificaciones realizadas, etc."
-          className="w-full rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          className="w-full resize-y rounded-xl border border-input bg-transparent p-3 text-sm transition-all duration-200 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fieldcredit-teal/50 focus-visible:ring-offset-2"
         />
       </div>
     </section>
   );
 }
 
-/* ---- Helpers visuales ---- */
-
-function Bloque({ titulo, icono, children, color }: { titulo: string; icono: string; color: "verde" | "rojo" | "ambar" | "teal"; children: React.ReactNode }) {
-  const header =
-    color === "verde" ? "bg-fieldcredit-green text-white" :
-    color === "rojo"  ? "bg-rose-600 text-white" :
-    color === "ambar" ? "bg-amber-500 text-white" :
-                        "bg-fieldcredit-teal text-white";
-  return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-      <div className={cn("flex items-center gap-2 px-3 py-2 text-sm font-semibold", header)}>
-        <span>{icono}</span><span>{titulo}</span>
-      </div>
-      <div className="p-3">{children}</div>
-    </div>
-  );
-}
-
-function SubtotalRow({ label, valor, tono, destacado }: { label: string; valor: number; tono: "verde" | "rojo" | "ambar" | "teal"; destacado?: boolean }) {
-  const bg =
-    tono === "verde" ? "bg-fieldcredit-green-pale text-fieldcredit-green-dark dark:bg-fieldcredit-green-dark/20 dark:text-fieldcredit-green-light" :
-    tono === "rojo"  ? "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-200" :
-    tono === "ambar" ? "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200" :
-                       "bg-fieldcredit-teal-pale text-fieldcredit-teal-dark dark:bg-fieldcredit-teal-dark/20 dark:text-fieldcredit-teal-light";
-  return (
-    <div className={cn("mt-2 flex items-center justify-between rounded-lg px-3 py-2 text-sm", bg, destacado && "font-bold")}>
-      <span>{label}</span>
-      <span className="font-mono">{fmt(valor)}</span>
-    </div>
-  );
-}
-
-function ResumenBox({ label, valor, sufijo, tono, destacado }: { label: string; valor: number; sufijo?: string; tono?: "green" | "amber" | "red"; destacado?: boolean }) {
-  const color =
-    tono === "red"   ? "text-rose-600 dark:text-rose-300" :
-    tono === "amber" ? "text-amber-600 dark:text-amber-300" :
-    tono === "green" ? "text-fieldcredit-green dark:text-fieldcredit-green-light" :
-    valor >= 0       ? "text-fieldcredit-green dark:text-fieldcredit-green-light" :
-                       "text-rose-600 dark:text-rose-300";
-  return (
-    <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className={cn("mt-1 font-mono text-lg", color, destacado && "font-extrabold")}>
-        {sufijo === "%" ? `${valor.toFixed(1)}%` : fmt(valor)}
-      </div>
-    </div>
-  );
-}
-
 // Estado del módulo para el indicador de tab
-export function estadoResultadosStatus(datos?: { valores: Record<string, ValorCuenta> }, cuentasObligatorias: string[] = []): "pendiente" | "progreso" | "completo" | "alerta" {
+export function estadoResultadosStatus(
+  datos?: { valores: Record<string, ValorCuenta> },
+  cuentasObligatorias: string[] = [],
+): "pendiente" | "progreso" | "completo" | "alerta" {
   if (!datos || Object.keys(datos.valores).length === 0) return "pendiente";
   const faltantes = cuentasObligatorias.filter((id) => !(datos.valores[id]?.valor > 0));
   if (faltantes.length === 0) return "completo";
