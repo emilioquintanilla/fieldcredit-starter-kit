@@ -1,4 +1,5 @@
 // Barra superior de navegación + selector de rol para presentaciones
+// Fase 3 UX: colores semánticos, rounded-xl, backdrop blur consistente
 import { Menu, LogOut, Eye } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useApp, useRolActivo, type Rol } from "@/stores/app";
@@ -35,17 +36,17 @@ export function NavBar({ onToggleSidebar }: Props) {
           <span className="hidden text-xs text-white/80 sm:inline">— no es el rol real</span>
           <button
             onClick={() => setRolSimulado(null)}
-            className="ml-1 shrink-0 rounded bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 sm:ml-2 sm:text-xs"
+            className="ml-1 shrink-0 rounded-lg bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 sm:ml-2 sm:text-xs"
           >
             Salir
           </button>
         </div>
       )}
 
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors dark:border-slate-700 dark:bg-slate-800/95 sm:px-4">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur-overlay sm:px-4">
         <button
           onClick={onToggleSidebar}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-accent"
           aria-label="Menú"
         >
           <Menu size={22} />
@@ -53,7 +54,7 @@ export function NavBar({ onToggleSidebar }: Props) {
 
         <div className="flex min-w-0 items-center gap-3">
           <img src={logoUrl} alt="MiCrédito" className="h-8 shrink-0" />
-          <div className="hidden h-6 w-px bg-slate-300 dark:bg-slate-600 sm:block" />
+          <div className="hidden h-6 w-px bg-border sm:block" />
           <span className="hidden truncate font-bold text-fieldcredit-green sm:inline">FieldCredit</span>
         </div>
 
@@ -64,15 +65,15 @@ export function NavBar({ onToggleSidebar }: Props) {
 
           {/* Selector de rol (solo visible para admin) */}
           {esAdmin && (
-            <div className="hidden items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 dark:border-slate-600 dark:bg-slate-700 sm:flex">
-              <Eye size={14} className="text-slate-400" />
+            <div className="hidden items-center gap-1 rounded-xl border border-border bg-muted px-2 py-1 sm:flex">
+              <Eye size={14} className="text-muted-foreground" />
               <select
                 value={rolSimulado ?? "real"}
                 onChange={(e) => {
                   const v = e.target.value;
                   setRolSimulado(v === "real" ? null : (v as Rol));
                 }}
-                className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none dark:text-slate-200"
+                className="bg-transparent text-xs font-medium text-foreground focus:outline-none"
               >
                 <option value="real">Mi rol ({usuario?.rol})</option>
                 {ROLES_DISPONIBLES.filter((r) => r.rol !== usuario?.rol).map((r) => (
@@ -86,16 +87,16 @@ export function NavBar({ onToggleSidebar }: Props) {
 
           <button
             onClick={toggleTheme}
-            className="hidden h-9 w-9 place-items-center rounded-md text-lg hover:bg-slate-100 dark:hover:bg-slate-700 sm:grid"
+            className="hidden h-9 w-9 place-items-center rounded-xl text-lg hover:bg-accent sm:grid"
             aria-label="Cambiar tema"
           >
             {theme === "light" ? "☀️" : "🌙"}
           </button>
           <div className="hidden text-right sm:block">
-            <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
+            <div className="text-sm font-medium text-foreground">
               {usuario?.nombre}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-muted-foreground">
               {sucursalNombre} · {rolActivo}
             </div>
           </div>
@@ -104,12 +105,11 @@ export function NavBar({ onToggleSidebar }: Props) {
               logout();
               navigate({ to: "/login" });
             }}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-slate-600 hover:bg-fieldcredit-red-light hover:text-fieldcredit-red dark:text-slate-300 dark:hover:bg-red-900/30 sm:h-9 sm:w-9"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-fieldcredit-red-light hover:text-fieldcredit-red dark:hover:bg-red-900/30 sm:h-9 sm:w-9"
             aria-label="Cerrar sesión"
           >
             <LogOut size={20} />
           </button>
-
         </div>
       </header>
     </>
