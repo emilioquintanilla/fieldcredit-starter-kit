@@ -252,13 +252,13 @@ export interface EtiquetaActividad {
 }
 
 export const ETIQUETAS_ACTIVIDAD: Record<TipoActividad, EtiquetaActividad> = {
-  [TIPOS_ACTIVIDAD.COMERCIO]:    { icono: "🛒", costos: "Compras y costos del negocio",     banner: "bg-fieldcredit-teal-pale border-fieldcredit-teal/40" },
-  [TIPOS_ACTIVIDAD.AGRICULTURA]: { icono: "🌱", costos: "Costos de producción agrícola",    banner: "bg-fieldcredit-green-pale border-fieldcredit-green/40" },
+  [TIPOS_ACTIVIDAD.COMERCIO]:    { icono: "🛒", costos: "Compras y costos del negocio",     banner: "bg-fieldcredit-teal-pale border-fieldcredit-teal/40 dark:bg-teal-900/20 dark:border-teal-700" },
+  [TIPOS_ACTIVIDAD.AGRICULTURA]: { icono: "🌱", costos: "Costos de producción agrícola",    banner: "bg-fieldcredit-green-pale border-fieldcredit-green/40 dark:bg-green-900/20 dark:border-green-700" },
   [TIPOS_ACTIVIDAD.GANADERIA]:   { icono: "🐄", costos: "Costos de la ganadería",           banner: "bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700" },
-  [TIPOS_ACTIVIDAD.MIXTO]:       { icono: "🌿🛒", costos: "Costos de producción y ventas",  banner: "bg-fieldcredit-green-pale border-fieldcredit-green/40", badge: "🌿🛒 Actividad mixta — mostrando cuentas combinadas" },
+  [TIPOS_ACTIVIDAD.MIXTO]:       { icono: "🌿🛒", costos: "Costos de producción y ventas",  banner: "bg-fieldcredit-green-pale border-fieldcredit-green/40 dark:bg-green-900/20 dark:border-green-700", badge: "🌿🛒 Actividad mixta — mostrando cuentas combinadas" },
   [TIPOS_ACTIVIDAD.SERVICIOS]:   { icono: "🔧", costos: "Costos de prestación de servicio", banner: "bg-slate-100 border-slate-300 dark:bg-slate-800 dark:border-slate-600" },
   [TIPOS_ACTIVIDAD.MANUFACTURA]: { icono: "🏭", costos: "Costos de producción",             banner: "bg-slate-100 border-slate-300 dark:bg-slate-800 dark:border-slate-600" },
   [TIPOS_ACTIVIDAD.ASALARIADO]:  { icono: "💼", costos: "Gastos relacionados al empleo",    banner: "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700" },
-  [TIPOS_ACTIVIDAD.AGRORESILIA]: { icono: "🌾", costos: "Costos del sistema AgroResilia",   banner: "bg-fieldcredit-green-pale border-fieldcredit-green/40", badge: "🌿 Proyecto AgroResilia" },
+  [TIPOS_ACTIVIDAD.AGRORESILIA]: { icono: "🌾", costos: "Costos del sistema AgroResilia",   banner: "bg-fieldcredit-green-pale border-fieldcredit-green/40 dark:bg-green-900/20 dark:border-green-700", badge: "🌿 Proyecto AgroResilia" },
   [TIPOS_ACTIVIDAD.OTRO]:        { icono: "📦", costos: "Costos de la actividad",           banner: "bg-slate-100 border-slate-300 dark:bg-slate-800 dark:border-slate-600" },
 };
