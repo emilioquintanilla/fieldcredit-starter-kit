@@ -24,6 +24,8 @@ import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
 import { useSincronizarEstados } from "@/hooks/useSincronizarEstados";
 import { productosCredito } from "@/data/catalogos";
 import { cn } from "@/lib/utils";
+import { SwipeToConfirm } from "@/components/ui/swipe-to-confirm";
+import { AnimatedCheck } from "@/components/ui/animated-check";
 
 export const Route = createFileRoute("/expedientes/$id")({
   head: () => ({ meta: [{ title: "Detalle de expediente — FieldCredit" }] }),
@@ -348,32 +350,35 @@ function TabDocumentos({ expedienteId }: { expedienteId: string }) {
       {/* Panel de verificación pre-comité */}
       <PreComitePanel expedienteId={expedienteId} />
 
-      <div className="rounded-xl border border-fieldcredit-teal/40 bg-fieldcredit-teal-light/40 p-4 dark:border-teal-800/60 dark:bg-teal-900/20">
+      <div className="rounded-2xl border border-fieldcredit-teal/40 bg-fieldcredit-teal-pale/60 p-4 dark:border-teal-800/60 dark:bg-teal-900/20">
         <h3 className="mb-2 text-sm font-bold text-fieldcredit-teal-dark dark:text-teal-200">
           ⚖️ Enviar a comité de crédito
         </h3>
-        <p className="mb-3 text-xs text-slate-600 dark:text-slate-300">
+        <p className="mb-3 text-xs text-muted-foreground">
           El Copiloto IA analizará el expediente completo y emitirá un dictamen con score,
           banderas de cumplimiento y recomendación. La decisión final la toma el comité humano.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => marcarEnComite(expedienteId)}
-            disabled={yaEnComite}
-            className="rounded-lg bg-fieldcredit-teal px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-          >
-            {yaEnComite ? "Ya está en comité" : "Enviar al comité"}
-          </button>
-          {yaEnComite && (
+
+        {yaEnComite ? (
+          <div className="space-y-3">
+            <AnimatedCheck size={40} color="teal" label="Expediente enviado al comité" />
             <Link
               to="/comite/$id"
               params={{ id: expedienteId }}
-              className="rounded-lg border border-fieldcredit-teal px-4 py-2 text-sm font-bold text-fieldcredit-teal-dark dark:text-teal-200"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-fieldcredit-teal py-3 text-sm font-bold text-fieldcredit-teal-dark transition-all hover:bg-fieldcredit-teal-light dark:text-teal-200"
             >
               Ver dictamen →
             </Link>
-          )}
-        </div>
+          </div>
+        ) : (
+          <SwipeToConfirm
+            label="Deslice para enviar a comité"
+            variant="success"
+            onConfirm={() => marcarEnComite(expedienteId)}
+            confirmedLabel="¡Enviado al comité!"
+          />
+        )}
+      </div>
       </div>
     </section>
   );
