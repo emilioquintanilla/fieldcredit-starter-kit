@@ -148,9 +148,14 @@ export function FlujoModule({
           />
         </div>
         <div className={cn("min-w-0 space-y-4", vista === "datos" && "hidden lg:block")}>
-          <VistaGraficos expedienteId={expedienteId} resumen={resumenIA} />
+          <VistaGraficos expedienteId={expedienteId} />
         </div>
       </div>
+
+      {/* El Copiloto va fuera del grid a propósito: dentro de la columna de
+          gráficos quedaba oculto en móvil mientras el asesor estaba en la
+          pestaña "Ingresar datos", que es la vista por defecto. */}
+      <CopilotoFlujo expedienteId={expedienteId} resumen={resumenIA} />
     </div>
   );
 }
@@ -830,12 +835,7 @@ function promedio(arr: number[]) {
 
 /* =============== VISTA 2 — GRÁFICOS =============== */
 
-function VistaGraficos({
-  expedienteId, resumen,
-}: {
-  expedienteId: string;
-  resumen: ResumenFlujoIA;
-}) {
+function VistaGraficos({ expedienteId }: { expedienteId: string }) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]!.flujo!);
   const { datosMensuales } = useCalculos(expedienteId);
   const esMovil = useIsMobile();
@@ -1061,8 +1061,6 @@ function VistaGraficos({
         cuotaMensual={cuotaMensual}
         plazoMeses={flujo.plazoMeses}
       />
-
-      <CopilotoFlujo expedienteId={expedienteId} resumen={resumen} />
     </div>
   );
 }
