@@ -379,7 +379,6 @@ function TabDocumentos({ expedienteId }: { expedienteId: string }) {
           />
         )}
       </div>
-      </div>
     </section>
   );
 }
