@@ -8,13 +8,15 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import {
-  HelpCircle, ChevronDown, BarChart3, ListChecks, AlertTriangle,
-  CheckCircle2, XCircle, Info, Send, ChevronLeft, ChevronRight, Zap,
+  HelpCircle, BarChart3, ListChecks, AlertTriangle,
+  CheckCircle2, XCircle, Info, ChevronLeft, ChevronRight, Zap,
 } from "lucide-react";
 import { useExpedientes } from "@/stores/expedientes";
 import { AlertasCoherencia } from "@/components/ia/AlertasCoherencia";
 import { InputMonetario } from "@/components/ui/input-monetario";
 import { ResumenPegajoso } from "@/components/estados/ResumenPegajoso";
+import { BloqueFinanciero } from "@/components/estados/BloqueFinanciero";
+import { CopilotoFlujo, type ResumenFlujoIA } from "@/components/ia/CopilotoFlujo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BLOQUE_META, BLOQUE_BG, COLORES_GRAFICO,
@@ -26,6 +28,15 @@ import { cn } from "@/lib/utils";
 
 // Formato monetario
 const fmtC = (n: number) => `C$ ${Math.round(n).toLocaleString("es-NI")}`;
+
+// Tono e ícono de cada bloque, para que los bloques del flujo se vean y se
+// comporten igual que los de Estado de Resultados y Situación Financiera.
+const TONO_BLOQUE: Record<Bloque, "verde" | "rojo" | "ambar" | "teal"> = {
+  A: "verde", B: "teal", C: "ambar", D: "rojo", F: "teal", E: "rojo",
+};
+const ICONO_BLOQUE: Record<Bloque, string> = {
+  A: "\u{1F4B5}", B: "\u{1F33E}", C: "\u{1F3E0}", D: "\u{1F69C}", F: "\u{2699}\u{FE0F}", E: "\u{1F4B3}",
+};
 const fmtK = (n: number) => `C$${(n / 1000).toFixed(0)}k`;
 
 interface Props {
@@ -54,13 +65,18 @@ export function FlujoModule({
     inicializarFlujo(expedienteId, { plazoMeses, mesInicio, tipoActividad, cuotaEstimada: cuotaInicial });
   }, [expedienteId, plazoMeses, tipoActividad, montoSolicitado, inicializarFlujo]);
 
+  const meses = useMemo(
+    () => (flujo ? generarMeses(flujo.mesInicio, flujo.plazoMeses) : []),
+    [flujo],
+  );
+  // Los hooks deben ejecutarse siempre en el mismo orden, así que el resumen se
+  // calcula antes del early return de "flujo no inicializado".
+  const resumenIA = useResumenIA(expedienteId, meses);
+
   if (!flujo) {
-    return (
-      <p className="text-sm text-muted-foreground">Inicializando flujo de efectivo…</p>
-    );
+    return <p className="text-sm text-muted-foreground">Inicializando flujo de efectivo…</p>;
   }
 
-  const meses = generarMeses(flujo.mesInicio, flujo.plazoMeses);
   const toggleBloque = (b: Bloque) => setBloquesAbiertos((prev) => ({ ...prev, [b]: !prev[b] }));
 
   return (
@@ -122,8 +138,8 @@ export function FlujoModule({
       {/* Alertas de coherencia en tiempo real durante la captura */}
       <AlertasCoherencia expedienteId={expedienteId} modoCompacto />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className={cn("space-y-4", vista === "graficos" && "hidden lg:block")}>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <div className={cn("min-w-0 space-y-4", vista === "graficos" && "hidden lg:block")}>
           <VistaDatos
             expedienteId={expedienteId}
             meses={meses}
@@ -131,12 +147,42 @@ export function FlujoModule({
             toggleBloque={toggleBloque}
           />
         </div>
-        <div className={cn("space-y-4", vista === "datos" && "hidden lg:block")}>
-          <VistaGraficos expedienteId={expedienteId} />
+        <div className={cn("min-w-0 space-y-4", vista === "datos" && "hidden lg:block")}>
+          <VistaGraficos expedienteId={expedienteId} resumen={resumenIA} />
         </div>
       </div>
     </div>
   );
+}
+
+/* =============== RESUMEN PARA EL COPILOTO =============== */
+
+/**
+ * Arma el resumen numérico del flujo que se le entrega al Copiloto, para que
+ * responda sobre lo que el asesor tiene en pantalla y no solo sobre lo guardado.
+ */
+function useResumenIA(expedienteId: string, meses: string[]): ResumenFlujoIA {
+  const flujo = useExpedientes((s) => s.expedientes[expedienteId]?.flujo);
+  const { datosMensuales } = useCalculos(expedienteId);
+
+  return useMemo(() => {
+    const critico = datosMensuales.reduce(
+      (max, d, i) => (d.capacidadPago > max.cap ? { nombre: meses[i] ?? "—", cap: d.capacidadPago } : max),
+      { nombre: meses[0] ?? "—", cap: -Infinity },
+    );
+    const capProm = promedio(datosMensuales.map((d) => d.capacidadPago));
+    return {
+      saldoPromedio: promedio(datosMensuales.map((d) => d.saldoNeto)),
+      ingresoPromedio: promedio(datosMensuales.map((d) => d.ingresos)),
+      egresoPromedio: promedio(datosMensuales.map((d) => d.egresos)),
+      capacidadPagoPromedio: isFinite(capProm) ? capProm : 0,
+      mesCritico: critico.nombre,
+      capacidadMesCritico: isFinite(critico.cap) ? critico.cap : 0,
+      mesesNegativos: datosMensuales.filter((d) => d.saldoNeto < 0).length,
+      plazoMeses: flujo?.plazoMeses ?? 0,
+      cuotaEstimada: flujo?.cuotaEstimada ?? 0,
+    };
+  }, [datosMensuales, meses, flujo?.plazoMeses, flujo?.cuotaEstimada]);
 }
 
 /* =============== RESUMEN PEGAJOSO =============== */
@@ -188,7 +234,7 @@ function VistaDatos({
     rubrosDin[b].filter((r) => flujo.rubrosActivos[r.key]).length;
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {(Object.keys(rubrosDin) as Bloque[]).map((b) => (
         <BloqueForm
           key={b}
@@ -242,70 +288,58 @@ function BloqueForm({
   // Un bloque sin rubros (F en varias actividades) no aporta nada en pantalla.
   if (rubrosBloque.length === 0) return null;
 
+  // Se reutiliza BloqueFinanciero — el mismo componente de Estado de Resultados
+  // y Situación Financiera — para que el encabezado, el chevron, el subtotal y
+  // el contador se vean e interactúen igual en los tres módulos.
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md">
-      <button
-        onClick={onToggle}
-        aria-expanded={abierto}
-        className={cn(
-          "flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-semibold sm:px-4",
-          meta.header,
-        )}
-        style={bg ? { backgroundColor: bg } : undefined}
-      >
-        <span className="min-w-0 flex-1 truncate">{meta.titulo}</span>
-        {activos > 0 && (
-          <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold">
-            {activos}/{total}
-          </span>
-        )}
-        <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 font-mono text-xs tabular-nums">
-          {fmtC(subtotal)}
-        </span>
-        <ChevronDown
-          size={16}
-          className={cn("shrink-0 transition-transform duration-200", abierto && "rotate-180")}
-        />
-      </button>
+    <BloqueFinanciero
+      titulo={meta.titulo}
+      icono={ICONO_BLOQUE[bloque]}
+      color={TONO_BLOQUE[bloque]}
+      bgPersonalizado={bg}
+      colapsableEnEscritorio
+      abierto={abierto}
+      onToggle={onToggle}
+      subtotal={subtotal}
+      llenos={activos}
+      total={total}
+    >
+      <div className="min-w-0 space-y-3">
+        <p className="rounded-xl bg-muted p-2.5 text-xs text-muted-foreground">
+          💡 {meta.tip}
+        </p>
 
-      {abierto && (
-        <div className="space-y-3 p-3 sm:p-4">
-          <p className="rounded-xl bg-muted p-2.5 text-xs text-muted-foreground">
-            💡 {meta.tip}
-          </p>
+        <button
+          type="button"
+          onClick={rellenarMes1EnTodos}
+          className="flex items-center gap-1.5 rounded-xl bg-fieldcredit-teal-pale px-3 py-2 text-xs font-semibold text-fieldcredit-teal-dark transition-colors hover:bg-fieldcredit-teal-light active:scale-[0.97] dark:bg-teal-900/30 dark:text-teal-200"
+        >
+          <Zap size={13} /> Rellenar todos los meses con el valor del mes 1
+        </button>
 
-          <button
-            type="button"
-            onClick={rellenarMes1EnTodos}
-            className="flex items-center gap-1.5 rounded-xl bg-fieldcredit-teal-pale px-3 py-2 text-xs font-semibold text-fieldcredit-teal-dark transition-colors hover:bg-fieldcredit-teal-light active:scale-[0.97] dark:bg-teal-900/30 dark:text-teal-200"
-          >
-            <Zap size={13} /> Rellenar todos los meses con el valor del mes 1
-          </button>
+        {rubrosBloque.map((r) => (
+          <FilaRubro
+            key={r.key}
+            rubro={r}
+            bloque={bloque}
+            expedienteId={expedienteId}
+            plazoMeses={flujo.plazoMeses}
+            meses={meses}
+          />
+        ))}
 
-          {rubrosBloque.map((r) => (
-            <FilaRubro
-              key={r.key}
-              rubro={r}
-              bloque={bloque}
-              expedienteId={expedienteId}
-              plazoMeses={flujo.plazoMeses}
-              meses={meses}
-            />
-          ))}
-
-          {consumoBajo && (
-            <div className="rounded-xl border border-fieldcredit-amber/40 bg-fieldcredit-amber-light p-2.5 text-xs text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
-              ⚠️ El gasto familiar declarado parece bajo para una familia. ¿Es correcto? Un gasto
-              mínimo referencial es C$3,000/mes.
-            </div>
-          )}
-
-          <div className={cn("rounded-xl px-3 py-2.5 text-sm font-bold", meta.subtotal)}>
-            SUBTOTAL {meta.titulo.split(".")[1]?.trim().toUpperCase() || ""} — {fmtC(subtotal)}
+        {consumoBajo && (
+          <div className="rounded-xl border border-fieldcredit-amber/40 bg-fieldcredit-amber-light p-2.5 text-xs text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
+            ⚠️ El gasto familiar declarado parece bajo para una familia. ¿Es correcto? Un gasto
+            mínimo referencial es C$3,000/mes.
           </div>
+        )}
+
+        <div className={cn("rounded-xl px-3 py-2.5 text-sm font-bold", meta.subtotal)}>
+          SUBTOTAL {meta.titulo.split(".")[1]?.trim().toUpperCase() || ""} — {fmtC(subtotal)}
         </div>
-      )}
-    </section>
+      </div>
+    </BloqueFinanciero>
   );
 }
 
@@ -346,7 +380,7 @@ function FilaRubro({
   };
 
   return (
-    <div className="rounded-2xl border border-border p-2.5 transition-colors">
+    <div className="min-w-0 rounded-2xl border border-border p-2.5 transition-colors">
       <div className="mb-2 flex items-center gap-2">
         <label className="relative inline-flex shrink-0 cursor-pointer items-center">
           <input
@@ -489,7 +523,7 @@ function GrillaMeses({
   };
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
           {meses.length} meses · deslizá para ver más
@@ -611,7 +645,7 @@ function BloqueSaldo({
   const mesesNeg = datosMensuales.filter((d) => d.saldoNeto < 0).length;
 
   return (
-    <section className="rounded-2xl border-2 border-fieldcredit-green bg-card p-3 shadow-sm sm:p-4">
+    <section className="min-w-0 rounded-2xl border-2 border-fieldcredit-green bg-card p-3 shadow-sm sm:p-4">
       <h3 className="mb-3 text-sm font-semibold text-foreground">
         F. Saldo y capacidad de pago
       </h3>
@@ -631,7 +665,7 @@ function BloqueSaldo({
         </div>
       </div>
 
-      <div className="-mx-3 overflow-x-auto scrollbar-hide px-3 sm:mx-0 sm:px-0">
+      <div className="-mx-3 min-w-0 overflow-x-auto scrollbar-hide px-3 sm:mx-0 sm:px-0">
         <table className="w-full min-w-max border-collapse text-xs">
           <thead>
             <tr className="bg-muted">
@@ -796,7 +830,12 @@ function promedio(arr: number[]) {
 
 /* =============== VISTA 2 — GRÁFICOS =============== */
 
-function VistaGraficos({ expedienteId }: { expedienteId: string }) {
+function VistaGraficos({
+  expedienteId, resumen,
+}: {
+  expedienteId: string;
+  resumen: ResumenFlujoIA;
+}) {
   const flujo = useExpedientes((s) => s.expedientes[expedienteId]!.flujo!);
   const { datosMensuales } = useCalculos(expedienteId);
   const esMovil = useIsMobile();
@@ -846,7 +885,7 @@ function VistaGraficos({ expedienteId }: { expedienteId: string }) {
   const leyenda = { fontSize: esMovil ? 10 : 11 };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <Grafico titulo="Ingresos vs Egresos por mes">
         <ResponsiveContainer width="100%" height={altoChart}>
           <BarChart data={chartData} margin={margenChart}>
@@ -1023,7 +1062,7 @@ function VistaGraficos({ expedienteId }: { expedienteId: string }) {
         plazoMeses={flujo.plazoMeses}
       />
 
-      <CopilotoBar />
+      <CopilotoFlujo expedienteId={expedienteId} resumen={resumen} />
     </div>
   );
 }
@@ -1036,7 +1075,7 @@ function Grafico({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+    <section className="min-w-0 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <h4 className="text-sm font-semibold text-foreground">{titulo}</h4>
       {subtitulo && <p className="mb-2 text-xs text-muted-foreground">{subtitulo}</p>}
       {children}
@@ -1098,7 +1137,7 @@ function PanelAnalisis({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+    <section className="min-w-0 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <h4 className="mb-3 text-sm font-semibold text-foreground">
         📊 Análisis automático del flujo
       </h4>
@@ -1119,45 +1158,6 @@ function PanelAnalisis({
           ))}
         </ul>
       )}
-    </section>
-  );
-}
-
-/* -------- Copiloto IA (UI preparada, sin API) -------- */
-
-function CopilotoBar() {
-  const tip = "El Copiloto IA se activa en la próxima actualización.";
-  return (
-    <section className="rounded-2xl bg-fieldcredit-green-dark p-4 text-white opacity-70" title={tip}>
-      <h4 className="mb-2 text-sm font-semibold">🤖 Pregúntale al Copiloto sobre este flujo</h4>
-      <div className="mb-3 flex flex-wrap gap-2">
-        {["¿El flujo es suficiente?", "¿Cuál es el mes crítico?", "¿Qué riesgo tiene?"].map((s) => (
-          <button
-            key={s}
-            disabled
-            title={tip}
-            className="cursor-not-allowed rounded-full bg-white/10 px-3 py-1 text-xs"
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          disabled
-          placeholder="Escribe tu pregunta..."
-          className="h-10 flex-1 cursor-not-allowed rounded-xl bg-white/10 px-3 text-sm placeholder-white/60"
-          title={tip}
-        />
-        <button
-          disabled
-          title={tip}
-          className="grid h-10 w-10 cursor-not-allowed place-items-center rounded-xl bg-white/20"
-        >
-          <Send size={14} />
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-white/80">💬 Disponible al conectar la IA</p>
     </section>
   );
 }
