@@ -110,6 +110,7 @@ export function SituacionFinancieraModule({
           titulo="Activos corrientes"
           icono="💵"
           color="teal"
+          colapsableEnEscritorio
           subtotal={totales.activoCorriente}
           llenos={llenos(cuentas.activosCorriente)}
           total={cuentas.activosCorriente.length}
@@ -125,6 +126,7 @@ export function SituacionFinancieraModule({
           titulo="Activos fijos"
           icono="🚜"
           color="verde"
+          colapsableEnEscritorio
           subtotal={totales.activoFijo}
           llenos={llenos(cuentas.activosFijos)}
           total={cuentas.activosFijos.length}
@@ -139,6 +141,7 @@ export function SituacionFinancieraModule({
           titulo="Inmuebles"
           icono="🏠"
           color="verde"
+          colapsableEnEscritorio
           subtotal={totales.activoInmueble}
           llenos={llenos(cuentas.activosInmuebles)}
           total={cuentas.activosInmuebles.length}
@@ -153,6 +156,7 @@ export function SituacionFinancieraModule({
           titulo="Pasivos"
           icono="💳"
           color="rojo"
+          colapsableEnEscritorio
           subtotal={totales.totalPasivos}
           llenos={llenos([...cuentas.pasivosCorriente, ...cuentas.pasivosLargoPlazo])}
           total={cuentas.pasivosCorriente.length + cuentas.pasivosLargoPlazo.length}

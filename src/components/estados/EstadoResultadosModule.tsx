@@ -112,6 +112,7 @@ export function EstadoResultadosModule({
           titulo="1. Ingresos"
           icono="💵"
           color="verde"
+          colapsableEnEscritorio
           subtotal={totales.ingresos}
           llenos={llenos(cuentas.ingresos)}
           total={cuentas.ingresos.length}
@@ -128,6 +129,7 @@ export function EstadoResultadosModule({
           titulo={`2. ${cuentas.etiquetas.costos}`}
           icono={cuentas.etiquetas.icono}
           color="rojo"
+          colapsableEnEscritorio
           subtotal={totales.costos}
           llenos={llenos(cuentas.costos)}
           total={cuentas.costos.length}
@@ -155,6 +157,7 @@ export function EstadoResultadosModule({
           titulo="3. Gastos de operación"
           icono="⚙️"
           color="ambar"
+          colapsableEnEscritorio
           subtotal={totales.gastosOp}
           llenos={llenos(cuentas.gastosOperacion)}
           total={cuentas.gastosOperacion.length}
@@ -176,6 +179,7 @@ export function EstadoResultadosModule({
           titulo="4. Consumo familiar"
           icono="🏠"
           color="teal"
+          colapsableEnEscritorio
           subtotal={totales.consumo}
           llenos={llenos(cuentas.consumoFamiliar)}
           total={cuentas.consumoFamiliar.length}

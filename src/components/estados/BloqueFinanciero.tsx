@@ -34,10 +34,10 @@ interface Props {
    */
   bgPersonalizado?: string;
   /**
-   * Permite colapsar también en escritorio. Los estados financieros dejan sus
-   * bloques abiertos porque son campos sueltos y caben; el flujo de efectivo lo
-   * activa porque cada rubro arrastra una grilla de hasta 24 meses y con todo
-   * desplegado la columna se vuelve inmanejable.
+   * Permite colapsar también en escritorio. Los tres módulos financieros lo
+   * activan: el asesor abre la sección que va a llenar y mantiene las demás
+   * cerradas, viendo su subtotal en el encabezado. Sin esta prop el bloque
+   * queda siempre abierto en pantallas grandes.
    */
   colapsableEnEscritorio?: boolean;
   /** Subtotal que se muestra en el encabezado cuando está cerrado */
