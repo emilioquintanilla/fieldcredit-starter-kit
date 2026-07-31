@@ -15,6 +15,8 @@ import { useExpedientesRemote } from "@/stores/expedientesRemote";
 import { obtenerSolicitudesDe, type ExpedienteDB } from "@/services/expedientesService";
 import type { SolicitudData } from "@/stores/expedientes";
 import { cn } from "@/lib/utils";
+import { PageTransition } from "@/components/ui/page-transition";
+import { SkeletonExpedienteRow } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/expedientes/")({
   head: () => ({ meta: [{ title: "Expedientes — FieldCredit" }] }),
@@ -99,6 +101,7 @@ function ExpedientesPage() {
 
   return (
     <AppLayout>
+      <PageTransition>
       <PageHeader
         title="Expedientes"
         subtitle={cargando ? "Cargando…" : `${lista.length} solicitud(es)`}
@@ -108,7 +111,7 @@ function ExpedientesPage() {
           <Link
             to="/expedientes/nuevo"
             search={{ id: undefined }}
-            className="inline-flex items-center gap-1.5 rounded-md bg-fieldcredit-green px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-fieldcredit-green-dark"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-fieldcredit-green px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-fieldcredit-green-dark active:scale-[0.97] transition-all"
           >
             <Plus size={16} /> <span className="hidden sm:inline">Nuevo expediente</span>
           </Link>
@@ -126,7 +129,7 @@ function ExpedientesPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar por nombre o cédula..."
-            className="w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 focus:border-fieldcredit-green focus:outline-none focus:ring-2 focus:ring-fieldcredit-green/30 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            className="w-full rounded-xl border border-input bg-transparent py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fieldcredit-teal/50 focus-visible:ring-offset-2"
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -192,6 +195,15 @@ function ExpedientesPage() {
                 onArchivar={() => handleArchivar(e)}
                 onEliminar={() => handleEliminar(e)}
               />
+              {cargando && lista.length === 0 && (
+          <>
+            <SkeletonExpedienteRow />
+            <SkeletonExpedienteRow />
+            <SkeletonExpedienteRow />
+            <SkeletonExpedienteRow />
+            <SkeletonExpedienteRow />
+          </>
+        )}
             </div>
           </li>
         ))}
@@ -281,6 +293,7 @@ function ExpedientesPage() {
           </tbody>
         </table>
       </div>
+    </PageTransition>
     </AppLayout>
   );
 }
