@@ -28,6 +28,18 @@ interface Props {
   titulo: string;
   icono: string;
   color: TonoBloque;
+  /**
+   * Color de fondo del encabezado en formato CSS, para bloques que no encajan
+   * en la paleta de cuatro tonos (los bloques C/D/F del flujo de efectivo).
+   */
+  bgPersonalizado?: string;
+  /**
+   * Permite colapsar también en escritorio. Los estados financieros dejan sus
+   * bloques abiertos porque son campos sueltos y caben; el flujo de efectivo lo
+   * activa porque cada rubro arrastra una grilla de hasta 24 meses y con todo
+   * desplegado la columna se vuelve inmanejable.
+   */
+  colapsableEnEscritorio?: boolean;
   /** Subtotal que se muestra en el encabezado cuando está cerrado */
   subtotal?: number;
   /** Cantidad de campos con valor / total de campos */
@@ -35,6 +47,13 @@ interface Props {
   total?: number;
   /** Forzar abierto por defecto (el primer bloque de cada módulo) */
   defaultAbierto?: boolean;
+  /**
+   * Modo controlado: si se pasan `abierto` y `onToggle`, el estado de apertura
+   * lo maneja el componente padre. El flujo de efectivo lo usa porque necesita
+   * conocer qué bloques están abiertos desde afuera.
+   */
+  abierto?: boolean;
+  onToggle?: () => void;
   children: React.ReactNode;
 }
 
@@ -49,49 +68,71 @@ export function BloqueFinanciero({
   titulo,
   icono,
   color,
+  bgPersonalizado,
+  colapsableEnEscritorio = false,
   subtotal,
   llenos,
   total,
   defaultAbierto = false,
+  abierto: abiertoProp,
+  onToggle,
   children,
 }: Props) {
   const esMovil = useIsMobile();
   const [manual, setManual] = useState<boolean | null>(null);
 
-  // En escritorio siempre abierto; en móvil respeta la preferencia del asesor
-  // y, si no tocó nada, usa defaultAbierto.
-  const abierto = !esMovil || (manual ?? defaultAbierto);
+  const permiteColapsar = esMovil || colapsableEnEscritorio;
+  const controlado = abiertoProp !== undefined;
+
+  // Si no se puede colapsar, queda siempre abierto. Si está controlado, manda
+  // el padre. Si no, respeta la preferencia del asesor y, mientras no toque
+  // nada, usa defaultAbierto.
+  const abierto = !permiteColapsar
+    ? true
+    : controlado
+      ? abiertoProp
+      : (manual ?? defaultAbierto);
+
+  const alternar = () => {
+    if (!permiteColapsar) return;
+    if (controlado) onToggle?.();
+    else setManual(!abierto);
+  };
+
+  // Mostrar el resumen en el encabezado solo aporta cuando está cerrado.
+  const mostrarResumen = permiteColapsar && !abierto;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md">
       <button
         type="button"
-        onClick={() => esMovil && setManual(!abierto)}
+        onClick={alternar}
         aria-expanded={abierto}
         className={cn(
           "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold",
-          HEADERS[color],
-          esMovil ? "cursor-pointer active:brightness-95" : "cursor-default",
+          bgPersonalizado ? "text-white" : HEADERS[color],
+          permiteColapsar ? "cursor-pointer active:brightness-95" : "cursor-default",
         )}
+        style={bgPersonalizado ? { backgroundColor: bgPersonalizado } : undefined}
       >
         <span className="shrink-0 text-base">{icono}</span>
         <span className="min-w-0 flex-1 truncate">{titulo}</span>
 
-        {/* Subtotal visible cuando está cerrado en móvil */}
-        {esMovil && !abierto && subtotal !== undefined && (
+        {/* Subtotal visible cuando está cerrado */}
+        {mostrarResumen && subtotal !== undefined && (
           <span className="shrink-0 font-mono text-xs tabular-nums opacity-90">
             {fmtCorto(subtotal)}
           </span>
         )}
 
         {/* Contador de campos llenos */}
-        {esMovil && !abierto && llenos !== undefined && total !== undefined && (
+        {mostrarResumen && llenos !== undefined && total !== undefined && (
           <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold">
             {llenos}/{total}
           </span>
         )}
 
-        {esMovil && (
+        {permiteColapsar && (
           <ChevronDown
             size={16}
             className={cn("shrink-0 transition-transform duration-200", abierto && "rotate-180")}
@@ -99,7 +140,7 @@ export function BloqueFinanciero({
         )}
       </button>
 
-      {abierto && <div className="p-3 sm:p-4">{children}</div>}
+      {abierto && <div className="min-w-0 p-3 sm:p-4">{children}</div>}
     </div>
   );
 }
