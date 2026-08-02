@@ -1,7 +1,9 @@
 // Módulo de clientes mejorado con filtros, badge ARS y estadísticas
 // Ruta: src/routes/clientes.tsx
+// Íconos: emojis → Lucide React (unificación design system)
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Search, LayoutGrid, List, Home, Store, FolderOpen, Leaf } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { MapaMini } from "@/components/geo/MapaMini";
@@ -31,16 +33,16 @@ const ARS_NIVELES = {
 } as const;
 
 const ESTADOS_FILTRO = [
-  { value: "todos",      label: "Todos" },
-  { value: "borrador",   label: "Borrador" },
-  { value: "en_revision",label: "En revisión" },
-  { value: "en_comite",  label: "En comité" },
-  { value: "aprobado",   label: "Aprobado" },
+  { value: "todos",       label: "Todos" },
+  { value: "borrador",    label: "Borrador" },
+  { value: "en_revision", label: "En revisión" },
+  { value: "en_comite",   label: "En comité" },
+  { value: "aprobado",    label: "Aprobado" },
 ];
 
 const PRODUCTOS_FILTRO = [
   { value: "todos",       label: "Todos" },
-  { value: "agroresilia", label: "AgroResilia 🌿" },
+  { value: "agroresilia", label: "AgroResilia" },   // emoji removido del label
   { value: "otro",        label: "Tradicional" },
 ];
 
@@ -79,6 +81,7 @@ function ClientesPage() {
     });
     return m;
   }, [locales]);
+
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroProducto, setFiltroProducto] = useState("todos");
@@ -143,9 +146,9 @@ function ClientesPage() {
 
   // Estadísticas rápidas
   const stats = useMemo(() => ({
-    total: lista.length,
-    verdes: lista.filter((e) => e.data.producto === "agroresilia").length,
-    enComite: lista.filter((e) => e.estado === "en_comite").length,
+    total:     lista.length,
+    verdes:    lista.filter((e) => e.data.producto === "agroresilia").length,
+    enComite:  lista.filter((e) => e.estado === "en_comite").length,
     aprobados: lista.filter((e) => e.estado === "aprobado").length,
   }), [lista]);
 
@@ -159,10 +162,10 @@ function ClientesPage() {
       {/* Estadísticas rápidas */}
       <div className="mt-3 grid grid-cols-4 gap-2">
         {[
-          { label: "Total", valor: stats.total, color: "text-slate-700 dark:text-slate-200" },
-          { label: "🌿 Verdes", valor: stats.verdes, color: "text-fieldcredit-green" },
-          { label: "En comité", valor: stats.enComite, color: "text-fieldcredit-teal" },
-          { label: "Aprobados", valor: stats.aprobados, color: "text-fieldcredit-green-dark" },
+          { label: "Total",      valor: stats.total,     color: "text-slate-700 dark:text-slate-200" },
+          { label: "Verdes",     valor: stats.verdes,    color: "text-fieldcredit-green" },
+          { label: "En comité",  valor: stats.enComite,  color: "text-fieldcredit-teal" },
+          { label: "Aprobados",  valor: stats.aprobados, color: "text-fieldcredit-green-dark" },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
             <p className={`text-xl font-bold ${s.color}`}>{s.valor}</p>
@@ -174,7 +177,11 @@ function ClientesPage() {
       {/* Buscador y filtros */}
       <div className="mt-3 space-y-2">
         <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            aria-hidden
+          />
           <input
             type="search"
             placeholder="Buscar por nombre, cédula o código..."
@@ -209,10 +216,17 @@ function ClientesPage() {
               </button>
             ))}
           </div>
-          <button onClick={() => setVistaLista(!vistaLista)}
-            className="ml-auto shrink-0 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500 dark:border-slate-600"
-            title="Cambiar vista">
-            {vistaLista ? "⊞ Tarjetas" : "≡ Lista"}
+          {/* Toggle de vista: Lucide en vez de caracteres especiales */}
+          <button
+            onClick={() => setVistaLista(!vistaLista)}
+            className="ml-auto shrink-0 rounded-lg border border-slate-200 p-1.5 text-slate-500 dark:border-slate-600"
+            title={vistaLista ? "Vista tarjetas" : "Vista lista"}
+            aria-label={vistaLista ? "Cambiar a vista tarjetas" : "Cambiar a vista lista"}
+          >
+            {vistaLista
+              ? <LayoutGrid size={16} aria-hidden />
+              : <List size={16} aria-hidden />
+            }
           </button>
         </div>
       </div>
@@ -242,13 +256,8 @@ function ClientesPage() {
   );
 }
 
-// ── Vista lista compacta ─────────────────────────────────────────────────────
-function VistaLista({
-  resultados, rol,
-}: {
-  resultados: ClienteVista[];
-  rol: string;
-}) {
+// ── Vista lista compacta ──────────────────────────────────────────────────────
+function VistaLista({ resultados, rol }: { resultados: ClienteVista[]; rol: string }) {
   return (
     <div className="mt-3 overflow-x-auto scrollbar-hide rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
       <table className="w-full min-w-[620px] text-left text-xs">
@@ -323,7 +332,10 @@ function TarjetaCliente({
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            {esVerde && <span className="text-sm">🌿</span>}
+            {/* Leaf icon en lugar de 🌿 */}
+            {esVerde && (
+              <Leaf size={14} strokeWidth={1.8} className="shrink-0 text-fieldcredit-green" aria-label="AgroResilia" />
+            )}
             <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{nombre}</p>
           </div>
           <p className="text-xs text-slate-500">
@@ -387,35 +399,50 @@ function TarjetaCliente({
         </div>
       )}
 
-      {/* Botones de navegación GPS */}
+      {/* Botones de navegación GPS — Home/Store en lugar de 🏠/🏪 */}
       <div className="mb-2 grid grid-cols-2 gap-2">
         {domicilio?.lat ? (
-          <a href={`https://www.google.com/maps/dir/?api=1&destination=${domicilio.lat},${domicilio.lng}`}
-            target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1 rounded-lg bg-fieldcredit-green py-2 text-xs font-bold text-white">
-            🏠 Ir al domicilio
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${domicilio.lat},${domicilio.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-fieldcredit-green py-2 text-xs font-bold text-white"
+          >
+            <Home size={13} strokeWidth={2} aria-hidden />
+            Ir al domicilio
           </a>
         ) : (
-          <span className="rounded-lg border border-dashed border-slate-200 py-2 text-center text-xs text-slate-400 dark:border-slate-600">
-            🏠 Sin domicilio
+          <span className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 py-2 text-xs text-slate-400 dark:border-slate-600">
+            <Home size={13} strokeWidth={1.8} aria-hidden />
+            Sin domicilio
           </span>
         )}
         {negocio?.lat ? (
-          <a href={`https://www.google.com/maps/dir/?api=1&destination=${negocio.lat},${negocio.lng}`}
-            target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1 rounded-lg bg-fieldcredit-teal py-2 text-xs font-bold text-white">
-            🏪 Ir al negocio
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${negocio.lat},${negocio.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-fieldcredit-teal py-2 text-xs font-bold text-white"
+          >
+            <Store size={13} strokeWidth={2} aria-hidden />
+            Ir al negocio
           </a>
         ) : (
-          <span className="rounded-lg border border-dashed border-slate-200 py-2 text-center text-xs text-slate-400 dark:border-slate-600">
-            🏪 Sin negocio
+          <span className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 py-2 text-xs text-slate-400 dark:border-slate-600">
+            <Store size={13} strokeWidth={1.8} aria-hidden />
+            Sin negocio
           </span>
         )}
       </div>
 
-      <Link to="/expedientes/$id" params={{ id: expediente.id }}
-        className="block w-full rounded-lg border border-slate-200 py-2 text-center text-xs font-semibold text-slate-600 transition-colors hover:border-fieldcredit-green hover:text-fieldcredit-green dark:border-slate-600 dark:text-slate-300">
-        📋 Ver expediente completo →
+      {/* Link al expediente — FolderOpen en lugar de 📋 */}
+      <Link
+        to="/expedientes/$id"
+        params={{ id: expediente.id }}
+        className="flex items-center justify-center gap-1.5 w-full rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-fieldcredit-green hover:text-fieldcredit-green dark:border-slate-600 dark:text-slate-300"
+      >
+        <FolderOpen size={13} strokeWidth={1.8} aria-hidden />
+        Ver expediente completo →
       </Link>
     </div>
   );
@@ -431,7 +458,8 @@ function ArsBadge({
   if (full) {
     return (
       <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${n.bg} dark:bg-opacity-20`}>
-        <span className="text-sm">🌿</span>
+        {/* Leaf en lugar de 🌿 */}
+        <Leaf size={16} strokeWidth={1.8} className="shrink-0 text-fieldcredit-green" aria-hidden />
         <div className="flex-1">
           <p className={`text-xs font-bold ${n.text}`}>ARS: {score}/100</p>
           <p className={`text-[10px] ${n.text} opacity-80`}>{n.label}</p>
@@ -448,7 +476,8 @@ function ArsBadge({
   }
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${n.bg} ${n.text}`}>
-      🌿 ARS {score}
+      <Leaf size={10} strokeWidth={2} aria-hidden />
+      ARS {score}
     </span>
   );
 }
