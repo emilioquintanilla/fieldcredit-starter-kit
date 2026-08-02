@@ -1,8 +1,14 @@
 // Dashboard principal — vista adaptada por rol.
 // Fase 2 UX: PageTransition, SkeletonMetricCard, colores semánticos, radius modernos.
+// Íconos: emojis → Lucide React (unificación design system)
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import {
+  FolderOpen, Clock, Scale, CheckCircle2,
+  AlertOctagon, AlertTriangle,
+  FilePlus, Users, Leaf, Settings,
+} from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -34,6 +40,15 @@ const saludo = () => {
 const COLOR_SEV: Record<string, string> = {
   critica: "#dc2626", alta: "#dc2626", media: "#f59e0b", baja: "#45ada2",
 };
+
+// Accesos rápidos móviles — definidos como array para filtrar por rol
+const ACCESOS_RAPIDOS = [
+  { to: "/expedientes/nuevo", Icon: FilePlus,  texto: "Nuevo expediente",    roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/clientes",          Icon: Users,      texto: "Buscar cliente",      roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/comite",            Icon: Scale,      texto: "Cola de comité",      roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/institucional",     Icon: Leaf,       texto: "Panel institucional", roles: ["gerente","admin"] },
+  { to: "/admin",             Icon: Settings,   texto: "Administración",      roles: ["admin"] },
+] as const;
 
 function DashboardPage() {
   const usuario = useApp((s) => s.usuario);
@@ -80,11 +95,11 @@ function DashboardPage() {
     () => (rol === "asesor" ? expedientes.filter((e) => e.asesor_id === usuario?.id) : expedientes),
     [expedientes, usuario, rol],
   );
-  const activos = mios.length;
+  const activos    = mios.length;
   const pendientes = mios.filter((e) => e.estado === "borrador" || e.estado === "en_revision").length;
-  const enComite = mios.filter((e) => e.estado === "en_comite").length;
-  const aprobados = mios.filter((e) => e.estado === "aprobado").length;
-  const recientes = [...mios]
+  const enComite   = mios.filter((e) => e.estado === "en_comite").length;
+  const aprobados  = mios.filter((e) => e.estado === "aprobado").length;
+  const recientes  = [...mios]
     .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
     .slice(0, 5);
 
@@ -101,27 +116,33 @@ function DashboardPage() {
     <AppLayout>
       <PageTransition>
         <PageHeader
-          title={`${saludo()}, ${usuario?.nombre.split(" ")[0]} 👋`}
+          title={`${saludo()}, ${usuario?.nombre.split(" ")[0]}`}
           subtitle={`${usuario?.sucursalNombre ?? ""} · ${hoy}`}
         />
 
-        {/* ── Alerta climática urgente ── */}
+        {/* ── Alertas climáticas urgentes ── */}
         {alertasActivas.length > 0 && (
           <div className="mt-4 space-y-2">
             {alertasActivas.map((a) => (
-              <div key={a.alerta_id}
+              <div
+                key={a.alerta_id}
                 className="flex items-start gap-3 rounded-2xl border-l-4 bg-amber-50 px-4 py-3 dark:bg-amber-900/10"
-                style={{ borderLeftColor: COLOR_SEV[a.severidad] }}>
-                <span className="text-lg">{a.severidad === "critica" ? "🚨" : "⚠️"}</span>
+                style={{ borderLeftColor: COLOR_SEV[a.severidad] }}
+              >
+                {a.severidad === "critica" ? (
+                  <AlertOctagon size={18} className="mt-0.5 shrink-0 text-fieldcredit-red" aria-hidden />
+                ) : (
+                  <AlertTriangle size={18} className="mt-0.5 shrink-0 text-fieldcredit-amber" aria-hidden />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">{a.titulo}</p>
-                  <p className="text-xs text-muted-foreground">{a.municipio ? `${a.municipio}, ` : ""}{a.departamento}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {a.municipio ? `${a.municipio}, ` : ""}{a.departamento}
+                  </p>
                 </div>
                 {!esAsesor && (
                   <div className="shrink-0 text-right">
-                    <p className="text-sm font-bold text-foreground">
-                      {fmtC$corto(a.saldo_expuesto)}
-                    </p>
+                    <p className="text-sm font-bold text-foreground">{fmtC$corto(a.saldo_expuesto)}</p>
                     <p className="text-xs text-muted-foreground">{a.creditos_expuestos} créditos</p>
                   </div>
                 )}
@@ -144,10 +165,10 @@ function DashboardPage() {
             </>
           ) : (
             <>
-              <MetricCard title={esAsesor ? "Mis expedientes" : "Expedientes activos"} value={activos} icon="📋" color="green" />
-              <MetricCard title="Pendientes" value={pendientes} icon="⏳" color="amber" />
-              <MetricCard title="En comité" value={enComite} icon="⚖️" color="teal" />
-              <MetricCard title="Aprobados" value={aprobados} icon="✅" color="green-dark" />
+              <MetricCard title={esAsesor ? "Mis expedientes" : "Expedientes activos"} value={activos}    Icon={FolderOpen}   color="green"      />
+              <MetricCard title="Pendientes"                                             value={pendientes} Icon={Clock}        color="amber"      />
+              <MetricCard title="En comité"                                              value={enComite}   Icon={Scale}        color="teal"       />
+              <MetricCard title="Aprobados"                                              value={aprobados}  Icon={CheckCircle2} color="green-dark" />
             </>
           )}
         </section>
@@ -252,7 +273,9 @@ function DashboardPage() {
                         <p className="truncate text-sm font-medium text-foreground">
                           {e.cliente ?? "Sin nombre"}
                         </p>
-                        <p className="text-xs text-muted-foreground">{e.codigo} · {new Date(e.created_at).toLocaleDateString("es-NI")}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {e.codigo} · {new Date(e.created_at).toLocaleDateString("es-NI")}
+                        </p>
                       </div>
                       <div className="shrink-0 text-right">
                         <p className="text-sm font-semibold text-foreground">{money(e.monto_solicitado)}</p>
@@ -277,18 +300,15 @@ function DashboardPage() {
         <section className="mt-4 md:hidden">
           <h2 className="mb-3 text-base font-semibold text-foreground">Acceso rápido</h2>
           <div className="grid grid-cols-2 gap-2">
-            {[
-              { to: "/expedientes/nuevo", label: "📋", texto: "Nuevo expediente", roles: ["asesor","coordinador","gerente","admin"] },
-              { to: "/clientes", label: "👥", texto: "Buscar cliente", roles: ["asesor","coordinador","gerente","admin"] },
-              { to: "/comite", label: "⚖️", texto: "Cola de comité", roles: ["asesor","coordinador","gerente","admin"] },
-              { to: "/institucional", label: "🌿", texto: "Panel institucional", roles: ["gerente","admin"] },
-              { to: "/admin", label: "⚙️", texto: "Administración", roles: ["admin"] },
-            ]
-              .filter((a) => (a.roles as string[]).includes(rol))
+            {ACCESOS_RAPIDOS
+              .filter((a) => (a.roles as readonly string[]).includes(rol))
               .map((a) => (
-                <Link key={a.to} to={a.to}
-                  className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-card p-4 text-center text-sm font-medium text-foreground transition-all duration-200 hover:border-fieldcredit-green hover:bg-fieldcredit-green-pale hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-                  <span className="text-2xl">{a.label}</span>
+                <Link
+                  key={a.to}
+                  to={a.to}
+                  className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 text-center text-sm font-medium text-foreground transition-all duration-200 hover:border-fieldcredit-green hover:bg-fieldcredit-green-pale hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
+                >
+                  <a.Icon size={24} strokeWidth={1.8} className="text-fieldcredit-green" aria-hidden />
                   <span className="text-xs">{a.texto}</span>
                 </Link>
               ))}
