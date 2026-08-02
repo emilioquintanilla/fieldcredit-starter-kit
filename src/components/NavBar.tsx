@@ -2,7 +2,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Barra superior de navegación + selector de rol para presentaciones
 // Fase 3 UX: colores semánticos, rounded-xl, backdrop blur consistente
-// CAMBIO: ☀️/🌙 emoji → Lucide Sun/Moon (unifica lenguaje de íconos)
+// CAMBIOS:
+//   - ☀️/🌙 emoji → Lucide Sun/Moon
+//   - Toggle de tema visible también en móvil (antes solo sm:grid)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Menu, LogOut, Eye, Sun, Moon } from "lucide-react";
@@ -12,10 +14,10 @@ import { IndicadorGuardado } from "@/components/ui/IndicadorGuardado";
 import logoUrl from "@/assets/micredito.svg";
 
 const ROLES_DISPONIBLES: Array<{ rol: Rol; label: string }> = [
-  { rol: "asesor",       label: "Asesor" },
-  { rol: "coordinador",  label: "Coordinador" },
-  { rol: "gerente",      label: "Gerente" },
-  { rol: "admin",        label: "Administrador" },
+  { rol: "asesor",      label: "Asesor" },
+  { rol: "coordinador", label: "Coordinador" },
+  { rol: "gerente",     label: "Gerente" },
+  { rol: "admin",       label: "Administrador" },
 ];
 
 interface Props {
@@ -24,10 +26,10 @@ interface Props {
 
 export function NavBar({ onToggleSidebar }: Props) {
   const { usuario, theme, toggleTheme, logout, rolSimulado, setRolSimulado } = useApp();
-  const rolActivo = useRolActivo();
-  const navigate = useNavigate();
+  const rolActivo      = useRolActivo();
+  const navigate       = useNavigate();
   const sucursalNombre = usuario?.sucursalNombre ?? "";
-  const esAdmin = usuario?.rol === "admin";
+  const esAdmin        = usuario?.rol === "admin";
 
   return (
     <>
@@ -50,6 +52,7 @@ export function NavBar({ onToggleSidebar }: Props) {
       )}
 
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur-overlay sm:px-4">
+        {/* Hamburger */}
         <button
           onClick={onToggleSidebar}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-accent"
@@ -58,6 +61,7 @@ export function NavBar({ onToggleSidebar }: Props) {
           <Menu size={22} />
         </button>
 
+        {/* Logo + nombre */}
         <div className="flex min-w-0 items-center gap-3">
           <img src={logoUrl} alt="MiCrédito" className="h-8 shrink-0" />
           <div className="hidden h-6 w-px bg-border sm:block" />
@@ -66,12 +70,14 @@ export function NavBar({ onToggleSidebar }: Props) {
           </span>
         </div>
 
+        {/* Acciones derechas */}
         <div className="ml-auto flex items-center gap-2">
+          {/* Guardado — solo desktop */}
           <div className="hidden sm:block">
             <IndicadorGuardado />
           </div>
 
-          {/* Selector de rol (solo admin) */}
+          {/* Selector de rol (solo admin, desktop) */}
           {esAdmin && (
             <div className="hidden items-center gap-1 rounded-xl border border-border bg-muted px-2 py-1 sm:flex">
               <Eye size={14} className="text-muted-foreground" />
@@ -93,19 +99,24 @@ export function NavBar({ onToggleSidebar }: Props) {
             </div>
           )}
 
-          {/* Toggle de tema — Lucide Sun/Moon en vez de ☀️/🌙 */}
+          {/*
+           * Toggle de tema — ahora visible en MÓVIL Y DESKTOP.
+           * Antes tenía `sm:grid` (solo desktop). Removido para que aparezca
+           * en móvil donde el modo noche no estaba disponible.
+           */}
           <button
             onClick={toggleTheme}
-            className="hidden h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-accent sm:grid"
+            className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-accent"
             aria-label={theme === "light" ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
           >
             {theme === "light" ? (
-              <Sun size={18} strokeWidth={1.8} />
+              <Sun  size={18} strokeWidth={1.8} />
             ) : (
               <Moon size={18} strokeWidth={1.8} />
             )}
           </button>
 
+          {/* Nombre y rol — solo desktop */}
           <div className="hidden text-right sm:block">
             <div className="text-sm font-medium text-foreground">{usuario?.nombre}</div>
             <div className="text-xs text-muted-foreground">
@@ -113,6 +124,7 @@ export function NavBar({ onToggleSidebar }: Props) {
             </div>
           </div>
 
+          {/* Cerrar sesión */}
           <button
             onClick={() => {
               logout();
