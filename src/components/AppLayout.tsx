@@ -1,6 +1,11 @@
+// src/components/AppLayout.tsx
+// ─────────────────────────────────────────────────────────────────────────────
 // Layout autenticado: NavBar + Sidebar + área de contenido
 // Fase 3 UX: colores semánticos, fondo con variable CSS
 // pb-28 en móvil: compensa el floating BottomNav (bottom-4 + altura pill + respiro)
+// NUEVO: pasa `sidebarOpen` al BottomNav para ocultarlo cuando el drawer está activo
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { NavBar } from "./NavBar";
@@ -9,11 +14,11 @@ import { BottomNav } from "./BottomNav";
 import { useApp } from "@/stores/app";
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]           = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [ready, setReady] = useState(false);
-  const usuario = useApp((s) => s.usuario);
-  const hydrate = useApp((s) => s.hydrate);
+  const [ready, setReady]         = useState(false);
+  const usuario  = useApp((s) => s.usuario);
+  const hydrate  = useApp((s) => s.hydrate);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,7 +48,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-      <BottomNav />
+      {/* sidebarOpen oculta el BottomNav mientras el drawer lateral está activo */}
+      <BottomNav sidebarOpen={open} />
     </div>
   );
 }
