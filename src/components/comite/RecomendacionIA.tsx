@@ -1,4 +1,7 @@
+// src/components/comite/RecomendacionIA.tsx
 // Recomendación del Copiloto IA con disclaimer.
+// Ícono: ⚖️ emoji → Lucide Scale (unificación design system)
+import { Scale } from "lucide-react";
 import type { RecomendacionIA as Reco } from "@/stores/expedientes";
 
 export function RecomendacionIA({ recomendacion }: { recomendacion: Reco }) {
@@ -22,9 +25,12 @@ export function RecomendacionIA({ recomendacion }: { recomendacion: Reco }) {
         </div>
       )}
       <div className="rounded-xl border border-amber-400/40 bg-amber-500/20 p-3">
-        <p className="text-xs text-amber-100">
-          ⚖️ <strong>La IA no aprueba ni desembolsa.</strong> Esta es una recomendación de análisis. La
-          decisión final la toma el oficial de crédito del comité, en apego a la normativa CONAMI.
+        <p className="flex items-start gap-2 text-xs text-amber-100">
+          <Scale size={14} strokeWidth={1.8} className="mt-0.5 shrink-0 text-amber-300" aria-hidden />
+          <span>
+            <strong>La IA no aprueba ni desembolsa.</strong> Esta es una recomendación de análisis. La
+            decisión final la toma el oficial de crédito del comité, en apego a la normativa CONAMI.
+          </span>
         </p>
       </div>
     </div>
