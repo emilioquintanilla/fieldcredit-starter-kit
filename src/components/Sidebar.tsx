@@ -1,37 +1,56 @@
+// src/components/Sidebar.tsx
+// ─────────────────────────────────────────────────────────────────────────────
 // Sidebar con navegación por rol (drawer en móvil, colapsable en desktop)
+// Rediseño: emojis → Lucide icons (misma filosofía que BottomNav y NavBar)
+// Sin otros cambios de lógica ni estructura.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  Home,
+  FolderOpen,
+  Users,
+  Scale,
+  CloudRain,
+  Leaf,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useExpedientes } from "@/stores/expedientes";
 import { useRolActivo, type Rol } from "@/stores/app";
 import logoUrl from "@/assets/micredito.svg";
 
-// ── Definición de rutas por sección y visibilidad por rol ───────────────────
+// ── Tipos ────────────────────────────────────────────────────────────────────
 interface NavItem {
   to: string;
-  icon: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Icon: React.ComponentType<any>;
   label: string;
   roles: Rol[];
 }
 
+// ── Rutas ────────────────────────────────────────────────────────────────────
 const OPERACION: NavItem[] = [
-  { to: "/dashboard",   icon: "🏠", label: "Dashboard",   roles: ["asesor","coordinador","gerente","admin"] },
-  { to: "/expedientes", icon: "📋", label: "Expedientes", roles: ["asesor","coordinador","gerente","admin"] },
-  { to: "/clientes",    icon: "👥", label: "Clientes",    roles: ["asesor","coordinador","gerente","admin"] },
-  { to: "/comite",      icon: "⚖️", label: "Comité",      roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/dashboard",   Icon: Home,       label: "Dashboard",   roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/expedientes", Icon: FolderOpen, label: "Expedientes", roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/clientes",    Icon: Users,      label: "Clientes",    roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/comite",      Icon: Scale,      label: "Comité",      roles: ["asesor","coordinador","gerente","admin"] },
 ];
 
 const DIRECCION: NavItem[] = [
-  { to: "/alertas",       icon: "🌦️", label: "Alertas climáticas", roles: ["asesor","coordinador","gerente","admin"] },
-  { to: "/institucional", icon: "🌿", label: "Institucional",       roles: ["gerente","admin"] },
-  { to: "/admin",         icon: "⚙️", label: "Administración",      roles: ["admin"] },
+  { to: "/alertas",       Icon: CloudRain, label: "Alertas climáticas", roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/institucional", Icon: Leaf,      label: "Institucional",       roles: ["gerente","admin"] },
+  { to: "/admin",         Icon: Settings,  label: "Administración",      roles: ["admin"] },
 ];
 
+// ── Props ────────────────────────────────────────────────────────────────────
 interface Props {
   open: boolean;
   collapsed: boolean;
   onClose: () => void;
 }
 
+// ── Componente principal ──────────────────────────────────────────────────────
 export function Sidebar({ open, collapsed, onClose }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const rol = useRolActivo();
@@ -63,12 +82,13 @@ export function Sidebar({ open, collapsed, onClose }: Props) {
           open ? "w-64 translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
       >
+        {/* Logo */}
         <div className="flex h-14 items-center justify-center border-b border-white/10 px-3">
           <img src={logoUrl} alt="MiCrédito" className="h-8" />
         </div>
 
+        {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-2">
-          {/* Sección: Operación */}
           <SeccionLabel texto="Operación" collapsed={collapsed} />
           {opItems.map((item) => (
             <NavLink
@@ -81,7 +101,6 @@ export function Sidebar({ open, collapsed, onClose }: Props) {
             />
           ))}
 
-          {/* Sección: Dirección */}
           {dirItems.length > 0 && (
             <>
               <SeccionLabel texto="Dirección" collapsed={collapsed} />
@@ -112,7 +131,7 @@ export function Sidebar({ open, collapsed, onClose }: Props) {
   );
 }
 
-// ── Componentes internos ────────────────────────────────────────────────────
+// ── Componentes internos ──────────────────────────────────────────────────────
 function SeccionLabel({ texto, collapsed }: { texto: string; collapsed: boolean }) {
   return (
     <p
@@ -129,22 +148,30 @@ function SeccionLabel({ texto, collapsed }: { texto: string; collapsed: boolean 
 function NavLink({
   item, active, badge, collapsed, onClose,
 }: {
-  item: NavItem; active: boolean; badge: number | null;
-  collapsed: boolean; onClose: () => void;
+  item: NavItem;
+  active: boolean;
+  badge: number | null;
+  collapsed: boolean;
+  onClose: () => void;
 }) {
   return (
     <Link
       to={item.to}
       onClick={onClose}
       className={cn(
-        "flex h-12 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors",
+        "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
         active
           ? "bg-fieldcredit-green text-white shadow-sm ring-1 ring-white/30"
           : "text-white/80 hover:bg-white/10 hover:text-white active:bg-white/20",
       )}
       title={item.label}
     >
-      <span className="w-6 shrink-0 text-center text-xl leading-none">{item.icon}</span>
+      <item.Icon
+        size={18}
+        strokeWidth={active ? 2.2 : 1.8}
+        className="w-5 shrink-0"
+        aria-hidden
+      />
       <span className={cn("flex-1 truncate", collapsed && "md:hidden")}>
         {item.label}
       </span>

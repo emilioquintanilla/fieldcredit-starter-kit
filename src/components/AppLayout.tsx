@@ -1,5 +1,6 @@
 // Layout autenticado: NavBar + Sidebar + área de contenido
 // Fase 3 UX: colores semánticos, fondo con variable CSS
+// pb-28 en móvil: compensa el floating BottomNav (bottom-4 + altura pill + respiro)
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { NavBar } from "./NavBar";
@@ -38,7 +39,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <Sidebar open={open} collapsed={collapsed} onClose={() => setOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <NavBar onToggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-x-hidden p-3 pb-20 sm:p-6 md:pb-6">
+        <main className="flex-1 overflow-x-hidden p-3 pb-28 sm:p-6 md:pb-6">
           {children}
         </main>
       </div>
