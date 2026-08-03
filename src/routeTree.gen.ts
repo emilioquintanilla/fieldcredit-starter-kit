@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as NormativaRouteImport } from './routes/normativa'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InstitucionalRouteImport } from './routes/institucional'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -22,9 +23,18 @@ import { Route as ComiteIndexRouteImport } from './routes/comite.index'
 import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
 import { Route as ComiteIdRouteImport } from './routes/comite.$id'
+import { Route as AdminDocumentosRouteImport } from './routes/admin/documentos'
+import { Route as ApiRagEmbeberRouteImport } from './routes/api/rag/embeber'
+import { Route as ApiRagApi_rag_procesarRouteImport } from './routes/api/rag/api_rag_procesar'
+import { Route as ApiRagApi_rag_consultarRouteImport } from './routes/api/rag/api_rag_consultar'
 import { Route as ApiPublicIpRouteImport } from './routes/api/public/ip'
 import { Route as ApiIaCompletarRouteImport } from './routes/api/ia/completar'
 
+const NormativaRoute = NormativaRouteImport.update({
+  id: '/normativa',
+  path: '/normativa',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -90,6 +100,26 @@ const ComiteIdRoute = ComiteIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ComiteRoute,
 } as any)
+const AdminDocumentosRoute = AdminDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ApiRagEmbeberRoute = ApiRagEmbeberRouteImport.update({
+  id: '/api/rag/embeber',
+  path: '/api/rag/embeber',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRagApi_rag_procesarRoute = ApiRagApi_rag_procesarRouteImport.update({
+  id: '/api/rag/api_rag_procesar',
+  path: '/api/rag/api_rag_procesar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRagApi_rag_consultarRoute = ApiRagApi_rag_consultarRouteImport.update({
+  id: '/api/rag/api_rag_consultar',
+  path: '/api/rag/api_rag_consultar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicIpRoute = ApiPublicIpRouteImport.update({
   id: '/api/public/ip',
   path: '/api/public/ip',
@@ -103,13 +133,15 @@ const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
+  '/normativa': typeof NormativaRoute
+  '/admin/documentos': typeof AdminDocumentosRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
@@ -117,15 +149,20 @@ export interface FileRoutesByFullPath {
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
   '/api/public/ip': typeof ApiPublicIpRoute
+  '/api/rag/api_rag_consultar': typeof ApiRagApi_rag_consultarRoute
+  '/api/rag/api_rag_procesar': typeof ApiRagApi_rag_procesarRoute
+  '/api/rag/embeber': typeof ApiRagEmbeberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/dashboard': typeof DashboardRoute
   '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
+  '/normativa': typeof NormativaRoute
+  '/admin/documentos': typeof AdminDocumentosRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
@@ -133,17 +170,22 @@ export interface FileRoutesByTo {
   '/expedientes': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
   '/api/public/ip': typeof ApiPublicIpRoute
+  '/api/rag/api_rag_consultar': typeof ApiRagApi_rag_consultarRoute
+  '/api/rag/api_rag_procesar': typeof ApiRagApi_rag_procesarRoute
+  '/api/rag/embeber': typeof ApiRagEmbeberRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/comite': typeof ComiteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
+  '/normativa': typeof NormativaRoute
+  '/admin/documentos': typeof AdminDocumentosRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
@@ -151,6 +193,9 @@ export interface FileRoutesById {
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
   '/api/public/ip': typeof ApiPublicIpRoute
+  '/api/rag/api_rag_consultar': typeof ApiRagApi_rag_consultarRoute
+  '/api/rag/api_rag_procesar': typeof ApiRagApi_rag_procesarRoute
+  '/api/rag/embeber': typeof ApiRagEmbeberRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -163,6 +208,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/institucional'
     | '/login'
+    | '/normativa'
+    | '/admin/documentos'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
@@ -170,6 +217,9 @@ export interface FileRouteTypes {
     | '/expedientes/'
     | '/api/ia/completar'
     | '/api/public/ip'
+    | '/api/rag/api_rag_consultar'
+    | '/api/rag/api_rag_procesar'
+    | '/api/rag/embeber'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,6 +229,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/institucional'
     | '/login'
+    | '/normativa'
+    | '/admin/documentos'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
@@ -186,6 +238,9 @@ export interface FileRouteTypes {
     | '/expedientes'
     | '/api/ia/completar'
     | '/api/public/ip'
+    | '/api/rag/api_rag_consultar'
+    | '/api/rag/api_rag_procesar'
+    | '/api/rag/embeber'
   id:
     | '__root__'
     | '/'
@@ -196,6 +251,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/institucional'
     | '/login'
+    | '/normativa'
+    | '/admin/documentos'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
@@ -203,26 +260,40 @@ export interface FileRouteTypes {
     | '/expedientes/'
     | '/api/ia/completar'
     | '/api/public/ip'
+    | '/api/rag/api_rag_consultar'
+    | '/api/rag/api_rag_procesar'
+    | '/api/rag/embeber'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AlertasRoute: typeof AlertasRoute
   ClientesRoute: typeof ClientesRoute
   ComiteRoute: typeof ComiteRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   InstitucionalRoute: typeof InstitucionalRoute
   LoginRoute: typeof LoginRoute
+  NormativaRoute: typeof NormativaRoute
   ExpedientesIdRoute: typeof ExpedientesIdRoute
   ExpedientesNuevoRoute: typeof ExpedientesNuevoRoute
   ExpedientesIndexRoute: typeof ExpedientesIndexRoute
   ApiIaCompletarRoute: typeof ApiIaCompletarRoute
   ApiPublicIpRoute: typeof ApiPublicIpRoute
+  ApiRagApi_rag_consultarRoute: typeof ApiRagApi_rag_consultarRoute
+  ApiRagApi_rag_procesarRoute: typeof ApiRagApi_rag_procesarRoute
+  ApiRagEmbeberRoute: typeof ApiRagEmbeberRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/normativa': {
+      id: '/normativa'
+      path: '/normativa'
+      fullPath: '/normativa'
+      preLoaderRoute: typeof NormativaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -314,6 +385,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComiteIdRouteImport
       parentRoute: typeof ComiteRoute
     }
+    '/admin/documentos': {
+      id: '/admin/documentos'
+      path: '/documentos'
+      fullPath: '/admin/documentos'
+      preLoaderRoute: typeof AdminDocumentosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/rag/embeber': {
+      id: '/api/rag/embeber'
+      path: '/api/rag/embeber'
+      fullPath: '/api/rag/embeber'
+      preLoaderRoute: typeof ApiRagEmbeberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rag/api_rag_procesar': {
+      id: '/api/rag/api_rag_procesar'
+      path: '/api/rag/api_rag_procesar'
+      fullPath: '/api/rag/api_rag_procesar'
+      preLoaderRoute: typeof ApiRagApi_rag_procesarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rag/api_rag_consultar': {
+      id: '/api/rag/api_rag_consultar'
+      path: '/api/rag/api_rag_consultar'
+      fullPath: '/api/rag/api_rag_consultar'
+      preLoaderRoute: typeof ApiRagApi_rag_consultarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ip': {
       id: '/api/public/ip'
       path: '/api/public/ip'
@@ -331,6 +430,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminDocumentosRoute: typeof AdminDocumentosRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDocumentosRoute: AdminDocumentosRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface ComiteRouteChildren {
   ComiteIdRoute: typeof ComiteIdRoute
   ComiteIndexRoute: typeof ComiteIndexRoute
@@ -346,19 +455,33 @@ const ComiteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AlertasRoute: AlertasRoute,
   ClientesRoute: ClientesRoute,
   ComiteRoute: ComiteRouteWithChildren,
   DashboardRoute: DashboardRoute,
   InstitucionalRoute: InstitucionalRoute,
   LoginRoute: LoginRoute,
+  NormativaRoute: NormativaRoute,
   ExpedientesIdRoute: ExpedientesIdRoute,
   ExpedientesNuevoRoute: ExpedientesNuevoRoute,
   ExpedientesIndexRoute: ExpedientesIndexRoute,
   ApiIaCompletarRoute: ApiIaCompletarRoute,
   ApiPublicIpRoute: ApiPublicIpRoute,
+  ApiRagApi_rag_consultarRoute: ApiRagApi_rag_consultarRoute,
+  ApiRagApi_rag_procesarRoute: ApiRagApi_rag_procesarRoute,
+  ApiRagEmbeberRoute: ApiRagEmbeberRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

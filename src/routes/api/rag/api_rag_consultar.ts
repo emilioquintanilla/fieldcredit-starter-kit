@@ -35,7 +35,7 @@ REGLAS:
 • Para excepciones y casos especiales, indica que debe consultar con el supervisor.
 • Sé conciso: máximo 3-4 párrafos. El asesor necesita respuestas prácticas y rápidas.`;
 
-export const Route = createFileRoute("/api/rag/consultar")({
+export const Route = createFileRoute("/api/rag/api_rag_consultar")({
   server: {
     handlers: {
       POST: async ({ request }): Promise<Response> => {

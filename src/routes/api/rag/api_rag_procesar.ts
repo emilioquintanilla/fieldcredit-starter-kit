@@ -42,7 +42,7 @@ function chunkearTexto(texto: string, tamano = 800, solape = 150): string[] {
 }
 
 // ── Route ─────────────────────────────────────────────────────────────────────
-export const Route = createFileRoute("/api/rag/procesar")({
+export const Route = createFileRoute("/api/rag/api_rag_procesar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
