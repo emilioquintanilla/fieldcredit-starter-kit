@@ -306,11 +306,11 @@ export function useDictamen(solicitudId: number) {  // INTEGER — coincide con 
         cur = cur[parts[i]] as Record<string, unknown>;
       }
       cur[parts[parts.length - 1]] = valor;
-      (next as DictamenCompleto)._meta = {
-        ...(next as DictamenCompleto)._meta,
+      (next as unknown as DictamenCompleto)._meta = {
+        ...(next as unknown as DictamenCompleto)._meta,
         editado_por_asesor: true,
       };
-      return next as DictamenCompleto;
+      return next as unknown as DictamenCompleto;
     });
   }, []);
 
