@@ -34,7 +34,7 @@ const SUGERENCIAS = [
 
 function NormativaPage() {
   // Contexto opcional: si se llega desde un expediente con ?expedienteId=xx
-  const search = useSearch({ from: "/normativa", strict: false }) as { expedienteId?: string };
+  const search = useSearch({ strict: false }) as unknown as { expedienteId?: string };
   const expedienteId = search?.expedienteId;
 
   const exp = useExpedientes((s) =>
