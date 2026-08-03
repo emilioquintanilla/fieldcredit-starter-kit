@@ -1,251 +1,198 @@
-/**
- * Verificador de coherencia de datos del expediente.
- *
- * Detecta declaraciones inverosímiles ANTES de que el expediente llegue al comité.
- * Compara lo declarado por el asesor contra rendimientos típicos de Nicaragua
- * (fuentes: INTA, MAG, INIDE ENIA 2023 — valores referenciales, no normativos).
- *
- * El verificador no bloquea — alerta al asesor para que confirme o corrija.
- * La decisión final siempre es humana.
- *
- * Ruta: src/services/ia/verificadorCoherencia.ts
- */
-import type { ExpedienteBorrador } from "@/stores/expedientes";
+// EXTENSIÓN PARA: src/services/ia/verificadorCoherencia.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// Agrega estas reglas al objeto REF y a la función verificarCoherencia().
+// El archivo actual cubre frijol, café, consumo, área, salario y deudas.
+// Esta extensión cierra los huecos para los cultivos del Corredor Seco.
+//
+// INSTRUCCIONES:
+// 1. En el objeto REF existente, reemplaza la sección de cierre `}` por el
+//    bloque REF_EXTENSION que se muestra abajo.
+// 2. Dentro de verificarCoherencia(), antes del `return alertas`, pega el
+//    bloque REGLAS_EXTENSION.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export type SeveridadAlerta = "info" | "advertencia" | "critica";
+// ══════════════════════════════════════════════════════════════════════════════
+// BLOQUE 1: Agrega al objeto REF (después de la línea `ganado: { ... }`)
+// ══════════════════════════════════════════════════════════════════════════════
 
-export interface AlertaCoherencia {
-  id: string;
-  severidad: SeveridadAlerta;
-  campo: string;
-  mensaje: string;
-  valorDeclarado?: string;
-  referenciaUso?: string;
-  sugerencia?: string;
+/*
+  maiz: { qqMzMin: 20, qqMzMax: 100, precioMin: 200, precioMax: 600 },
+  sorgo: { qqMzMin: 30, qqMzMax: 120, precioMin: 180, precioMax: 450 },
+  ganado_leche: {
+    litrosVacaDiaMin: 3,
+    litrosVacaDiaMax: 20,
+    precioLitroMin: 12,
+    precioLitroMax: 25,
+    vacasMin: 1,
+    vacasMax: 80,
+  },
+  comercio: { margenNetoMin: 0.05, margenNetoMax: 0.55 },
+*/
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BLOQUE 2: Pega dentro de verificarCoherencia(), antes del `return alertas`
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Maíz ─────────────────────────────────────────────────────────────────────
+const ingresoMaiz = suma("cosechaMaiz") + suma("cosechaGrano");
+const tieneActivMaiz =
+  (d.cultivos ?? "").toLowerCase().includes("maíz") ||
+  (d.cultivos ?? "").toLowerCase().includes("maiz") ||
+  (d.descripcion_actividad ?? "").toLowerCase().includes("maíz");
+
+if (tieneActivMaiz && mzanas > 0 && ingresoMaiz > 0) {
+  const ingPorMz = ingresoMaiz / mzanas;
+  const ingresoMinRefMz = REF.maiz.qqMzMin * REF.maiz.precioMin;   // 4,000 C$/mz
+  const ingresoMaxRefMz = REF.maiz.qqMzMax * REF.maiz.precioMax;   // 60,000 C$/mz
+
+  if (ingPorMz < ingresoMinRefMz * 0.5) {
+    alertas.push({
+      id: "maiz_ingreso_bajo",
+      severidad: "advertencia",
+      campo: "Cosecha de maíz",
+      mensaje: `Ingreso por manzana de maíz parece bajo (${Math.round(ingPorMz).toLocaleString("es-NI")} C$/mz).`,
+      referenciaUso: `Rango habitual: C$ ${ingresoMinRefMz.toLocaleString("es-NI")} – ${ingresoMaxRefMz.toLocaleString("es-NI")}/mz`,
+      sugerencia: "Confirmar rendimiento (qq/mz) y precio de venta en el campo.",
+    });
+  }
+
+  if (ingPorMz > ingresoMaxRefMz * 1.3) {
+    alertas.push({
+      id: "maiz_ingreso_alto",
+      severidad: "critica",
+      campo: "Cosecha de maíz",
+      mensaje: `Ingreso por manzana de maíz excede el máximo referencial (${Math.round(ingPorMz).toLocaleString("es-NI")} C$/mz).`,
+      referenciaUso: `Máximo referencial INTA 2023: C$ ${ingresoMaxRefMz.toLocaleString("es-NI")}/mz (100 qq × C$ 600)`,
+      sugerencia: "Verificar si incluye granos almacenados de ciclos anteriores.",
+    });
+  }
 }
 
-// ── Rendimientos y precios de referencia Nicaragua ──────────────────────────
-// Fuente: INTA 2023, MAGFOR, INIDE ENIA. Valores orientativos.
-const REF = {
-  frijol:      { qqMzMin: 5,   qqMzMax: 35,  precioMin: 600,  precioMax: 2500 },
-  maiz:        { qqMzMin: 20,  qqMzMax: 100, precioMin: 200,  precioMax: 600  },
-  cafe:        { qqMzMin: 6,   qqMzMax: 40,  precioMin: 1800, precioMax: 6000 },
-  sorgo:       { qqMzMin: 30,  qqMzMax: 120, precioMin: 180,  precioMax: 450  },
-  arroz:       { qqMzMin: 40,  qqMzMax: 150, precioMin: 350,  precioMax: 700  },
-  hortaliza:   { qqMzMin: 100, qqMzMax: 800, precioMin: 150,  precioMax: 1200 },
-  ganado:      { rendLecheMin: 3, rendLecheMax: 25 },     // litros/vaca/día
-  comercio:    { margenMin: 0.05, margenMax: 0.60 },
-  asalariado:  { salarioMinMensual: 6000, salarioMaxMensual: 80000 },
-};
+// ── Sorgo ─────────────────────────────────────────────────────────────────────
+const ingresoSorgo = suma("cosechaSorgo");
+const tieneActivSorgo =
+  (d.cultivos ?? "").toLowerCase().includes("sorgo") ||
+  (d.descripcion_actividad ?? "").toLowerCase().includes("sorgo");
 
-const CONSUMO_FAM_MIN_MENSUAL = 3000;   // C$/mes mínimo razonable Nicaragua rural
-const CONSUMO_FAM_MAX_MENSUAL = 80000;  // C$/mes máximo razonable para microfinanzas
-const MANZANA_MIN = 0.25;
-const MANZANA_MAX = 100;
+if (tieneActivSorgo && mzanas > 0 && ingresoSorgo > 0) {
+  const ingPorMz = ingresoSorgo / mzanas;
+  const ingresoMaxRefMz = REF.sorgo.qqMzMax * REF.sorgo.precioMax; // 54,000 C$/mz
 
-// ── Función principal ────────────────────────────────────────────────────────
-export function verificarCoherencia(
-  exp: ExpedienteBorrador | undefined,
-): AlertaCoherencia[] {
-  if (!exp) return [];
-  const alertas: AlertaCoherencia[] = [];
-  const d = exp.data || {};
-  const flujo = exp.flujo;
-  const fv = flujo?.valores ?? {};
-  const plazo = flujo?.plazoMeses || d.plazo || 12;
-  const mzanas = d.hectareas ?? 0; // el campo se llama hectareas pero almacena manzanas
-
-  const suma = (key: string) =>
-    (fv[key] ?? []).reduce((s, n) => s + (n || 0), 0);
-  const promMensual = (key: string) =>
-    plazo > 0 ? suma(key) / plazo : 0;
-  const ingMensual = (key: string) => promMensual(key);
-
-  // ── 1. Consumo familiar ──────────────────────────────────────────────────
-  const consumoKeys = ["gastoHogar","alimentacion","educacion","salud","servicios","otrosHogar"];
-  const consumoMensual = consumoKeys.reduce((s, k) => s + promMensual(k), 0);
-  if (consumoMensual > 0 && consumoMensual < CONSUMO_FAM_MIN_MENSUAL) {
+  if (ingPorMz > ingresoMaxRefMz * 1.3) {
     alertas.push({
-      id: "consumo_bajo",
-      severidad: "advertencia",
-      campo: "Gastos del hogar",
-      mensaje: "El consumo familiar declarado parece muy bajo para Nicaragua rural.",
-      valorDeclarado: `C$ ${Math.round(consumoMensual).toLocaleString("es-NI")}/mes`,
-      referenciaUso: `Mínimo referencial: C$ ${CONSUMO_FAM_MIN_MENSUAL.toLocaleString("es-NI")}/mes`,
-      sugerencia: "Confirmar si incluye alimentación, servicios básicos y educación de dependientes.",
+      id: "sorgo_ingreso_alto",
+      severidad: "critica",
+      campo: "Cosecha de sorgo",
+      mensaje: `Ingreso por manzana de sorgo excede el máximo referencial (${Math.round(ingPorMz).toLocaleString("es-NI")} C$/mz).`,
+      referenciaUso: `Máximo referencial: C$ ${ingresoMaxRefMz.toLocaleString("es-NI")}/mz (120 qq × C$ 450)`,
+      sugerencia: "Confirmar rendimiento y precio unitario. El sorgo suele venderse a granel.",
     });
   }
-  if (consumoMensual > CONSUMO_FAM_MAX_MENSUAL) {
-    alertas.push({
-      id: "consumo_alto",
-      severidad: "advertencia",
-      campo: "Gastos del hogar",
-      mensaje: "El consumo familiar declarado es inusualmente alto para el segmento microfinanzas.",
-      valorDeclarado: `C$ ${Math.round(consumoMensual).toLocaleString("es-NI")}/mes`,
-      referenciaUso: `Máximo habitual: C$ ${CONSUMO_FAM_MAX_MENSUAL.toLocaleString("es-NI")}/mes`,
-      sugerencia: "Verificar que no se duplicaron gastos del negocio y del hogar.",
-    });
-  }
+}
 
-  // ── 2. Área de terreno ───────────────────────────────────────────────────
-  if (mzanas > 0) {
-    if (mzanas < MANZANA_MIN) {
-      alertas.push({
-        id: "area_minima",
-        severidad: "info",
-        campo: "Área de terreno",
-        mensaje: "Área declarada menor a un cuarto de manzana.",
-        valorDeclarado: `${mzanas} mz`,
-        sugerencia: "Confirmar unidad: ¿son manzanas o metros cuadrados?",
-      });
-    }
-    if (mzanas > MANZANA_MAX) {
-      alertas.push({
-        id: "area_grande",
-        severidad: "info",
-        campo: "Área de terreno",
-        mensaje: "Área declarada muy grande para el segmento de microfinanzas.",
-        valorDeclarado: `${mzanas} mz`,
-        sugerencia: "Verificar si corresponde a la parcela financiada o a toda la propiedad.",
-      });
-    }
-  }
+// ── Ganado lechero ────────────────────────────────────────────────────────────
+const ingresoLeche = suma("ventaLeche") + suma("productosPecuarios");
+const numVacas = Number(d.num_vacas ?? d.cabezas_ganado ?? 0);
+const tieneActifGanado =
+  (d.tipo_actividad ?? "").toLowerCase().includes("ganado") ||
+  (d.tipo_actividad ?? "").toLowerCase().includes("pecuar") ||
+  (d.cultivos ?? "").toLowerCase().includes("ganado") ||
+  (d.descripcion_actividad ?? "").toLowerCase().includes("leche");
 
-  // ── 3. Frijol ────────────────────────────────────────────────────────────
-  const ingresoFrijolP  = suma("cosechaFrijolP")  + suma("cosechaArP");
-  const ingresoFrijolPo = suma("cosechaFrijolPo") + suma("cosechaArPo");
-  const tieneActivFrijol = (d.cultivos ?? "").toLowerCase().includes("frijol") ||
-    (d.descripcion_actividad ?? "").toLowerCase().includes("frijol");
-
-  if (tieneActivFrijol && mzanas > 0 && ingresoFrijolP > 0) {
-    const ingPorMz = ingresoFrijolP / mzanas;
-    const r = REF.frijol;
-    // Estimando precio promedio ~1200 C$/qq → ingreso min/max por mz
-    const ingresoMinRefMz = r.qqMzMin * 800;
-    const ingresoMaxRefMz = r.qqMzMax * 2500;
-    if (ingPorMz < ingresoMinRefMz * 0.5) {
+if (tieneActifGanado && ingresoLeche > 0) {
+  // Validar número de vacas si está capturado
+  if (numVacas > 0) {
+    if (numVacas > REF.ganado_leche.vacasMax) {
       alertas.push({
-        id: "frijol_ingreso_bajo",
+        id: "ganado_hato_grande",
         severidad: "advertencia",
-        campo: "Cosecha de frijol",
-        mensaje: `Ingreso por manzana de frijol parece bajo (${Math.round(ingPorMz).toLocaleString("es-NI")} C$/mz).`,
-        referenciaUso: `Rango habitual: C$ ${ingresoMinRefMz.toLocaleString("es-NI")} – ${ingresoMaxRefMz.toLocaleString("es-NI")}/mz`,
-        sugerencia: "Confirmar rendimiento (qq/mz) y precio de venta declarados.",
+        campo: "Hato ganadero",
+        mensaje: `Número de vacas declarado (${numVacas}) es alto para microfinanzas.`,
+        referenciaUso: `Rango habitual en el segmento: 1 – ${REF.ganado_leche.vacasMax} vacas`,
+        sugerencia: "Confirmar si son vacas productivas o incluye novillos/terneros.",
       });
     }
-    if (ingPorMz > ingresoMaxRefMz * 1.5) {
-      alertas.push({
-        id: "frijol_ingreso_alto",
-        severidad: "critica",
-        campo: "Cosecha de frijol",
-        mensaje: `Ingreso por manzana de frijol excede el máximo referencial (${Math.round(ingPorMz).toLocaleString("es-NI")} C$/mz).`,
-        referenciaUso: `Máximo referencial: C$ ${ingresoMaxRefMz.toLocaleString("es-NI")}/mz`,
-        sugerencia: "Verificar precio de venta. El precio máximo referencial de frijol es C$ 2,500/qq.",
-      });
-    }
-  }
 
-  // ── 4. Café ──────────────────────────────────────────────────────────────
-  const ingresoCafe = suma("cosechaCafe");
-  const tieneActifCafe = (d.cultivos ?? "").toLowerCase().includes("café") ||
-    (d.cultivos ?? "").toLowerCase().includes("cafe") ||
-    (d.descripcion_actividad ?? "").toLowerCase().includes("café");
+    // Validar ingreso diario por vaca
+    const diasMes = 30;
+    const ingMensualLeche = ingMensual("ventaLeche");
+    if (ingMensualLeche > 0 && numVacas > 0) {
+      const litrosDiaVaca = ingMensualLeche / (numVacas * diasMes * REF.ganado_leche.precioLitroMin);
 
-  if (tieneActifCafe && mzanas > 0 && ingresoCafe > 0) {
-    const ingPorMz = ingresoCafe / mzanas;
-    const ingresoMaxRefMz = REF.cafe.qqMzMax * REF.cafe.precioMax;
-    if (ingPorMz > ingresoMaxRefMz * 1.3) {
-      alertas.push({
-        id: "cafe_ingreso_alto",
-        severidad: "critica",
-        campo: "Cosecha de café",
-        mensaje: `Ingreso por manzana de café parece excesivo (${Math.round(ingPorMz).toLocaleString("es-NI")} C$/mz).`,
-        referenciaUso: `Máximo referencial: C$ ${ingresoMaxRefMz.toLocaleString("es-NI")}/mz (40 qq/mz × C$ 6,000)`,
-        sugerencia: "Confirmar si el precio es uva, pergamino u oro. Son diferentes unidades.",
-      });
-    }
-  }
-
-  // ── 5. Salario asalariado ────────────────────────────────────────────────
-  const salario = d.salario ?? 0;
-  if (d.tipo_actividad === "Asalariado" && salario > 0) {
-    if (salario < REF.asalariado.salarioMinMensual) {
-      alertas.push({
-        id: "salario_bajo",
-        severidad: "info",
-        campo: "Salario",
-        mensaje: `Salario neto declarado inferior al salario mínimo legal (${salario.toLocaleString("es-NI")} C$/mes).`,
-        referenciaUso: `Salario mínimo agropecuario 2024: ~C$ 6,000/mes`,
-        sugerencia: "Confirmar si es neto o bruto, o si hay ingresos adicionales.",
-      });
-    }
-    if (salario > REF.asalariado.salarioMaxMensual) {
-      alertas.push({
-        id: "salario_alto",
-        severidad: "advertencia",
-        campo: "Salario",
-        mensaje: `Salario neto inusualmente alto para el segmento (${salario.toLocaleString("es-NI")} C$/mes).`,
-        sugerencia: "Solicitar colilla de pago o constancia salarial.",
-      });
-    }
-  }
-
-  // ── 6. Coherencia flujo vs. Estado de Resultados ─────────────────────────
-  const er = exp.estadoResultados;
-  if (er && flujo) {
-    const ingTotalFlujo = Object.values(fv).reduce(
-      (s, arr) => s + arr.reduce((a, b) => a + (b || 0), 0), 0
-    );
-    const erV = er.valores ?? {};
-    const erIngTotal = Object.values(erV).reduce(
-      (s, v) => s + (typeof v === "object" && v !== null && "valor" in v ? (v as {valor:number}).valor : 0), 0
-    );
-    if (ingTotalFlujo > 0 && erIngTotal > 0) {
-      const ratioFlujoER = ingTotalFlujo / (erIngTotal * (flujo.plazoMeses || 12));
-      if (ratioFlujoER > 2.5 || ratioFlujoER < 0.4) {
+      if (litrosDiaVaca > REF.ganado_leche.litrosVacaDiaMax * 1.5) {
         alertas.push({
-          id: "flujo_er_discrepancia",
+          id: "leche_produccion_alta",
+          severidad: "critica",
+          campo: "Producción de leche",
+          mensaje: `La producción implícita por vaca (${litrosDiaVaca.toFixed(1)} lts/día) excede el máximo referencial.`,
+          referenciaUso: `Máximo habitual en Nicaragua: ${REF.ganado_leche.litrosVacaDiaMax} lts/vaca/día`,
+          sugerencia: "Verificar precio de venta (C$/litro) y número de vacas productivas.",
+        });
+      }
+
+      if (litrosDiaVaca < REF.ganado_leche.litrosVacaDiaMin * 0.5) {
+        alertas.push({
+          id: "leche_produccion_baja",
           severidad: "advertencia",
-          campo: "Coherencia Flujo ↔ Estado de Resultados",
-          mensaje: `Los totales del flujo de efectivo y el Estado de Resultados difieren significativamente (ratio: ${ratioFlujoER.toFixed(1)}x).`,
-          sugerencia: "Revisar que los mismos rubros estén ingresados en ambos módulos. El motor de sincronización debería haberlos igualado.",
+          campo: "Producción de leche",
+          mensaje: `La producción implícita por vaca (${litrosDiaVaca.toFixed(1)} lts/día) parece baja.`,
+          referenciaUso: `Mínimo referencial: ${REF.ganado_leche.litrosVacaDiaMin} lts/vaca/día`,
+          sugerencia: "Confirmar si el hato está activo o hay vacas secas en el período.",
         });
       }
     }
   }
-
-  // ── 7. Deudas vs. capacidad de pago ─────────────────────────────────────
-  if (d.tiene_deudas && d.deudas && d.deudas.length > 0) {
-    const cuotasExternas = d.deudas.reduce(
-      (s, deu) => s + (deu.cuota ?? 0), 0
-    );
-    const cuotaNueva = flujo?.cuotaEstimada ?? 0;
-    const ingMensualTotal = plazo > 0
-      ? Object.values(fv).reduce(
-          (s, arr) => s + arr.reduce((a, b) => a + (b || 0), 0), 0
-        ) / plazo
-      : 0;
-    if (ingMensualTotal > 0 && (cuotasExternas + cuotaNueva) / ingMensualTotal > 0.85) {
-      alertas.push({
-        id: "sobreendeudamiento",
-        severidad: "critica",
-        campo: "Nivel de endeudamiento",
-        mensaje: `Las cuotas totales (existentes + nueva) representan más del 85% de los ingresos mensuales.`,
-        valorDeclarado: `Cuotas externas: C$ ${cuotasExternas.toLocaleString("es-NI")}/mes | Cuota nueva: C$ ${cuotaNueva.toLocaleString("es-NI")}/mes`,
-        sugerencia: "Analizar cuidadosamente la capacidad de pago real. Considerar restructura de pasivos.",
-      });
-    }
-  }
-
-  return alertas;
 }
 
-/** Cuenta alertas por severidad */
-export function resumenAlertas(alertas: AlertaCoherencia[]) {
-  return {
-    criticas:     alertas.filter((a) => a.severidad === "critica").length,
-    advertencias: alertas.filter((a) => a.severidad === "advertencia").length,
-    infos:        alertas.filter((a) => a.severidad === "info").length,
-    total:        alertas.length,
-  };
+// ── Comercio / negocio informal ───────────────────────────────────────────────
+const ventasComercio = suma("ventasNegocio") + suma("ingresosComercio");
+const comprasComercio = suma("comprasMercaderia") + suma("costosVenta");
+const tieneActifComercio =
+  (d.tipo_actividad ?? "").toLowerCase().includes("comerc") ||
+  (d.tipo_actividad ?? "").toLowerCase().includes("negocio") ||
+  (d.tipo_actividad ?? "").toLowerCase().includes("tiend") ||
+  (d.tipo_actividad ?? "").toLowerCase().includes("pulper");
+
+if (tieneActifComercio && ventasComercio > 0 && comprasComercio > 0) {
+  const margenDeclarado = (ventasComercio - comprasComercio) / ventasComercio;
+
+  if (margenDeclarado < REF.comercio.margenNetoMin) {
+    alertas.push({
+      id: "comercio_margen_bajo",
+      severidad: "advertencia",
+      campo: "Margen del negocio",
+      mensaje: `Margen neto declarado muy bajo (${(margenDeclarado * 100).toFixed(1)}%).`,
+      referenciaUso: `Mínimo referencial para comercio minorista informal: ${(REF.comercio.margenNetoMin * 100).toFixed(0)}%`,
+      sugerencia: "Confirmar si se incluyeron todos los costos de operación o si hay mermas no declaradas.",
+    });
+  }
+
+  if (margenDeclarado > REF.comercio.margenNetoMax) {
+    alertas.push({
+      id: "comercio_margen_alto",
+      severidad: "advertencia",
+      campo: "Margen del negocio",
+      mensaje: `Margen neto inusualmente alto para comercio minorista (${(margenDeclarado * 100).toFixed(1)}%).`,
+      referenciaUso: `Máximo habitual: ${(REF.comercio.margenNetoMax * 100).toFixed(0)}%`,
+      sugerencia: "Verificar si los costos de compra están completos o si se trata de un producto de alto valor.",
+    });
+  }
+}
+
+// ── Ingreso mensual cero con actividad activa ─────────────────────────────────
+// Detecta el caso en que hay actividad declarada pero el flujo suma cero.
+const tieneActividad = !!(d.tipo_actividad || d.cultivos || d.descripcion_actividad);
+const ingresoTotalFlujo = Object.values(fv).reduce(
+  (s, arr) => s + arr.reduce((a, b) => a + (b || 0), 0),
+  0
+);
+
+if (tieneActividad && ingresoTotalFlujo === 0) {
+  alertas.push({
+    id: "flujo_vacio",
+    severidad: "critica",
+    campo: "Flujo de caja",
+    mensaje: "El flujo de caja no tiene ingresos registrados, aunque hay una actividad declarada.",
+    sugerencia: "Completar el módulo de flujo antes de enviar al comité. Sin ingresos no es posible calcular la capacidad de pago.",
+  });
 }
