@@ -1,4 +1,7 @@
+// src/routes/comite.$id.tsx
 // Dictamen IA de un expediente en comité + chat en vivo + decisión humana.
+// FASE 1: Persistencia en Supabase agregada — guarda número FC-YYYY-NNNN
+//         y recupera el dictamen si se pierde de memoria (recarga de página).
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Sparkles } from "lucide-react";
@@ -16,6 +19,8 @@ import { ChatCopiloto } from "@/components/comite/ChatCopiloto";
 import { ExportarDictamenPDF } from "@/components/comite/ExportarDictamenPDF";
 import { useCargarExpediente } from "@/hooks/useHidratarExpediente";
 import { useExpedientes, type DictamenIA } from "@/stores/expedientes";
+import { supabase } from "@/integrations/supabase/client";         // [FASE 1]
+import { useDictamenGuardado } from "@/hooks/useDictamenGuardado"; // [FASE 1]
 import { llamarIA } from "@/services/ia/adaptadorIA";
 import { construirContextoExpediente } from "@/services/ia/contextoExpediente";
 import { PROMPT_GENERAR_DICTAMEN, SISTEMA_COPILOTO_COMITE } from "@/services/ia/prompts";
@@ -62,6 +67,27 @@ function DictamenPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [dictamen, setDictamen] = useState<DictamenIA | null>(exp?.comite?.dictamenIA ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [numeroDictamen, setNumeroDictamen] = useState<string | null>(null); // [FASE 1]
+
+  // [FASE 1] Carga el dictamen persistido en Supabase si no hay uno en memoria.
+  // Permite recuperarlo después de una recarga de página.
+  const { dictamen: dictamenGuardado, meta: dictamenMeta } =
+    useDictamenGuardado(Number(id));
+
+  // [FASE 1] Hidrata desde Supabase cuando la memoria está vacía.
+  useEffect(() => {
+    if (dictamenGuardado && !dictamen) {
+      setDictamen(dictamenGuardado);
+      setFase("listo");
+    }
+  }, [dictamenGuardado, dictamen]);
+
+  // [FASE 1] Muestra el número del dictamen cuando se carga desde Supabase.
+  useEffect(() => {
+    if (dictamenMeta?.numero_dictamen && !numeroDictamen) {
+      setNumeroDictamen(dictamenMeta.numero_dictamen);
+    }
+  }, [dictamenMeta, numeroDictamen]);
 
   useEffect(() => {
     if (exp && exp.estado !== "en_comite" && !exp.comite?.decision) marcarEnComite(id);
@@ -98,7 +124,6 @@ function DictamenPage() {
     setLogs([]);
     setError(null);
 
-    // Log animado en paralelo a la llamada real.
     let cancelado = false;
     (async () => {
       for (let i = 0; i < LOGS.length; i++) {
@@ -118,9 +143,39 @@ function DictamenPage() {
       });
       const parsed = parsearDictamenIA(respuesta);
       cancelado = true;
+
+      // Guardar en Zustand (comportamiento original)
       setDictamen(parsed);
       guardarDictamen(id, parsed);
       setFase("listo");
+
+      // [FASE 1] Persistir en Supabase para sobrevivir recargas de página.
+      // Se hace en background — un fallo aquí no interrumpe el flujo.
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: fila } = await supabase
+            .from("dictamenes")
+            .insert({
+              solicitud_id: Number(id),   // INTEGER en Supabase
+              contenido_json: parsed,
+              estado: "borrador",
+              generado_por: user.id,      // UUID de Supabase Auth
+              modelo_ia: "llama-3.3-70b-versatile",
+              editado_por_asesor: false,
+            })
+            .select("numero_dictamen")
+            .single();
+
+          if (fila?.numero_dictamen) {
+            setNumeroDictamen(fila.numero_dictamen);
+          }
+        }
+      } catch (dbErr) {
+        // No bloquea — el dictamen ya está en pantalla y en Zustand.
+        console.warn("[comite.$id] No se pudo persistir en Supabase:", dbErr);
+      }
+
     } catch (e) {
       cancelado = true;
       const msg = e instanceof Error ? e.message : "Error desconocido";
@@ -208,7 +263,9 @@ function DictamenPage() {
           <RecomendacionIA recomendacion={dictamen.recomendacion} />
           <DecisionComite expedienteId={id} />
           <ChatCopiloto expediente={exp} dictamen={dictamen} clienteNombre={nombre} />
-          <div className="mb-4 flex gap-2">
+
+          {/* [FASE 1] Número del dictamen + exportación */}
+          <div className="mb-4 flex items-center gap-2">
             <button
               onClick={generar}
               className="flex-1 rounded-xl border border-slate-300 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -221,6 +278,13 @@ function DictamenPage() {
               clienteNombre={nombre}
             />
           </div>
+
+          {/* [FASE 1] Indicador de persistencia */}
+          {numeroDictamen && (
+            <p className="mb-4 text-center text-xs text-slate-400 font-mono">
+              {numeroDictamen} · guardado en repositorio
+            </p>
+          )}
         </>
       )}
     </AppLayout>
