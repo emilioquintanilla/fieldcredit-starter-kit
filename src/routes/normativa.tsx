@@ -61,7 +61,7 @@ function NormativaPage() {
       d.producto       && `Producto solicitado: ${d.producto}`,
       d.monto          && `Monto: C$ ${d.monto.toLocaleString("es-NI")}`,
       d.plazo          && `Plazo: ${d.plazo} meses`,
-      d.municipio      && `Municipio: ${d.municipio}`,
+      d.municipio_residencia && `Municipio: ${d.municipio_residencia}`,
     ].filter(Boolean).join("\n");
   }
 
