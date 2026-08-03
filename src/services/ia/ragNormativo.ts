@@ -17,7 +17,7 @@ export async function consultarNormativa(
   pregunta          : string,
   contextoExpediente?: string
 ): Promise<RespuestaNormativa> {
-  const res = await fetch("/api/rag/api_rag_consultar", {
+  const res = await fetch("/api/rag/consultar", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify({ pregunta, contextoExpediente }),
@@ -46,7 +46,7 @@ export async function procesarDocumento(
   documentoId    : string,
   contenidoTexto : string
 ): Promise<{ procesados: number; total: number; mensaje: string }> {
-  const res = await fetch("/api/rag/api_rag_procesar", {
+  const res = await fetch("/api/rag/procesar", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify({
