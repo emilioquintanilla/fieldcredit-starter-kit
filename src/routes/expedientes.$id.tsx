@@ -16,6 +16,7 @@ import { GeoModule, estadoGeoStatus } from "@/components/geo/GeoModule";
 import { DocsExpedientePage, estadoDocsSoporte } from "@/components/docs/DocsExpedientePage";
 import { AsistenteBarraCampo } from "@/components/ia/AsistenteBarraCampo";
 import { AsistenteVoz } from "@/components/ia/AsistenteVoz";
+import { AlertasCoherencia } from "@/components/ia/AlertasCoherencia"; // [FASE 2]
 import { PreComitePanel } from "@/components/comite/PreComitePanel";
 
 import { useExpedientes, type SolicitudData } from "@/stores/expedientes";
@@ -245,14 +246,17 @@ function ExpedienteDetalle() {
       {tab === "garantias" && aplicaGarantia && (
         <GarantiasModule expedienteId={id} montoCredito={d?.monto || 0} tiposGarantia={tiposGarantia} />
       )}
-      {tab === "flujo" && (
-        <FlujoModule
-          expedienteId={id}
-          plazoMeses={d?.plazo || 12}
-          tipoActividad={tipoActividadFlujo}
-          montoSolicitado={d?.monto || 0}
-          onSwitchToSolicitud={() => setTab("solicitud")}
-        />
+      {tab === "flujo" && (  // [FASE 2]
+        <>
+          <FlujoModule
+            expedienteId={id}
+            plazoMeses={d?.plazo || 12}
+            tipoActividad={tipoActividadFlujo}
+            montoSolicitado={d?.monto || 0}
+            onSwitchToSolicitud={() => setTab("solicitud")}
+          />
+          <AlertasCoherencia expedienteId={id} />
+        </>
       )}
       {tab === "resultados" && (
         <EstadoResultadosModule
@@ -402,3 +406,4 @@ function EstadoDot({ estado }: { estado: Estado }) {
     "bg-slate-300 dark:bg-slate-500";
   return <span className={cn("inline-block h-2 w-2 rounded-full", cls)} aria-hidden />;
 }
+
