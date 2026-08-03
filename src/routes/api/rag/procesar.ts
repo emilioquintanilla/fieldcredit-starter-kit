@@ -37,7 +37,7 @@ function chunkearTexto(texto: string): string[] {
   return fragmentos.filter((f) => f.length > 30);
 }
 
-export const Route = createFileRoute("/api/rag/api_rag_procesar")({
+export const Route = createFileRoute("/api/rag/procesar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
