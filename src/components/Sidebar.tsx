@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Users,
   Scale,
+  BookOpen,
   CloudRain,
   Leaf,
   Settings,
@@ -35,6 +36,7 @@ const OPERACION: NavItem[] = [
   { to: "/expedientes", Icon: FolderOpen, label: "Expedientes", roles: ["asesor","coordinador","gerente","admin"] },
   { to: "/clientes",    Icon: Users,      label: "Clientes",    roles: ["asesor","coordinador","gerente","admin"] },
   { to: "/comite",      Icon: Scale,      label: "Comité",      roles: ["asesor","coordinador","gerente","admin"] },
+  { to: "/normativa",   Icon: BookOpen,   label: "Ag. Normativo", roles: ["asesor","coordinador","gerente","admin"] }, // [FASE 3]
 ];
 
 const DIRECCION: NavItem[] = [
@@ -188,3 +190,4 @@ function NavLink({
     </Link>
   );
 }
+
