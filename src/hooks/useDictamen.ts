@@ -266,7 +266,12 @@ export function useDictamen(solicitudId: number) {  // INTEGER — coincide con 
           descripcion_actividad: iaContent.descripcion_actividad,
           analisis_financiero: iaContent.analisis_financiero,
           solicitud_justificacion: iaContent.solicitud_justificacion,
-          analisis_riesgo: iaContent.analisis_riesgo,
+          analisis_riesgo: {
+            factores_positivos: iaContent.factores_positivos,
+            factores_de_atencion: iaContent.factores_de_atencion,
+            nivel_riesgo_sugerido: iaContent.nivel_riesgo_sugerido,
+            observaciones: iaContent.observaciones,
+          },
           recomendacion: iaContent.recomendacion,
           _meta: {
             modelo_ia: MODELOS[PROVEEDOR_ACTIVO],
