@@ -1,19 +1,14 @@
-// src/routes/api/rag/procesar.ts
+// src/routes/api/rag/api_rag_procesar.ts
 // Procesa un documento normativo: chunking → batch embedding → bulk INSERT.
-//
-// OPTIMIZACIÓN vs versión anterior:
-//   Antes: 1 llamada HuggingFace por fragmento + 1 INSERT por fragmento
-//          → 40 fragmentos = ~40 llamadas en serie (~60-120 seg)
-//   Ahora: 1 llamada HuggingFace con todos los fragmentos + 1 INSERT masivo
-//          → 40 fragmentos = ~2-4 segundos en total
+// El texto llega directamente en el body — no necesita leerlo de Supabase,
+// lo que elimina la dependencia de SUPABASE_SERVICE_ROLE_KEY para la lectura.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-const CHUNK_SIZE  = 800; // caracteres por fragmento
-const CHUNK_SOLAPE = 150; // solapamiento entre fragmentos
-const BATCH_MAX   = 50;  // máximo de fragmentos por llamada HuggingFace
+const CHUNK_SIZE   = 800;
+const CHUNK_SOLAPE = 150;
+const BATCH_MAX    = 50;
 
-// ── Chunking ──────────────────────────────────────────────────────────────────
 function chunkearTexto(texto: string): string[] {
   const parrafos = texto
     .split(/\n{2,}/)
@@ -31,7 +26,6 @@ function chunkearTexto(texto: string): string[] {
         fragmentos.push(buffer.trim());
         buffer = buffer.slice(-CHUNK_SOLAPE) + "\n\n" + parrafo;
       } else {
-        // Párrafo más largo que CHUNK_SIZE: partir por caracteres
         for (let i = 0; i < parrafo.length; i += CHUNK_SIZE - CHUNK_SOLAPE) {
           fragmentos.push(parrafo.slice(i, i + CHUNK_SIZE).trim());
         }
@@ -43,15 +37,20 @@ function chunkearTexto(texto: string): string[] {
   return fragmentos.filter((f) => f.length > 30);
 }
 
-// ── Route ─────────────────────────────────────────────────────────────────────
-export const Route = createFileRoute("/api/rag/procesar")({
+export const Route = createFileRoute("/api/rag/api_rag_procesar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         let documentoId: string;
+        let contenidoTexto: string;
+
         try {
-          const body = (await request.json()) as { documento_id: string };
-          documentoId = body.documento_id;
+          const body = (await request.json()) as {
+            documento_id   : string;
+            contenido_texto: string;
+          };
+          documentoId    = body.documento_id;
+          contenidoTexto = body.contenido_texto;
         } catch {
           return Response.json({ error: "JSON inválido" }, { status: 400 });
         }
@@ -60,50 +59,38 @@ export const Route = createFileRoute("/api/rag/procesar")({
           return Response.json({ error: "documento_id requerido" }, { status: 400 });
         }
 
-        const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-        const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!contenidoTexto?.trim()) {
+          return Response.json({ error: "contenido_texto vacío" }, { status: 422 });
+        }
 
-        if (!supabaseUrl || !serviceKey) {
+        // Supabase solo para INSERT de fragmentos (no para leer el documento)
+        const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
           return Response.json(
-            { error: "SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no configurados" },
+            { error: "Variables de entorno de Supabase no configuradas" },
             { status: 500 }
           );
         }
 
-        const supabase = createClient(supabaseUrl, serviceKey);
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const baseUrl  = new URL(request.url).origin;
 
-        // 1. Leer el documento
-        const { data: doc, error: docError } = await supabase
-          .from("documentos_normativos")
-          .select("id, nombre, contenido_texto")
-          .eq("id", documentoId)
-          .single();
-
-        if (docError || !doc?.contenido_texto) {
-          return Response.json(
-            { error: "Documento no encontrado o sin texto" },
-            { status: 404 }
-          );
-        }
-
-        // 2. Borrar fragmentos anteriores (permite re-indexar)
+        // 1. Borrar fragmentos anteriores
         await supabase
           .from("fragmentos_normativos")
           .delete()
           .eq("documento_id", documentoId);
 
-        // 3. Chunkear el texto completo
-        const fragmentos = chunkearTexto(doc.contenido_texto);
+        // 2. Chunkear
+        const fragmentos = chunkearTexto(contenidoTexto);
 
         if (fragmentos.length === 0) {
           return Response.json({ error: "El texto no produjo fragmentos válidos" }, { status: 422 });
         }
 
-        const baseUrl = new URL(request.url).origin;
-
-        // 4. ── BATCH EMBEDDING ────────────────────────────────────────────────
-        // Dividir en lotes de BATCH_MAX para respetar límites del modelo.
-        // Incluso con 2 lotes esto es 2 llamadas vs 40+ anteriores.
+        // 3. Batch embedding
         const allEmbeddings: number[][] = [];
 
         for (let i = 0; i < fragmentos.length; i += BATCH_MAX) {
@@ -112,13 +99,13 @@ export const Route = createFileRoute("/api/rag/procesar")({
           const embRes = await fetch(`${baseUrl}/api/rag/embeber`, {
             method : "POST",
             headers: { "Content-Type": "application/json" },
-            body   : JSON.stringify({ textos: lote }), // ← array batch
+            body   : JSON.stringify({ textos: lote }),
           });
 
           if (!embRes.ok) {
             const err = await embRes.text();
             return Response.json(
-              { error: `Error generando embeddings (lote ${i / BATCH_MAX + 1}): ${err}` },
+              { error: `Error generando embeddings: ${err}` },
               { status: 500 }
             );
           }
@@ -127,8 +114,7 @@ export const Route = createFileRoute("/api/rag/procesar")({
           allEmbeddings.push(...embeddings);
         }
 
-        // 5. ── BULK INSERT ────────────────────────────────────────────────────
-        // Un solo INSERT con todos los fragmentos en lugar de N inserts
+        // 4. Bulk INSERT de fragmentos
         const filas = fragmentos.map((contenido, i) => ({
           documento_id    : documentoId,
           contenido,
@@ -148,7 +134,7 @@ export const Route = createFileRoute("/api/rag/procesar")({
           );
         }
 
-        // 6. Actualizar estado del documento
+        // 5. Actualizar estado del documento
         await supabase
           .from("documentos_normativos")
           .update({ procesado: true, fragmentos_count: fragmentos.length })
@@ -158,7 +144,7 @@ export const Route = createFileRoute("/api/rag/procesar")({
           exito     : true,
           procesados: fragmentos.length,
           total     : fragmentos.length,
-          mensaje   : `${fragmentos.length} fragmentos indexados para "${doc.nombre}"`,
+          mensaje   : `${fragmentos.length} fragmentos indexados correctamente`,
         });
       },
     },
