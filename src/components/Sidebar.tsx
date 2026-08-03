@@ -14,7 +14,6 @@ import {
   BookOpen,
   CloudRain,
   Leaf,
-  FileCheck2,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,9 +41,8 @@ const OPERACION: NavItem[] = [
 
 const DIRECCION: NavItem[] = [
   { to: "/alertas",       Icon: CloudRain, label: "Alertas climáticas", roles: ["asesor","coordinador","gerente","admin"] },
-  { to: "/institucional",    Icon: Leaf,       label: "Institucional",    roles: ["gerente","admin"] },
-  { to: "/admin/documentos", Icon: FileCheck2, label: "Docs. normativos", roles: ["gerente","admin"] }, // [FASE 3]
-  { to: "/admin",            Icon: Settings,   label: "Administración",   roles: ["admin"] },
+  { to: "/institucional", Icon: Leaf,      label: "Institucional",  roles: ["gerente","admin"] },
+  { to: "/admin",         Icon: Settings,  label: "Administración",  roles: ["gerente","admin"] }, // gerente accede solo a tab Normativos
 ];
 
 // ── Props ────────────────────────────────────────────────────────────────────
