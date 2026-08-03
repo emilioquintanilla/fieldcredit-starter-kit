@@ -5,11 +5,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Pencil, Save, X, Eye, EyeOff, Shield, Users, Package, Settings, ClipboardList, Trash2, Download } from "lucide-react";
+import { Plus, Pencil, Save, X, Eye, EyeOff, Shield, Users, Package, Settings, ClipboardList, FileCheck2, Trash2, Download, CheckCircle2, XCircle, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { useApp } from "@/stores/app";
+import { supabase } from "@/integrations/supabase/client"; // [FASE 3]
+import { procesarDocumento } from "@/services/ia/ragNormativo"; // [FASE 3]
 import {
   listarUsuarios, crearUsuario, actualizarUsuario, cambiarPasswordUsuario, eliminarUsuario,
   listarProductos, actualizarProducto, crearProducto, eliminarProducto,
@@ -29,13 +31,14 @@ export const Route = createFileRoute("/admin")({
   component: PanelAdmin,
 });
 
-type Tab = "usuarios" | "productos" | "parametros" | "bitacora";
+type Tab = "usuarios" | "productos" | "parametros" | "bitacora" | "normativos";
 
 const TABS: Array<{ id: Tab; label: string; icon: typeof Users }> = [
   { id: "usuarios", label: "Usuarios", icon: Users },
   { id: "productos", label: "Productos", icon: Package },
   { id: "parametros", label: "Parámetros", icon: Settings },
-  { id: "bitacora", label: "Bitácora", icon: ClipboardList },
+  { id: "bitacora",    label: "Bitácora",     icon: ClipboardList },
+  { id: "normativos",  label: "Normativos",   icon: FileCheck2   }, // [FASE 3]
 ];
 
 const ROLES: Array<{ value: UsuarioAdmin["rol"]; label: string }> = [
@@ -47,9 +50,10 @@ const ROLES: Array<{ value: UsuarioAdmin["rol"]; label: string }> = [
 
 function PanelAdmin() {
   const usuario = useApp((s) => s.usuario);
-  const [tab, setTab] = useState<Tab>("usuarios");
+  const esAdmin = usuario?.rol === "admin";
+  const [tab, setTab] = useState<Tab>(esAdmin ? "usuarios" : "normativos");
 
-  if (usuario?.rol !== "admin") {
+  if (!["admin", "gerente"].includes(usuario?.rol ?? "")) {
     return (
       <AppLayout>
         <PageHeader title="Acceso restringido" subtitle="Esta sección requiere rol de administrador." />
@@ -65,7 +69,7 @@ function PanelAdmin() {
       />
 
       <nav className="mt-4 flex gap-1 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-700">
-        {TABS.map((t) => {
+        {TABS.filter((t) => t.id === "normativos" || esAdmin).map((t) => {
           const Icon = t.icon;
           return (
             <button
@@ -88,7 +92,8 @@ function PanelAdmin() {
         {tab === "usuarios" && <TabUsuarios adminUser={usuario} />}
         {tab === "productos" && <TabProductos adminUser={usuario} />}
         {tab === "parametros" && <TabParametros adminUser={usuario} />}
-        {tab === "bitacora" && <TabBitacora />}
+        {tab === "bitacora"   && <TabBitacora />}
+        {tab === "normativos" && <TabDocumentosNormativos />} {/* [FASE 3] */}
       </div>
     </AppLayout>
   );
@@ -1109,3 +1114,226 @@ function TabBitacora() {
   );
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// DOCUMENTOS NORMATIVOS (FASE 3 — RAG)
+// ═════════════════════════════════════════════════════════════════════════════
+type DocNormativo = {
+  id              : string;
+  nombre          : string;
+  descripcion     : string | null;
+  tipo            : string;
+  procesado       : boolean;
+  fragmentos_count: number;
+  subido_en       : string;
+};
+
+const TIPO_LABEL: Record<string, string> = {
+  manual    : "Manual",
+  reglamento: "Reglamento",
+  circular  : "Circular",
+  tabla     : "Tabla / Tarifario",
+};
+
+function TabDocumentosNormativos() {
+  const [docs,         setDocs]         = useState<DocNormativo[]>([]);
+  const [cargandoDocs, setCargandoDocs] = useState(true);
+  const [mostrarForm,  setMostrarForm]  = useState(false);
+  const [indexando,    setIndexando]    = useState<string | null>(null);
+  const [eliminando,   setEliminando]   = useState<string | null>(null);
+  const [guardando,    setGuardando]    = useState(false);
+  const [form, setForm] = useState({ nombre: "", descripcion: "", tipo: "manual" as "manual"|"reglamento"|"circular"|"tabla", texto: "" });
+
+  const cargarDocs = useCallback(async () => {
+    setCargandoDocs(true);
+    const { data } = await supabase
+      .from("documentos_normativos")
+      .select("id, nombre, descripcion, tipo, procesado, fragmentos_count, subido_en")
+      .order("subido_en", { ascending: false });
+    setDocs((data as DocNormativo[]) ?? []);
+    setCargandoDocs(false);
+  }, []);
+
+  useEffect(() => { void cargarDocs(); }, [cargarDocs]);
+
+  const handleGuardar = async () => {
+    if (!form.nombre.trim() || !form.texto.trim()) {
+      toast.error("El nombre y el texto del documento son obligatorios.");
+      return;
+    }
+    setGuardando(true);
+    const { error } = await supabase.from("documentos_normativos").insert({
+      nombre: form.nombre.trim(), descripcion: form.descripcion.trim() || null,
+      tipo: form.tipo, contenido_texto: form.texto.trim(), procesado: false,
+    });
+    setGuardando(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`"${form.nombre}" guardado. Ahora indexa el documento.`);
+    setForm({ nombre: "", descripcion: "", tipo: "manual", texto: "" });
+    setMostrarForm(false);
+    void cargarDocs();
+  };
+
+  const handleIndexar = async (doc: DocNormativo) => {
+    setIndexando(doc.id);
+    try {
+      const result = await procesarDocumento(doc.id);
+      toast.success(result.mensaje);
+      void cargarDocs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al indexar.");
+    } finally {
+      setIndexando(null);
+    }
+  };
+
+  const handleEliminar = async (doc: DocNormativo) => {
+    if (!confirm(`¿Eliminar "${doc.nombre}" y todos sus fragmentos?`)) return;
+    setEliminando(doc.id);
+    const { error } = await supabase.from("documentos_normativos").delete().eq("id", doc.id);
+    setEliminando(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`"${doc.nombre}" eliminado.`);
+    void cargarDocs();
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        Base de conocimiento del Agente Normativo. Pega el texto de cada manual y haz clic en
+        <strong> Indexar</strong> para que el sistema genere los vectores de búsqueda.
+      </p>
+
+      <div className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-xs text-teal-800 dark:border-teal-800/40 dark:bg-teal-900/10 dark:text-teal-200">
+        <strong>¿Cómo funciona?</strong> Copia el texto del PDF (Ctrl+A dentro del visor, luego Ctrl+C) y pégalo en el campo de texto. Después de guardar, haz clic en <strong>Indexar</strong>. El proceso tarda ~30 segundos por documento.
+      </div>
+
+      {/* Lista */}
+      <div className="space-y-2">
+        {cargandoDocs ? (
+          <div className="space-y-2">
+            {[1,2,3].map((i) => <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />)}
+          </div>
+        ) : docs.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 py-8 text-center dark:border-slate-700">
+            <FileCheck2 size={28} className="mx-auto mb-2 text-slate-300" />
+            <p className="text-sm text-slate-400">No hay manuales cargados aún.</p>
+          </div>
+        ) : (
+          docs.map((doc) => (
+            <div key={doc.id} className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{doc.nombre}</p>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-slate-700">
+                      {TIPO_LABEL[doc.tipo] ?? doc.tipo}
+                    </span>
+                    {doc.procesado ? (
+                      <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                        <CheckCircle2 size={9} /> {doc.fragmentos_count} fragmentos indexados
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                        <XCircle size={9} /> Sin indexar
+                      </span>
+                    )}
+                  </div>
+                  {doc.descripcion && <p className="mt-1 text-xs text-slate-500">{doc.descripcion}</p>}
+                  <p className="mt-0.5 text-[10px] text-slate-400">{new Date(doc.subido_en).toLocaleDateString("es-NI")}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => handleIndexar(doc)}
+                    disabled={indexando === doc.id}
+                    className="flex items-center gap-1.5 rounded-lg bg-fieldcredit-teal px-3 py-1.5 text-xs font-semibold text-white hover:bg-fieldcredit-teal-dark disabled:opacity-60"
+                  >
+                    {indexando === doc.id
+                      ? <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
+                      : <Zap size={12} />}
+                    {doc.procesado ? "Re-indexar" : "Indexar"}
+                  </button>
+                  <button
+                    onClick={() => handleEliminar(doc)}
+                    disabled={eliminando === doc.id}
+                    className="rounded-lg border border-red-200 p-1.5 text-red-500 hover:bg-red-50 disabled:opacity-60 dark:border-red-800/40"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Botón agregar */}
+      {!mostrarForm && (
+        <button
+          onClick={() => setMostrarForm(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-fieldcredit-teal py-3 text-sm font-semibold text-fieldcredit-teal hover:bg-teal-50 dark:hover:bg-teal-900/10"
+        >
+          <Plus size={16} /> Agregar documento normativo
+        </button>
+      )}
+
+      {/* Formulario */}
+      {mostrarForm && (
+        <div className="rounded-xl border border-fieldcredit-teal/40 bg-teal-50/50 p-4 dark:bg-teal-900/10">
+          <h3 className="mb-4 text-sm font-bold text-slate-800 dark:text-slate-100">Nuevo documento normativo</h3>
+          <div className="space-y-3">
+            <input
+              value={form.nombre}
+              onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+              placeholder="Nombre del documento *"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-fieldcredit-teal focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={form.tipo}
+                onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as typeof form.tipo }))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-fieldcredit-teal focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+              >
+                {Object.entries(TIPO_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+              <input
+                value={form.descripcion}
+                onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
+                placeholder="Descripción (opcional)"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-fieldcredit-teal focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+              />
+            </div>
+            <div>
+              <textarea
+                value={form.texto}
+                onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))}
+                rows={8}
+                placeholder="Pega aquí el texto del manual o reglamento..."
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-fieldcredit-teal focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+              {form.texto && (
+                <p className="mt-1 text-[10px] text-slate-400">
+                  {form.texto.length.toLocaleString("es-NI")} caracteres
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleGuardar}
+                disabled={guardando}
+                className="flex-1 rounded-xl bg-fieldcredit-teal py-2 text-sm font-semibold text-white hover:bg-fieldcredit-teal-dark disabled:opacity-60"
+              >
+                {guardando ? "Guardando…" : "Guardar documento"}
+              </button>
+              <button
+                onClick={() => setMostrarForm(false)}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
