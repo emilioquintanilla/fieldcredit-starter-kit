@@ -1125,6 +1125,7 @@ type DocNormativo = {
   procesado       : boolean;
   fragmentos_count: number;
   subido_en       : string;
+  contenido_texto : string | null;
 };
 
 const TIPO_LABEL: Record<string, string> = {
@@ -1147,7 +1148,7 @@ function TabDocumentosNormativos() {
     setCargandoDocs(true);
     const { data } = await supabase
       .from("documentos_normativos")
-      .select("id, nombre, descripcion, tipo, procesado, fragmentos_count, subido_en")
+      .select("id, nombre, descripcion, tipo, procesado, fragmentos_count, subido_en, contenido_texto")
       .order("subido_en", { ascending: false });
     setDocs((data as DocNormativo[]) ?? []);
     setCargandoDocs(false);
@@ -1174,9 +1175,13 @@ function TabDocumentosNormativos() {
   };
 
   const handleIndexar = async (doc: DocNormativo) => {
+    if (!doc.contenido_texto?.trim()) {
+      toast.error("Este documento no tiene texto guardado. Elimínalo y agrégalo de nuevo con el contenido.");
+      return;
+    }
     setIndexando(doc.id);
     try {
-      const result = await procesarDocumento(doc.id);
+      const result = await procesarDocumento(doc.id, doc.contenido_texto);
       toast.success(result.mensaje);
       void cargarDocs();
     } catch (err) {
