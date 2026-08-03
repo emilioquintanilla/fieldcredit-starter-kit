@@ -1,5 +1,5 @@
 // src/services/ia/ragNormativo.ts
-// Servicio cliente para el Copiloto Normativo (Fase 3 — RAG).
+// Servicio cliente para el Agente Normativo (Fase 3 — RAG).
 // Llama a las API routes del servidor — las claves nunca tocan el cliente.
 
 export interface FuenteNormativa {
@@ -17,7 +17,7 @@ export async function consultarNormativa(
   pregunta          : string,
   contextoExpediente?: string
 ): Promise<RespuestaNormativa> {
-  const res = await fetch("/api/rag/consultar", {
+  const res = await fetch("/api/rag/api_rag_consultar", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify({ pregunta, contextoExpediente }),
@@ -36,19 +36,23 @@ export async function consultarNormativa(
   };
 
   if (!data.exito) throw new Error(data.error || "Error en la consulta normativa");
-
   return { respuesta: data.respuesta, fuentes: data.fuentes };
 }
 
-export async function procesarDocumento(documentoId: string): Promise<{
-  procesados: number;
-  total     : number;
-  mensaje   : string;
-}> {
-  const res = await fetch("/api/rag/procesar", {
+// contenidoTexto se pasa directamente para evitar que el servidor
+// tenga que releerlo de Supabase (elimina dependencia de SUPABASE_SERVICE_ROLE_KEY
+// para la lectura del documento)
+export async function procesarDocumento(
+  documentoId    : string,
+  contenidoTexto : string
+): Promise<{ procesados: number; total: number; mensaje: string }> {
+  const res = await fetch("/api/rag/api_rag_procesar", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
-    body   : JSON.stringify({ documento_id: documentoId }),
+    body   : JSON.stringify({
+      documento_id   : documentoId,
+      contenido_texto: contenidoTexto,   // texto directo — sin lectura de DB
+    }),
   });
 
   if (!res.ok) {
