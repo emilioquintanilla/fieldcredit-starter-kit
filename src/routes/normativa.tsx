@@ -34,7 +34,7 @@ const SUGERENCIAS = [
 
 function NormativaPage() {
   // Contexto opcional: si se llega desde un expediente con ?expedienteId=xx
-  const search = useSearch({ from: "/normativa", strict: false }) as { expedienteId?: string };
+  const search = useSearch({ strict: false }) as unknown as { expedienteId?: string };
   const expedienteId = search?.expedienteId;
 
   const exp = useExpedientes((s) =>
@@ -61,7 +61,7 @@ function NormativaPage() {
       d.producto       && `Producto solicitado: ${d.producto}`,
       d.monto          && `Monto: C$ ${d.monto.toLocaleString("es-NI")}`,
       d.plazo          && `Plazo: ${d.plazo} meses`,
-      d.municipio      && `Municipio: ${d.municipio}`,
+      d.municipio_residencia && `Municipio: ${d.municipio_residencia}`,
     ].filter(Boolean).join("\n");
   }
 
