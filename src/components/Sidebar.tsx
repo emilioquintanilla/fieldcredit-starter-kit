@@ -14,6 +14,7 @@ import {
   BookOpen,
   CloudRain,
   Leaf,
+  FileCheck2,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
