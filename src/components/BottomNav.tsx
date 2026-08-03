@@ -116,13 +116,15 @@ export function BottomNav({ sidebarOpen = false }: BottomNavProps) {
       `}</style>
 
       {/* ── Wrapper flotante ── */}
+      {/* display:none garantiza ocultamiento real cuando el sidebar está abierto */}
       <div
         className="fixed bottom-4 left-1/2 z-50 pb-safe md:hidden"
         style={{
           width: "calc(100% - 32px)",
           maxWidth: 420,
           animation: "fc-nav-enter 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards",
-          // Ocultar cuando sidebar abierto — desliza hacia abajo y desvanece
+          // display:none cuando sidebar abierto — más confiable que opacity sola
+          display:       visible ? undefined : "none",
           opacity:       visible ? 1 : 0,
           pointerEvents: visible ? "auto" : "none",
           transform:     `translateX(-50%) translateY(${visible ? 0 : 24}px)`,
