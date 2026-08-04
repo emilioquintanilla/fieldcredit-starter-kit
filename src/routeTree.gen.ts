@@ -9,60 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as NormativaRouteImport } from './routes/normativa'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as InstitucionalRouteImport } from './routes/institucional'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ComiteRouteImport } from './routes/comite'
-import { Route as ClientesRouteImport } from './routes/clientes'
-import { Route as AlertasRouteImport } from './routes/alertas'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ComiteRouteImport } from './routes/comite'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as InstitucionalRouteImport } from './routes/institucional'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as NormativaRouteImport } from './routes/normativa'
 import { Route as ComiteIndexRouteImport } from './routes/comite.index'
-import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
-import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
 import { Route as ComiteIdRouteImport } from './routes/comite.$id'
-import { Route as AdminDocumentosRouteImport } from './routes/admin/documentos'
-import { Route as ApiRagEmbeberRouteImport } from './routes/api/rag/embeber'
-import { Route as ApiRagApi_rag_procesarRouteImport } from './routes/api/rag/api_rag_procesar'
-import { Route as ApiRagApi_rag_consultarRouteImport } from './routes/api/rag/api_rag_consultar'
-import { Route as ApiPublicIpRouteImport } from './routes/api/public/ip'
+import { Route as ExpedientesIndexRouteImport } from './routes/expedientes.index'
+import { Route as ExpedientesIdRouteImport } from './routes/expedientes.$id'
+import { Route as ExpedientesNuevoRouteImport } from './routes/expedientes.nuevo'
 import { Route as ApiIaCompletarRouteImport } from './routes/api/ia/completar'
+import { Route as ApiPublicIpRouteImport } from './routes/api/public/ip'
+import { Route as ApiRagConsultarRouteImport } from './routes/api/rag/consultar'
+import { Route as ApiRagEmbeberRouteImport } from './routes/api/rag/embeber'
+import { Route as ApiRagProcesarRouteImport } from './routes/api/rag/procesar'
 
-const NormativaRoute = NormativaRouteImport.update({
-  id: '/normativa',
-  path: '/normativa',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InstitucionalRoute = InstitucionalRouteImport.update({
-  id: '/institucional',
-  path: '/institucional',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ComiteRoute = ComiteRouteImport.update({
-  id: '/comite',
-  path: '/comite',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClientesRoute = ClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AlertasRoute = AlertasRouteImport.update({
-  id: '/alertas',
-  path: '/alertas',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -70,14 +39,39 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExpedientesIndexRoute = ExpedientesIndexRouteImport.update({
-  id: '/expedientes/',
-  path: '/expedientes/',
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComiteRoute = ComiteRouteImport.update({
+  id: '/comite',
+  path: '/comite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstitucionalRoute = InstitucionalRouteImport.update({
+  id: '/institucional',
+  path: '/institucional',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NormativaRoute = NormativaRouteImport.update({
+  id: '/normativa',
+  path: '/normativa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComiteIndexRoute = ComiteIndexRouteImport.update({
@@ -85,9 +79,14 @@ const ComiteIndexRoute = ComiteIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ComiteRoute,
 } as any)
-const ExpedientesNuevoRoute = ExpedientesNuevoRouteImport.update({
-  id: '/expedientes/nuevo',
-  path: '/expedientes/nuevo',
+const ComiteIdRoute = ComiteIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ComiteRoute,
+} as any)
+const ExpedientesIndexRoute = ExpedientesIndexRouteImport.update({
+  id: '/expedientes/',
+  path: '/expedientes/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
@@ -95,34 +94,9 @@ const ExpedientesIdRoute = ExpedientesIdRouteImport.update({
   path: '/expedientes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ComiteIdRoute = ComiteIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ComiteRoute,
-} as any)
-const AdminDocumentosRoute = AdminDocumentosRouteImport.update({
-  id: '/documentos',
-  path: '/documentos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const ApiRagEmbeberRoute = ApiRagEmbeberRouteImport.update({
-  id: '/api/rag/embeber',
-  path: '/api/rag/embeber',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiRagApi_rag_procesarRoute = ApiRagApi_rag_procesarRouteImport.update({
-  id: '/api/rag/api_rag_procesar',
-  path: '/api/rag/api_rag_procesar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiRagApi_rag_consultarRoute = ApiRagApi_rag_consultarRouteImport.update({
-  id: '/api/rag/api_rag_consultar',
-  path: '/api/rag/api_rag_consultar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicIpRoute = ApiPublicIpRouteImport.update({
-  id: '/api/public/ip',
-  path: '/api/public/ip',
+const ExpedientesNuevoRoute = ExpedientesNuevoRouteImport.update({
+  id: '/expedientes/nuevo',
+  path: '/expedientes/nuevo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
@@ -130,10 +104,30 @@ const ApiIaCompletarRoute = ApiIaCompletarRouteImport.update({
   path: '/api/ia/completar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicIpRoute = ApiPublicIpRouteImport.update({
+  id: '/api/public/ip',
+  path: '/api/public/ip',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRagConsultarRoute = ApiRagConsultarRouteImport.update({
+  id: '/api/rag/consultar',
+  path: '/api/rag/consultar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRagEmbeberRoute = ApiRagEmbeberRouteImport.update({
+  id: '/api/rag/embeber',
+  path: '/api/rag/embeber',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRagProcesarRoute = ApiRagProcesarRouteImport.update({
+  id: '/api/rag/procesar',
+  path: '/api/rag/procesar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/comite': typeof ComiteRouteWithChildren
@@ -141,7 +135,6 @@ export interface FileRoutesByFullPath {
   '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
   '/normativa': typeof NormativaRoute
-  '/admin/documentos': typeof AdminDocumentosRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
@@ -149,20 +142,19 @@ export interface FileRoutesByFullPath {
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
   '/api/public/ip': typeof ApiPublicIpRoute
-  '/api/rag/api_rag_consultar': typeof ApiRagApi_rag_consultarRoute
-  '/api/rag/api_rag_procesar': typeof ApiRagApi_rag_procesarRoute
+  '/api/rag/consultar': typeof ApiRagConsultarRoute
   '/api/rag/embeber': typeof ApiRagEmbeberRoute
+  '/api/rag/procesar': typeof ApiRagProcesarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/dashboard': typeof DashboardRoute
   '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
   '/normativa': typeof NormativaRoute
-  '/admin/documentos': typeof AdminDocumentosRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
@@ -170,14 +162,14 @@ export interface FileRoutesByTo {
   '/expedientes': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
   '/api/public/ip': typeof ApiPublicIpRoute
-  '/api/rag/api_rag_consultar': typeof ApiRagApi_rag_consultarRoute
-  '/api/rag/api_rag_procesar': typeof ApiRagApi_rag_procesarRoute
+  '/api/rag/consultar': typeof ApiRagConsultarRoute
   '/api/rag/embeber': typeof ApiRagEmbeberRoute
+  '/api/rag/procesar': typeof ApiRagProcesarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/alertas': typeof AlertasRoute
   '/clientes': typeof ClientesRoute
   '/comite': typeof ComiteRouteWithChildren
@@ -185,7 +177,6 @@ export interface FileRoutesById {
   '/institucional': typeof InstitucionalRoute
   '/login': typeof LoginRoute
   '/normativa': typeof NormativaRoute
-  '/admin/documentos': typeof AdminDocumentosRoute
   '/comite/$id': typeof ComiteIdRoute
   '/expedientes/$id': typeof ExpedientesIdRoute
   '/expedientes/nuevo': typeof ExpedientesNuevoRoute
@@ -193,9 +184,9 @@ export interface FileRoutesById {
   '/expedientes/': typeof ExpedientesIndexRoute
   '/api/ia/completar': typeof ApiIaCompletarRoute
   '/api/public/ip': typeof ApiPublicIpRoute
-  '/api/rag/api_rag_consultar': typeof ApiRagApi_rag_consultarRoute
-  '/api/rag/api_rag_procesar': typeof ApiRagApi_rag_procesarRoute
+  '/api/rag/consultar': typeof ApiRagConsultarRoute
   '/api/rag/embeber': typeof ApiRagEmbeberRoute
+  '/api/rag/procesar': typeof ApiRagProcesarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -209,7 +200,6 @@ export interface FileRouteTypes {
     | '/institucional'
     | '/login'
     | '/normativa'
-    | '/admin/documentos'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
@@ -217,9 +207,9 @@ export interface FileRouteTypes {
     | '/expedientes/'
     | '/api/ia/completar'
     | '/api/public/ip'
-    | '/api/rag/api_rag_consultar'
-    | '/api/rag/api_rag_procesar'
+    | '/api/rag/consultar'
     | '/api/rag/embeber'
+    | '/api/rag/procesar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -230,7 +220,6 @@ export interface FileRouteTypes {
     | '/institucional'
     | '/login'
     | '/normativa'
-    | '/admin/documentos'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
@@ -238,9 +227,9 @@ export interface FileRouteTypes {
     | '/expedientes'
     | '/api/ia/completar'
     | '/api/public/ip'
-    | '/api/rag/api_rag_consultar'
-    | '/api/rag/api_rag_procesar'
+    | '/api/rag/consultar'
     | '/api/rag/embeber'
+    | '/api/rag/procesar'
   id:
     | '__root__'
     | '/'
@@ -252,7 +241,6 @@ export interface FileRouteTypes {
     | '/institucional'
     | '/login'
     | '/normativa'
-    | '/admin/documentos'
     | '/comite/$id'
     | '/expedientes/$id'
     | '/expedientes/nuevo'
@@ -260,14 +248,14 @@ export interface FileRouteTypes {
     | '/expedientes/'
     | '/api/ia/completar'
     | '/api/public/ip'
-    | '/api/rag/api_rag_consultar'
-    | '/api/rag/api_rag_procesar'
+    | '/api/rag/consultar'
     | '/api/rag/embeber'
+    | '/api/rag/procesar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRouteWithChildren
+  AdminRoute: typeof AdminRoute
   AlertasRoute: typeof AlertasRoute
   ClientesRoute: typeof ClientesRoute
   ComiteRoute: typeof ComiteRouteWithChildren
@@ -280,60 +268,18 @@ export interface RootRouteChildren {
   ExpedientesIndexRoute: typeof ExpedientesIndexRoute
   ApiIaCompletarRoute: typeof ApiIaCompletarRoute
   ApiPublicIpRoute: typeof ApiPublicIpRoute
-  ApiRagApi_rag_consultarRoute: typeof ApiRagApi_rag_consultarRoute
-  ApiRagApi_rag_procesarRoute: typeof ApiRagApi_rag_procesarRoute
+  ApiRagConsultarRoute: typeof ApiRagConsultarRoute
   ApiRagEmbeberRoute: typeof ApiRagEmbeberRoute
+  ApiRagProcesarRoute: typeof ApiRagProcesarRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/normativa': {
-      id: '/normativa'
-      path: '/normativa'
-      fullPath: '/normativa'
-      preLoaderRoute: typeof NormativaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/institucional': {
-      id: '/institucional'
-      path: '/institucional'
-      fullPath: '/institucional'
-      preLoaderRoute: typeof InstitucionalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/comite': {
-      id: '/comite'
-      path: '/comite'
-      fullPath: '/comite'
-      preLoaderRoute: typeof ComiteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/clientes': {
-      id: '/clientes'
-      path: '/clientes'
-      fullPath: '/clientes'
-      preLoaderRoute: typeof ClientesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/alertas': {
-      id: '/alertas'
-      path: '/alertas'
-      fullPath: '/alertas'
-      preLoaderRoute: typeof AlertasRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -343,18 +289,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/expedientes/': {
-      id: '/expedientes/'
-      path: '/expedientes'
-      fullPath: '/expedientes/'
-      preLoaderRoute: typeof ExpedientesIndexRouteImport
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comite': {
+      id: '/comite'
+      path: '/comite'
+      fullPath: '/comite'
+      preLoaderRoute: typeof ComiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/institucional': {
+      id: '/institucional'
+      path: '/institucional'
+      fullPath: '/institucional'
+      preLoaderRoute: typeof InstitucionalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/normativa': {
+      id: '/normativa'
+      path: '/normativa'
+      fullPath: '/normativa'
+      preLoaderRoute: typeof NormativaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/comite/': {
@@ -364,11 +345,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComiteIndexRouteImport
       parentRoute: typeof ComiteRoute
     }
-    '/expedientes/nuevo': {
-      id: '/expedientes/nuevo'
-      path: '/expedientes/nuevo'
-      fullPath: '/expedientes/nuevo'
-      preLoaderRoute: typeof ExpedientesNuevoRouteImport
+    '/comite/$id': {
+      id: '/comite/$id'
+      path: '/$id'
+      fullPath: '/comite/$id'
+      preLoaderRoute: typeof ComiteIdRouteImport
+      parentRoute: typeof ComiteRoute
+    }
+    '/expedientes/': {
+      id: '/expedientes/'
+      path: '/expedientes'
+      fullPath: '/expedientes/'
+      preLoaderRoute: typeof ExpedientesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/expedientes/$id': {
@@ -378,46 +366,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpedientesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/comite/$id': {
-      id: '/comite/$id'
-      path: '/$id'
-      fullPath: '/comite/$id'
-      preLoaderRoute: typeof ComiteIdRouteImport
-      parentRoute: typeof ComiteRoute
-    }
-    '/admin/documentos': {
-      id: '/admin/documentos'
-      path: '/documentos'
-      fullPath: '/admin/documentos'
-      preLoaderRoute: typeof AdminDocumentosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/api/rag/embeber': {
-      id: '/api/rag/embeber'
-      path: '/api/rag/embeber'
-      fullPath: '/api/rag/embeber'
-      preLoaderRoute: typeof ApiRagEmbeberRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/rag/api_rag_procesar': {
-      id: '/api/rag/api_rag_procesar'
-      path: '/api/rag/api_rag_procesar'
-      fullPath: '/api/rag/api_rag_procesar'
-      preLoaderRoute: typeof ApiRagApi_rag_procesarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/rag/api_rag_consultar': {
-      id: '/api/rag/api_rag_consultar'
-      path: '/api/rag/api_rag_consultar'
-      fullPath: '/api/rag/api_rag_consultar'
-      preLoaderRoute: typeof ApiRagApi_rag_consultarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/ip': {
-      id: '/api/public/ip'
-      path: '/api/public/ip'
-      fullPath: '/api/public/ip'
-      preLoaderRoute: typeof ApiPublicIpRouteImport
+    '/expedientes/nuevo': {
+      id: '/expedientes/nuevo'
+      path: '/expedientes/nuevo'
+      fullPath: '/expedientes/nuevo'
+      preLoaderRoute: typeof ExpedientesNuevoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ia/completar': {
@@ -427,18 +380,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiIaCompletarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ip': {
+      id: '/api/public/ip'
+      path: '/api/public/ip'
+      fullPath: '/api/public/ip'
+      preLoaderRoute: typeof ApiPublicIpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rag/consultar': {
+      id: '/api/rag/consultar'
+      path: '/api/rag/consultar'
+      fullPath: '/api/rag/consultar'
+      preLoaderRoute: typeof ApiRagConsultarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rag/embeber': {
+      id: '/api/rag/embeber'
+      path: '/api/rag/embeber'
+      fullPath: '/api/rag/embeber'
+      preLoaderRoute: typeof ApiRagEmbeberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rag/procesar': {
+      id: '/api/rag/procesar'
+      path: '/api/rag/procesar'
+      fullPath: '/api/rag/procesar'
+      preLoaderRoute: typeof ApiRagProcesarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
-
-interface AdminRouteChildren {
-  AdminDocumentosRoute: typeof AdminDocumentosRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminDocumentosRoute: AdminDocumentosRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface ComiteRouteChildren {
   ComiteIdRoute: typeof ComiteIdRoute
@@ -455,7 +426,7 @@ const ComiteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRouteWithChildren,
+  AdminRoute: AdminRoute,
   AlertasRoute: AlertasRoute,
   ClientesRoute: ClientesRoute,
   ComiteRoute: ComiteRouteWithChildren,
@@ -468,9 +439,9 @@ const rootRouteChildren: RootRouteChildren = {
   ExpedientesIndexRoute: ExpedientesIndexRoute,
   ApiIaCompletarRoute: ApiIaCompletarRoute,
   ApiPublicIpRoute: ApiPublicIpRoute,
-  ApiRagApi_rag_consultarRoute: ApiRagApi_rag_consultarRoute,
-  ApiRagApi_rag_procesarRoute: ApiRagApi_rag_procesarRoute,
+  ApiRagConsultarRoute: ApiRagConsultarRoute,
   ApiRagEmbeberRoute: ApiRagEmbeberRoute,
+  ApiRagProcesarRoute: ApiRagProcesarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
