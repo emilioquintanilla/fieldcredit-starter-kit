@@ -1,9 +1,8 @@
 // src/routes/api/rag/procesar.ts
-// Procesa un documento: chunking → bulk INSERT de fragmentos de texto.
-// SIN embeddings externos — usa FTS (full-text search) de PostgreSQL.
-// Mucho más rápido y sin dependencias externas.
+// Chunking de documento + bulk INSERT en fragmentos_normativos.
+// Usa el cliente Supabase del proyecto (URL hardcodeada en src/lib/supabase.ts).
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
 const CHUNK_SIZE   = 800;
 const CHUNK_SOLAPE = 150;
@@ -61,25 +60,13 @@ export const Route = createFileRoute("/api/rag/procesar")({
           return Response.json({ error: "contenido_texto vacío" }, { status: 422 });
         }
 
-        const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
-
-        if (!supabaseUrl || !supabaseKey) {
-          return Response.json(
-            { error: "Variables de entorno Supabase no configuradas" },
-            { status: 500 }
-          );
-        }
-
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
-        // 1. Borrar fragmentos anteriores
+        // Borrar fragmentos anteriores (permite re-indexar)
         await supabase
           .from("fragmentos_normativos")
           .delete()
           .eq("documento_id", documentoId);
 
-        // 2. Chunkear texto
+        // Chunkear texto
         const fragmentos = chunkearTexto(contenidoTexto);
         if (fragmentos.length === 0) {
           return Response.json(
@@ -88,13 +75,12 @@ export const Route = createFileRoute("/api/rag/procesar")({
           );
         }
 
-        // 3. Bulk INSERT — sin embeddings, solo texto plano
+        // Bulk INSERT — sin embeddings, FTS nativo de PostgreSQL
         const filas = fragmentos.map((contenido, i) => ({
           documento_id    : documentoId,
           contenido,
           indice_fragmento: i,
           metadata        : { longitud: contenido.length },
-          // embedding queda NULL — la búsqueda usa FTS nativo de PostgreSQL
         }));
 
         const { error: insertError } = await supabase
@@ -108,7 +94,7 @@ export const Route = createFileRoute("/api/rag/procesar")({
           );
         }
 
-        // 4. Actualizar estado del documento
+        // Actualizar estado del documento
         await supabase
           .from("documentos_normativos")
           .update({ procesado: true, fragmentos_count: fragmentos.length })
